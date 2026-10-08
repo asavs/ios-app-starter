@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       account:
-        description: 'Opt in to read-only Apple account checks using apple-account environment secrets'
+        description: 'Opt in to read-only Apple account checks using apple-credentials environment secrets'
         type: boolean
         default: false
 permissions:
@@ -78,7 +78,7 @@ jobs:
     needs: [portable, configuration]
     if: github.event_name == 'workflow_dispatch' && inputs.account && github.ref == 'refs/heads/main'
     runs-on: windows-latest
-    environment: apple-account
+    environment: apple-credentials
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -98,6 +98,6 @@ jobs:
         run: python3 scripts/apple-doctor.py --configuration build/configuration.json --account --asc build/tools/asc.exe
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: apple-account-diagnostics
+          name: apple-credentials-diagnostics
           path: build/apple-diagnostics/
           retention-days: 7
