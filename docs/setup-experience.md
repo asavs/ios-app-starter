@@ -2,7 +2,7 @@
 
 This is a living handoff for people and agents setting up the starter. Read it alongside [the roadmap](../roadmap.md). Entries record actual observations; planned improvements are explicitly labeled. Do not paste credentials or unredacted logs here.
 
-## 2026-10-08 â€” Repository visibility and credentials
+## 2026-10-08 — Repository visibility and credentials
 
 **Decision:** The repository was created private because visibility had not been specified. There is no architectural requirement for this starter to be private. It was initially kept private pending user authorization; the public transition is recorded below.
 
@@ -21,7 +21,7 @@ Sources checked on this date:
 - [GitHub Variables](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-variables)
 - [GitHub-hosted runner availability and billing](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
 
-## 2026-10-08 â€” Milestone 1: generated app and GitHub build
+## 2026-10-08 — Milestone 1: generated app and GitHub build
 
 **Verified configuration:** Xcode 27.0, bundled iOS 27.0 SDK, XcodeGen 2.46.0, iPhone 17 simulator on iOS 27.0. App and test targets declare an iOS 17.0 minimum. Optional Apple platforms are not implemented yet.
 
@@ -29,7 +29,7 @@ Sources checked on this date:
 |---|---|---|
 | Existing workflow selected Xcode 26.2 and iOS 26.2. | Changed to `runs-on: xcode-27`, selected `/Applications/Xcode_27.0.app/Contents/Developer`, and verified Xcode and SDK versions. Both checks passed on GitHub. | Preview runner label and selected Xcode version are distinct settings. Do not rely on the runner's default Xcode. |
 | The project existed only as a manually created Xcode project. XcodeGen was not installed locally. | Added `project.yml` and a script downloading the pinned generator into a temporary directory, verifying SHA-256, and running it without a global installation. Regeneration reproduced the committed project. | Windows users edit the manifest and push; the runner executes generation. Pin the generator and update the checksum with version upgrades. |
-| Initial launch test launched the app without asserting anything. Unit test was also a placeholder. | Added `testWelcomeScreen`, asserting that â€œHello, world!â€ appears. CI explicitly selects this test. Run logs report one executed test, zero failures, and `TEST SUCCEEDED`. | A green process is not sufficient evidence of useful test coverage. The current gate is only a smoke test; feature tests belong with future capabilities. |
+| Initial launch test launched the app without asserting anything. Unit test was also a placeholder. | Added `testWelcomeScreen`, asserting that “Hello, world!” appears. CI explicitly selects this test. Run logs report one executed test, zero failures, and `TEST SUCCEEDED`. | A green process is not sufficient evidence of useful test coverage. The current gate is only a smoke test; feature tests belong with future capabilities. |
 | No Git remote was configured. | Asked for the destination; user authorized creating a new remote. Created `asavs/ios-app-starter` privately and pushed the app and workflow. | Detect missing remotes early while continuing local preparation. Do not guess an existing destination repository. |
 | `gh repo create ... --source=. --remote=origin` created the GitHub repository but failed to attach `origin`. | Added the remote separately using approved Git metadata access, then committed and pushed. | Repository creation can partially succeed. Inspect the resulting GitHub repository and local remotes before retrying; do not blindly create another repository. |
 | Local `simctl` reported invalid CoreSimulator connections and denied access to simulator logs. | The restricted local execution environment could not access simulator services. Project parsing succeeded locally; the required simulator test ran successfully on GitHub. | Distinguish sandbox/service-access failures from application failures. Local simulator availability is not a prerequisite for the Windows workflow. |
@@ -57,7 +57,7 @@ XDG_CACHE_HOME="$(mktemp -d)" gh run view RUN_ID --repo OWNER/REPO --log
 
 Choose a writable cache location using the host's normal environment configuration on Windows. Do not infer that an inaccessible cache requires a new GitHub token.
 
-## 2026-10-08 â€” GitHub template setting and milestone 2
+## 2026-10-08 — GitHub template setting and milestone 2
 
 **Template setting:** The user requested a GitHub template repository. Ran `gh repo edit asavs/ios-app-starter --template`, then queried repository metadata and verified `isTemplate: true`. Visibility was private at this step. People with access could use GitHub's **Use this template** button; marking a repository as a template does not make it public or copy credentials/settings into generated repositories. New owners must configure their own Actions and later release secrets.
 
@@ -80,12 +80,12 @@ Choose a writable cache location using the host's normal environment configurati
 Both final runs use implementation commit `f122dae`:
 
 - [Successful run](https://github.com/asavs/ios-app-starter/actions/runs/37826317826): one passed UI test, zero failures, exit 0; report tests passed; artifact upload completed.
-- [Deliberate failure run](https://github.com/asavs/ios-app-starter/actions/runs/37826318371): one failed UI test, exit 65, named `testWelcomeScreen()`, with â€œDeliberate failure probe: verify report deliveryâ€ in the Markdown summary and result JSON. The run correctly remains red while artifact upload succeeds.
+- [Deliberate failure run](https://github.com/asavs/ios-app-starter/actions/runs/37826318371): one failed UI test, exit 65, named `testWelcomeScreen()`, with “Deliberate failure probe: verify report delivery” in the Markdown summary and result JSON. The run correctly remains red while artifact upload succeeds.
 - Downloaded and inspected both artifacts: Markdown and JSON summaries, exit status, complete logs, and `.xcresult` were present; DerivedData was excluded. These reports are readable from Windows without Xcode.
 - Routine CI skips verbose diagnostics, retains standard result bundles, and uses pinned Node.js 24 checkout/upload actions. The job timeout is still the ultimate bound if simulator startup or finalization stalls.
 - Cancelled investigative runs do not count as passing or completed failure verification. Milestone 2 is complete based on the final two inspected runs.
 
-## 2026-10-08 â€” Public template and minimal configuration design
+## 2026-10-08 — Public template and minimal configuration design
 
 **Visibility:** The user explicitly authorized public visibility. Changed the GitHub repository to public and queried its metadata again: `visibility: PUBLIC`, `isTemplate: true`, URL `https://github.com/asavs/ios-app-starter`. Updated the README and roadmap to match. Earlier private-creation entries describe historical state.
 
@@ -95,7 +95,7 @@ Both final runs use implementation commit `f122dae`:
 
 References: [XcodeGen project specification](https://github.com/yonaskolb/XcodeGen/blob/2.46.0/Docs/ProjectSpec.md), [Apple command-line build and test guidance](https://developer.apple.com/library/archive/technotes/tn2339/_index.html).
 
-## 2026-10-08 â€” Milestone 3 configuration implementation
+## 2026-10-08 — Milestone 3 configuration implementation
 
 **Approach:** Retained the native XcodeGen manifest and fixed internal project/target/scheme names. Added a configurable Home Screen display name and a native `include`/override example named Pocket Notes. Actions validates both variants and builds/tests them independently. The policy checker uses `plutil`, `xcodebuild -list -json`, and all-target Debug/Release `-showBuildSettings -json`; it does not parse YAML or introduce a configuration service. A post-build check compares the simulator app's actual Info.plist with the validated configuration. Only selected public settings are saved as artifacts, not the full build environment.
 
@@ -105,7 +105,7 @@ References: [XcodeGen project specification](https://github.com/yonaskolb/XcodeG
 
 **Invalid minimum silently accepted by native tools:** With `options.deploymentTarget.iOS: banana`, XcodeGen generated a project without explicit deployment settings, and Xcode resolved the minimum to its installed SDK version. A resolved-setting range check alone incorrectly accepted it. The checker now also requires explicit numeric project deployment settings in the generated native project, preventing this silent fallback. Preserve this negative integration probe when upgrading XcodeGen.
 
-**Device-family inheritance:** A negative probe revealed that XcodeGenâ€™s iOS target defaults override a project-level `TARGETED_DEVICE_FAMILY`. Moved the editable device-family setting onto the app target, where it takes effect. This reinforces why checks must inspect resolved settings and built output rather than assume manifest placement is sufficient.
+**Device-family inheritance:** A negative probe revealed that XcodeGen’s iOS target defaults override a project-level `TARGETED_DEVICE_FAMILY`. Moved the editable device-family setting onto the app target, where it takes effect. This reinforces why checks must inspect resolved settings and built output rather than assume manifest placement is sufficient.
 
 **Scheme/capability probes:** Removing the shared scheme still left an automatically discovered scheme in `xcodebuild -list`; the checker therefore verifies the shared scheme file and its test references as well. Capability attributes generated by this XcodeGen version can appear as a non-dictionary value in the native project; reject this explicitly with an account-setup message rather than crashing during inspection. Native generation and policy probes use isolated directories, and individual cases can be reproduced by passing their names to `scripts/tests/check-configurations.py`.
 
@@ -133,7 +133,7 @@ No signing, installation, minimum-OS runtime coverage, or optional-platform supp
 
 Add dated entries as work proceeds. Explain the symptom, confirmed cause or uncertainty, fix, verification, and downstream implication. Keep reusable guidance in the README or focused setup guides and link to it from here. Keep the roadmap status accurate; do not claim completion while required checks are pending.
 
-## 2026-10-08 â€” Milestone 4: portable Apple diagnostics
+## 2026-10-08 — Milestone 4: portable Apple diagnostics
 
 - Audited the ignored CLI checkout at `1fffe67d1` and release 5.14.0. MIT license, native Windows amd64 release, macOS/Linux amd64 and arm64 releases, and read-command pagination were inspected. Integration downloads binaries rather than building the Go 1.27.1 module; the upstream module's original owner name differs from the release repository. Published SHA-256 values are pinned in `scripts/install-asc.py`.
 - Confirmed upstream telemetry is on by default and auth can fall back to stored profiles/config/Keychain. The wrapper removes inherited ASC settings except explicit credential fields, isolates the config path, bypasses Keychain, requests strict auth and disables telemetry. It never calls login or credential-persistence commands. Do not replace the wrapper with bare CLI commands when diagnosing secrets.
@@ -151,18 +151,17 @@ Add dated entries as work proceeds. Explain the symptom, confirmed cause or unce
 - [Fresh iOS regression run 37838166104](https://github.com/asavs/ios-app-starter/actions/runs/37838166104) passed for starter and Pocket Notes at `348a929`. Downloaded and inspected both result artifacts: each contains one passed welcome-screen test, zero failures, iOS 27.0, configuration metadata and compiled app metadata. Both artifact uploads succeeded. This establishes that the earlier `ENOTFOUND` upload failure did not repeat; its underlying network cause remains unknown. Small preview-runner smoke builds can still take several minutes; keep their actual results distinct from the much faster portable diagnostic checks.
 
 
-## 2026-10-08 â€” Clarify credentials environment and repository description
+## 2026-10-08 — Clarify credentials environment and repository description
 
 - The name `apple-account` appeared as a GitHub deployment environment and confused account diagnostics with deployment. Renamed active workflow/guide references to `apple-credentials` and explained GitHub's deployment terminology. Historical entries above retain the original name to match their run evidence.
 - GitHub's environment REST API identifies environments by name and has create/update/delete operations rather than an in-place rename field. Verified the old environment had zero secrets, zero variables, no protection rules and no branch policy; replaced this empty environment. For a populated environment, do not repeat that replacement blindly: secret values cannot be read back through the API, and protections/variables need deliberate migration.
-- Reviewed all thirteen roadmap milestones. The previous GitHub description implied TestFlight delivery was already implemented and omitted the broader optional modules. Revised it to describe the Windows/GitHub Actions foundation and label TestFlight, additional Apple platforms, backend/AI features and the iMessage bridge as roadmap scope. Milestones 1â€“4 remain complete; signing is next, with TestFlight following.
+- Reviewed all thirteen roadmap milestones. The previous GitHub description implied TestFlight delivery was already implemented and omitted the broader optional modules. Revised it to describe the Windows/GitHub Actions foundation and label TestFlight, additional Apple platforms, backend/AI features and the iMessage bridge as roadmap scope. Milestones 1–4 remain complete; signing is next, with TestFlight following.
 - Verification of the live environment name, repository metadata and renamed manual diagnostic workflow is recorded below after completion. No Apple credentials or account operations are part of this rename.
 - Rename implementation commit `32ba9eb` passed [manual diagnostics verification 37840884205](https://github.com/asavs/ios-app-starter/actions/runs/37840884205): all three portable jobs, fresh Xcode configuration and the Windows account job succeeded. Downloaded the newly named `apple-credentials-diagnostics` artifact and confirmed missing credentials/unverified account reads were reported correctly. Queried environment inventory: only `apple-credentials` remains. Repository description was read back and matches the broader planned scope; public visibility and template status remain enabled.
 
-## 2026-10-08 â€” Starter App demo Apple identity
+## 2026-10-08 — Starter App demo Apple identity
 
-- Created the demo-only native XcodeGen override `examples/starter-app-demo.yml` with display name `Starter App` and bundle identifiers `com.asaschaeffer.starterappdemo`, `.tests`, and `.uitests`. The reusable `project.yml` defaults remain unchanged. The matching App ID was registered in Apple Developer under the user-confirmed team `9L6Y9T3PPW`; Appleâ€™s form had its In-App Purchase toggle checked and disabled by default, while no optional capabilities were selected. No API key, certificate, profile, or GitHub secret was created or changed.
+- Created the demo-only native XcodeGen override `examples/starter-app-demo.yml` with display name `Starter App` and bundle identifiers `com.asaschaeffer.starterappdemo`, `.tests`, and `.uitests`. The reusable `project.yml` defaults remain unchanged. The matching App ID was registered in Apple Developer under the user-confirmed team `9L6Y9T3PPW`; Apple’s form had its In-App Purchase toggle checked and disabled by default, while no optional capabilities were selected. No API key, certificate, profile, or GitHub secret was created or changed.
 - Added the demo override as a separate iOS CI matrix entry. This Windows checkout cannot run Xcode 27.0; the most recent fresh Xcode export available before this edit was workflow run [37840884205](https://github.com/asavs/ios-app-starter/actions/runs/37840884205) at commit `32ba9eb`, so it verifies the prior default configuration only. The new demo configuration still needs a macOS runner result before it is verified.
 - The App Store Connect record's SKU is permanent, so confirm the SKU and primary language before creation. The findings from this setup have GitHub issues: [least-privilege API key role](https://github.com/asavs/ios-app-starter/issues/1), [credential-free account workflow status](https://github.com/asavs/ios-app-starter/issues/2), [default In-App Purchase toggle](https://github.com/asavs/ios-app-starter/issues/3), and [record name uniqueness](https://github.com/asavs/ios-app-starter/issues/4).
 - App Store Connect rejected the record name `Starter App` because it was already in use. After the user approved a distinct record name, created `Starter App Template Demo` with primary language English (U.S.), iOS, SKU `starter-app-demo-20261008`, and limited access; the app appears in the app list at record ID `6820716653`. The Home Screen display name remains `Starter App`. This confirms record name availability is separate from the display name; setup guide follow-up is tracked in [issue #4](https://github.com/asavs/ios-app-starter/issues/4). The record is not submitted for distribution.
-
