@@ -2,7 +2,7 @@
 
 A native Apple app starter built around **Windows → GitHub Actions → TestFlight → iPhone**. Users do not need a separately managed Mac. GitHub-hosted macOS runners perform the Xcode work.
 
-The starter has a generated iPhone/iPad app and a passing remote build gate. Portable success/failure reports and artifact uploads have also been verified on GitHub. Signing, TestFlight delivery, and optional platforms are planned in [the roadmap](roadmap.md); they are not implemented yet.
+The starter has a generated iPhone/iPad app and a passing remote build gate. Configuration validation, a renamed-app example, and portable success/failure reports have also been verified on GitHub. Signing, TestFlight delivery, and optional platforms are planned in [the roadmap](roadmap.md); they are not implemented yet.
 
 ## Develop from Windows
 

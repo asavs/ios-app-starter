@@ -46,7 +46,7 @@ Reuse the existing infrastructure: `project.yml` is the configuration, XcodeGen 
 - Prove customization with a changed app name and bundle ID that builds and passes the smoke test on GitHub. Verify representative invalid and unsupported configurations fail with useful messages. Generating a project alone is not the acceptance check.
 - Keep capability setup in Apple's native entitlements/build settings and the later signing milestones. A declared entitlement does not prove Apple has enabled the capability for the account.
 
-GitHub Actions orchestrates these commands; Xcode performs Apple's compilation, testing, and later signing/archive work. This remains a repository with scripts and workflows, without a separately operated service. Milestone 3 is still pending implementation and remote verification.
+GitHub Actions orchestrates these commands; Xcode performs Apple's compilation, testing, and later signing/archive work. This remains a repository with scripts and workflows, without a separately operated service. Milestone 3 is complete based on the remote checks and inspected artifacts linked below.
 
 ## First end-to-end acceptance check
 
@@ -76,7 +76,11 @@ Common logic belongs in shared packages; enabled platforms own their interface a
 - [Successful build/test and report upload](https://github.com/asavs/ios-app-starter/actions/runs/37826317826).
 - [Deliberate assertion-failure check](https://github.com/asavs/ios-app-starter/actions/runs/37826318371): expected red run; named failure, exit 65, logs, and result bundle verified.
 - GitHub repository metadata confirms **template repository enabled**; visibility is public, as authorized by the user.
-- **Milestone 3 implementation is in place:** native configuration checks, a renamed-app example, twelve invalid-configuration probes, and compiled-app settings verification. Required GitHub build/test acceptance is pending; do not start milestone 4 yet.
+- **Milestone 3 is complete:** native configuration checks, a renamed-app example, twelve invalid-configuration probes, and compiled-app settings verification.
+- Verified implementation commit: `76c9db4`.
+- [Successful starter and Pocket Notes acceptance run](https://github.com/asavs/ios-app-starter/actions/runs/37833792319): both built with Xcode 27.0/iOS SDK 27.0 and passed one welcome-screen test each on iOS 27.0. Downloaded artifacts confirm distinct app names/identifiers, iOS 17.0 minimum, and iPhone/iPad support in the compiled apps. All twelve invalid-configuration probes passed.
+- Slow bootstrap/automation exposed the previous 120-second test allowance. CI now prepares the simulator explicitly, allows 300 seconds per test, and bounds build/test to ten minutes. Native runner timing still varies; the journal records the observed failures and limits of the diagnosis.
+- **Next: milestone 4**, Apple setup guidance and read-only diagnostics, including assessment of the reference App Store Connect CLI.
 
 The cloned `App-Store-Connect-CLI` is a reference checkout for milestone 4, not an integrated template dependency. Audit its implementation, platform support, license, and command coverage before reuse.
 

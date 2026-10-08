@@ -117,7 +117,17 @@ References: [XcodeGen project specification](https://github.com/yonaskolb/XcodeG
 
 **Verified starter artifact:** Downloaded and inspected flat-root `configuration.json`/`built-app.json`, Markdown/JSON results, exit status, logs, and `.xcresult`. One test passed, zero failed, and the actual app declared Starter App, com.example.StarterApp, MinimumOSVersion 17.0, and UIDeviceFamily [1, 2]. The summary named ios-test-results-starter correctly.
 
-**Verification:** Final remote acceptance results will be recorded after the checks complete. No signing, installation, minimum-OS runtime coverage, or optional-platform support is claimed by this milestone.
+### Completed milestone 3 evidence
+
+- [Implementation commit 76c9db4](https://github.com/asavs/ios-app-starter/commit/76c9db4ee2723a4455e41bab54ed764cbc8d3a32).
+- [Successful acceptance run 37833792319](https://github.com/asavs/ios-app-starter/actions/runs/37833792319): both jobs completed successfully using the explicitly selected Xcode 27.0, iOS SDK 27.0, and iPhone 17/iOS 27.0 simulator. Each executed one welcome-screen test with zero failures and exit 0. Actual method durations were roughly 16 seconds for the starter and 21 seconds for Pocket Notes; build/bootstrap time is additional.
+- Both Debug and Release resolved settings were verified. Compiled Info.plist values confirmed Starter App/com.example.StarterApp and Pocket Notes/org.example.pocketnotes, with MinimumOSVersion 17.0 and UIDeviceFamily [1, 2] for both apps.
+- All twelve actual manifest/generator/Xcode integration probes passed remotely: missing/invalid identifier, empty name, inconsistent/invalid/too-old minimum, unsupported device family/platform, absent shared scheme/UI-test reference, unconfigured capability, and missing source path.
+- Downloaded and inspected both final artifacts: public configuration JSON and built-app JSON at the root, Markdown/JSON test summaries, exit status, logs, and one .xcresult each. DerivedData was absent and summaries named the correct matrix artifact. The five existing report tests also passed.
+- The final jobs used both observed runner image versions: Pocket Notes on 20260928.0222.1 and the starter on 20261006.0244.1. Both passed. Keep the confirmed tight-budget failure distinct from the still-unexplained internal causes of earlier startup failures; this run does not prove the preview runner will never stall.
+- GitHub metadata was queried again and confirmed PUBLIC visibility and template status enabled. Milestone 3 is complete; milestone 4 has not started.
+
+No signing, installation, minimum-OS runtime coverage, or optional-platform support is claimed by this milestone.
 
 ## How to maintain this journal
 
