@@ -81,7 +81,7 @@ def main():
         lines.extend(["### Build/test diagnostics", "", fenced("\n".join(excerpt))])
 
     lines.extend([
-        "Download the **ios-test-results** artifact on the Actions run page for "
+        f"Download the **{os.environ.get('IOS_TEST_ARTIFACT_NAME', 'ios-test-results')}** artifact on the Actions run page for "
         "`summary.md`, `results.json`, the complete logs, and `Tests.xcresult` when available.",
         "Locally, these files are in the report directory printed by `test-ios.sh`.",
         "",

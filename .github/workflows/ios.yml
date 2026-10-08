@@ -28,6 +28,8 @@ jobs:
             spec: examples/pocket-notes.yml
     runs-on: xcode-27
     timeout-minutes: 30
+    env:
+      IOS_TEST_DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=27.0
 
     steps:
       - name: Check out repository
@@ -50,7 +52,9 @@ jobs:
         run: bash scripts/generate-project.sh
 
       - name: Check resolved app configuration
-        run: python3 scripts/check-configuration.py --output build/configuration.json
+        env:
+          IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
+        run: python3 scripts/check-configuration.py --output "$IOS_TEST_OUTPUT_DIR/configuration.json"
 
       - name: Verify invalid configurations fail clearly
         if: matrix.configuration == 'starter'
@@ -71,15 +75,22 @@ jobs:
           path.write_text(source.replace(needle, needle + '\n        XCTFail("Deliberate failure probe: verify report delivery")'))
           PY
 
+      - name: Prepare simulator
+        timeout-minutes: 5
+        run: python3 scripts/prepare-simulator.py
+
       - name: Build and test iOS app
+        id: ios_tests
         env:
           IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
+          IOS_TEST_ARTIFACT_NAME: ios-test-results-${{ matrix.configuration }}
         run: bash scripts/test-ios.sh
 
       - name: Verify built app identity and minimum OS
+        if: ${{ !cancelled() && steps.ios_tests.outcome != 'skipped' }}
         env:
           IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
-        run: python3 scripts/check-built-app.py build/configuration.json "$IOS_TEST_OUTPUT_DIR"
+        run: python3 scripts/check-built-app.py "$IOS_TEST_OUTPUT_DIR/configuration.json" "$IOS_TEST_OUTPUT_DIR"
 
       - name: Upload test reports
         if: always()
@@ -87,8 +98,8 @@ jobs:
         with:
           name: ios-test-results-${{ matrix.configuration }}
           path: |
-            build/configuration.json
-            build/built-app.json
+            ${{ runner.temp }}/ios-test-results/configuration.json
+            ${{ runner.temp }}/ios-test-results/built-app.json
             ${{ runner.temp }}/ios-test-results/run.*/summary.md
             ${{ runner.temp }}/ios-test-results/run.*/results.json
             ${{ runner.temp }}/ios-test-results/run.*/exit-status.txt

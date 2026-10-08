@@ -17,6 +17,7 @@ xcodebuild \
   -derivedDataPath "$report_dir/DerivedData" \
   -resultBundlePath "$report_dir/Tests.xcresult" \
   -only-testing:StarterAppUITests/StarterAppUITests/testWelcomeScreen \
+  -parallel-testing-enabled NO \
   -test-timeouts-enabled YES \
   -default-test-execution-time-allowance 120 \
   -maximum-test-execution-time-allowance 120 \
