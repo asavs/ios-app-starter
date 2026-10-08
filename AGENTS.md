@@ -36,3 +36,9 @@ Update `docs/setup-experience.md` whenever setup, implementation, or verificatio
 5. Remaining uncertainty and any onboarding/tooling improvement needed.
 
 Distinguish observed behavior from assumptions. Report material trouble to the user as it occurs, explain the resolution, and mention any remaining limitation. Turn recurring workarounds into documented commands or onboarding improvements. Avoid duplicating raw logs; preserve the useful diagnosis and evidence.
+
+## Apple setup diagnostics
+
+Read `docs/apple-setup.md` before guiding Apple setup. Start with credential-free `python scripts/apple-doctor.py`; use the current run's native Xcode `configuration.json` export for project findings. Never claim a stale artifact verifies edited configuration.
+
+Authenticated reads require explicit opt-in. Use the pinned CLI through `scripts/apple-doctor.py --account --asc <binary>`, not arbitrary CLI commands. Do not run login, fixes, key generation, certificate/profile changes or revocation during diagnosis. Do not forward raw upstream output into logs or artifacts. Treat inaccessible and unverified checks as unknown, never as proof that an asset is missing. Present intended team, key type, role and account changes before any later setup operation; human enrollment, payment, identity and agreement decisions remain specific human steps.

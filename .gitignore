@@ -14,3 +14,7 @@ AuthKey_*.p8
 
 # Reference checkout, not an integrated template dependency
 /App-Store-Connect-CLI/
+
+# Apple API credentials and local CLI profiles
+*.p8
+.asc/

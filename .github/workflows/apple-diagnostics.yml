@@ -1,0 +1,103 @@
+name: Apple diagnostics
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      account:
+        description: 'Opt in to read-only Apple account checks using apple-account environment secrets'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  portable:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    env:
+      ASC_TELEMETRY_DISABLED: '1'
+      DO_NOT_TRACK: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Test diagnosis, permission handling and redaction
+        run: python3 -m unittest discover -s scripts/tests -p test_apple_doctor.py -v
+      - name: Download pinned native CLI
+        run: python3 scripts/install-asc.py
+      - name: Exercise native CLI without credentials
+        shell: bash
+        run: |
+          binary=build/tools/asc
+          if test -f build/tools/asc.exe; then binary=build/tools/asc.exe; fi
+          "$binary" version
+          "$binary" apps list --help
+          "$binary" bundle-ids list --help
+          "$binary" certificates list --help
+          "$binary" bundle-ids profiles list --help
+      - name: Exercise invalid credentials through the native CLI wrapper
+        run: python3 -m unittest discover -s scripts/tests -p test_apple_doctor.py -v
+      - name: Write credential-free readiness report
+        run: python3 scripts/apple-doctor.py
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: apple-diagnostics-${{ matrix.os }}
+          path: build/apple-diagnostics/
+          retention-days: 14
+  configuration:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: xcode-27
+    timeout-minutes: 10
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Verify toolchain and export current configuration
+        run: |
+          test "$(xcodebuild -version | head -n 1)" = 'Xcode 27.0'
+          test "$(xcrun --sdk iphoneos --show-sdk-version)" = '27.0'
+          bash scripts/generate-project.sh
+          python3 scripts/check-configuration.py --output build/configuration.json
+          python3 scripts/apple-doctor.py --configuration build/configuration.json
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: apple-configuration
+          path: build/configuration.json
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: apple-project-diagnostics
+          path: build/apple-diagnostics/
+  account:
+    needs: [portable, configuration]
+    if: github.event_name == 'workflow_dispatch' && inputs.account && github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    environment: apple-account
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: apple-configuration
+          path: build
+      - run: python3 scripts/install-asc.py
+      - name: Read account state and write sanitized report
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          ASC_KEY_TYPE: ${{ vars.ASC_KEY_TYPE || 'team' }}
+        run: python3 scripts/apple-doctor.py --configuration build/configuration.json --account --asc build/tools/asc.exe
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: apple-account-diagnostics
+          path: build/apple-diagnostics/
+          retention-days: 7

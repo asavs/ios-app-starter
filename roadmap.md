@@ -92,3 +92,9 @@ The cloned `App-Store-Connect-CLI` is a reference checkout for milestone 4, not 
 - [Apple App Store Connect API setup](https://developer.apple.com/help/app-store-connect/get-started/app-store-connect-api)
 
 The separate `platform-and-sdk-notes.md` preserves the earlier pasted text verbatim. This roadmap records the subsequently agreed decisions.
+
+## Milestone 4 implementation approach
+
+The Windows-first [Apple setup guide](docs/apple-setup.md) pairs human prerequisites with portable `scripts/apple-doctor.py` reports. Project findings consume milestone 3's native Xcode JSON export; no second configuration format or hosted service is introduced. The `asc` 5.14.0 subprocess is checksum-pinned, telemetry-disabled and constrained to paginated read commands with isolated credential resolution. Optional account reads run only on explicit request; ordinary checks need no Apple account.
+
+Windows/Linux/macOS CI exercises the native binary and diagnosis/redaction contract. Real Apple account reads require user-owned credentials and remain unverified until the opt-in workflow runs with them. Milestone 5 adds persistent credential handling, signing-asset validation/setup and a validated signed archive; milestone 6 adds the first TestFlight installation.

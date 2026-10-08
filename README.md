@@ -83,4 +83,16 @@ If failure happens before the test command starts, inspect the failed setup step
 
 For setup troubleshooting and agent handoff, see [the experience journal](docs/setup-experience.md) and [agent instructions](AGENTS.md). The journal records observed problems, fixes, test evidence, and remaining gaps; update it as development proceeds.
 
-`App-Store-Connect-CLI/` is a separately cloned reference checkout, excluded from this repository. It will be assessed for Apple setup and release tooling in milestone 4. Current builds do not depend on it.
+`App-Store-Connect-CLI/` is a separately cloned reference checkout, excluded from this repository. Milestone 4 audited it and integrates a pinned release binary for optional account diagnostics. Unsigned app builds do not depend on it.
+
+## Apple account setup and diagnostics
+
+Follow [the Windows-first Apple setup guide](docs/apple-setup.md) for membership, API access, choosing a key, secure credential entry, and agent-assisted setup. Start without credentials:
+
+```powershell
+python scripts/apple-doctor.py
+```
+
+The **Apple diagnostics** workflow tests the portable commands on Windows, Linux and macOS. A manual run also exports the current Xcode configuration; optional account reads use a separate `apple-account` environment on `main`. Reports explain what is missing, inaccessible or unverified. Signing and TestFlight delivery remain the next milestones.
+
+The CLI integration downloads pinned, checksum-verified `asc` 5.14.0 release binaries when requested. No source build, Go installation, cloud Mac account or Apple secret is needed for the ordinary diagnostic checks.
