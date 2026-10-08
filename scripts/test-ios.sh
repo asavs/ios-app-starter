@@ -20,6 +20,7 @@ xcodebuild \
   -test-timeouts-enabled YES \
   -default-test-execution-time-allowance 120 \
   -maximum-test-execution-time-allowance 120 \
+  -collect-test-diagnostics "${IOS_TEST_DIAGNOSTICS:-never}" \
   CODE_SIGNING_ALLOWED=NO \
   test 2>&1 | tee "$report_dir/xcodebuild.log"
 pipeline_status=("${PIPESTATUS[@]}")
