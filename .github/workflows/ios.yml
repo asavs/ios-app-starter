@@ -26,6 +26,8 @@ jobs:
             spec: project.yml
           - configuration: pocket-notes
             spec: examples/pocket-notes.yml
+          - configuration: starter-app-demo
+            spec: examples/starter-app-demo.yml
     runs-on: xcode-27
     timeout-minutes: 30
     env:
@@ -108,3 +110,4 @@ jobs:
             ${{ runner.temp }}/ios-test-results/run.*/Tests.xcresult
           retention-days: 14
           if-no-files-found: warn
+
