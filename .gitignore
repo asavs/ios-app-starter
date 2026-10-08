@@ -5,6 +5,7 @@
 DerivedData/
 .build/
 build/
+__pycache__/
 
 # Local signing material
 *.p12

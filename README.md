@@ -2,15 +2,15 @@
 
 A native Apple app starter built around **Windows → GitHub Actions → TestFlight → iPhone**. Users do not need a separately managed Mac. GitHub-hosted macOS runners perform the Xcode work.
 
-The current milestone is a minimal iPhone/iPad app and a remote build gate. Signing, TestFlight delivery, configuration tooling, and optional platforms are planned in [the roadmap](roadmap.md); they are not implemented yet.
+The starter has a generated iPhone/iPad app and a passing remote build gate. Milestone 2 adds portable test reports. Signing, TestFlight delivery, configuration tooling, and optional platforms are planned in [the roadmap](roadmap.md); they are not implemented yet.
 
 ## Develop from Windows
 
-1. Put this starter in your own GitHub repository with Actions enabled.
+1. On GitHub, choose **Use this template → Create a new repository**. Enable Actions in your new repository if needed. This template is currently private, so you must have access to use it.
 2. Edit Swift files under `StarterApp/StarterApp` using your preferred Windows editor or GitHub's browser editor.
 3. Edit `project.yml` for project settings. It is the source of truth for the generated Xcode project.
 4. Push to `main` or open a pull request. The **iOS** workflow generates the project, builds the app, and tests the welcome screen on an iPhone simulator.
-5. Check the workflow result in GitHub's **Actions** tab. You can also select **iOS → Run workflow** to run it manually.
+5. Open the workflow run in GitHub's **Actions** tab. Read its test summary and download the **ios-test-results** artifact for full logs, JSON counts, and the `.xcresult` bundle. Artifacts are retained for 14 days. You can also select **iOS → Run workflow** to run it manually.
 
 This first workflow is unsigned and needs no Apple credentials. It does not yet produce a build you can install on your iPhone. Signed TestFlight delivery is milestone 6.
 
@@ -43,14 +43,16 @@ The generated project is checked in for convenience, but changes belong in `proj
 With Xcode 27.0 and the iOS 27.0 simulator installed, run the same smoke test as CI:
 
 ```sh
-xcodebuild \
-  -project StarterApp/StarterApp.xcodeproj \
-  -scheme StarterApp \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=27.0' \
-  -only-testing:StarterAppUITests/StarterAppUITests/testWelcomeScreen \
-  CODE_SIGNING_ALLOWED=NO \
-  test
+bash scripts/test-ios.sh
 ```
+
+The script prints its report directory under `build/test-results/`. Set `IOS_TEST_DESTINATION` to use another installed simulator, and `IOS_TEST_OUTPUT_DIR` to choose the reports directory. A nonzero build or test result remains a nonzero command exit even though output is captured through `tee`. A successful command with no verified passing tests is also rejected.
+
+## Check failure reports
+
+To check the complete failure-reporting path, manually run **iOS** with **verify_failure_reporting** selected. This changes only the runner's temporary smoke-test assertion, deliberately produces a failed test, and should make that run red. Inspect the summary for the test name and assertion failure; download the artifact to see the same details and complete logs. Normal push and PR runs never enable the probe. It does not upload an app or change committed source.
+
+If failure happens before the test command starts, inspect the failed setup step in the Actions logs; test artifacts may not exist yet. `.xcresult` is primarily useful with Xcode, while Markdown, JSON, and text logs can be read on Windows.
 
 ## Reference tools
 

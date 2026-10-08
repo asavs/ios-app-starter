@@ -45,7 +45,7 @@ Sources checked on this date:
 - [Successful run after recording milestone completion](https://github.com/asavs/ios-app-starter/actions/runs/37822901771)
 - Local checks: shell syntax, Xcode project property-list validity, target/scheme discovery, clean whitespace, and deterministic project regeneration.
 
-**Coverage limits:** One UI smoke test ran on iOS 27.0. This does not prove iOS 17 runtime compatibility, device installation, signing, TestFlight delivery, or Windows execution of future CLI tools. Current CI does not upload `.xcresult` artifacts; reports and artifact retention are milestone 2.
+**Coverage limits:** One UI smoke test ran on iOS 27.0. This does not prove iOS 17 runtime compatibility, device installation, signing, TestFlight delivery, or Windows execution of future CLI tools. At milestone 1, CI did not upload `.xcresult` artifacts; milestone 2 adds reports and retention.
 
 ### Retrieving logs in a restricted environment
 
@@ -56,6 +56,18 @@ XDG_CACHE_HOME="$(mktemp -d)" gh run view RUN_ID --repo OWNER/REPO --log
 ```
 
 Choose a writable cache location using the host's normal environment configuration on Windows. Do not infer that an inaccessible cache requires a new GitHub token.
+
+## 2026-10-08 — GitHub template setting and milestone 2
+
+**Template setting:** The user requested a GitHub template repository. Ran `gh repo edit asavs/ios-app-starter --template`, then queried repository metadata and verified `isTemplate: true`. Visibility remains private. People with access can use GitHub's **Use this template** button; marking a repository as a template does not make it public or copy credentials/settings into generated repositories. New owners must configure their own Actions and later release secrets.
+
+**Reporting design:** `scripts/test-ios.sh` is the shared local-Mac/GitHub command. It creates a fresh report directory for every invocation, saves the build log, captures pipeline statuses immediately after `tee`, exports result-summary JSON with `xcresulttool`, and runs the Python Markdown reporter. The reporter rejects empty/unverified test runs instead of treating a zero command status as sufficient evidence.
+
+**Failure verification:** A manually selected `verify_failure_reporting` input replaces the welcome-screen assertion in the runner checkout only. The app remains unchanged, the test fails deliberately, and the workflow must stay red. Artifact upload uses `always()` so failed builds can retain reports. The probe is never enabled by ordinary push/PR events. Build failures may lack a readable `.xcresult`; the reporter falls back to text diagnostics. Setup failures before test execution may have no test artifact and must be diagnosed from step logs.
+
+**Action upgrade:** Replaced checkout v4 with a pinned v6 commit (Node.js 24) and disabled persisted checkout credentials. Pinned upload-artifact v4 and limited artifact paths to reports and result bundles, excluding DerivedData. This addresses the earlier checkout runtime warning; remote verification is pending.
+
+**Local verification:** Five report tests pass: success counts, named assertion failure, pre-test failure without results, a successful command without results, and zero executed tests. Shell syntax and whitespace checks pass. Full success/failure report and artifact checks on GitHub are pending; do not mark milestone 2 complete yet.
 
 ## How to maintain this journal
 

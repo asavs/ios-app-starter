@@ -5,6 +5,13 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      verify_failure_reporting:
+        description: 'Deliberately fail the smoke test to check reports (expected red run)'
+        type: boolean
+        default: false
+
+run-name: ${{ github.event_name == 'workflow_dispatch' && inputs.verify_failure_reporting && 'iOS (deliberate test failure)' || 'iOS' }}
 
 permissions:
   contents: read
@@ -13,10 +20,14 @@ jobs:
   test:
     runs-on: xcode-27
     timeout-minutes: 30
+    env:
+      IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
 
       - name: Select Xcode
         env:
@@ -30,13 +41,34 @@ jobs:
       - name: Generate Xcode project
         run: bash scripts/generate-project.sh
 
-      - name: Build and test iOS app
+      - name: Verify report handling
+        run: python3 -m unittest discover -s scripts/tests -v
+
+      - name: Inject deliberate assertion failure in runner checkout
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.verify_failure_reporting }}
         run: |
-          xcodebuild \
-            -project StarterApp/StarterApp.xcodeproj \
-            -scheme StarterApp \
-            -destination 'platform=iOS Simulator,name=iPhone 17,OS=27.0' \
-            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
-            -only-testing:StarterAppUITests/StarterAppUITests/testWelcomeScreen \
-            CODE_SIGNING_ALLOWED=NO \
-            test
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('StarterApp/StarterAppUITests/StarterAppUITests.swift')
+          source = path.read_text()
+          needle = 'app.staticTexts["Hello, world!"]'
+          assert source.count(needle) == 1, 'Smoke-test assertion changed; update failure probe.'
+          path.write_text(source.replace(needle, 'app.staticTexts["DELIBERATE FAILURE PROBE"]'))
+          PY
+
+      - name: Build and test iOS app
+        run: bash scripts/test-ios.sh
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ios-test-results
+          path: |
+            ${{ runner.temp }}/ios-test-results/run.*/summary.md
+            ${{ runner.temp }}/ios-test-results/run.*/results.json
+            ${{ runner.temp }}/ios-test-results/run.*/exit-status.txt
+            ${{ runner.temp }}/ios-test-results/run.*/*.log
+            ${{ runner.temp }}/ios-test-results/run.*/Tests.xcresult
+          retention-days: 14
+          if-no-files-found: warn
