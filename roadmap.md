@@ -47,6 +47,8 @@ The first milestones make this loop work before adding AI, server, or messaging 
 
 Onboarding and examples are updated with every milestone. Finish with a complete Windows walkthrough and generated non-AI and AI examples proving optional modules remain optional.
 
+Maintain [the setup experience journal](docs/setup-experience.md) throughout development. Record actual failures, fixes, important decisions, verification evidence, and unresolved limitations so future people and agents can reproduce the setup. Root `AGENTS.md` makes this part of the ongoing workflow.
+
 Agent guidance should explain human-only Apple prerequisites, diagnose before changing anything, preview account changes, and keep secrets out of chat. Choose API key types and roles deliberately rather than defaulting to the broadest access. Windows users enter credentials through supported local secret storage or GitHub secrets; Mac Keychain is an optional local path.
 
 Common logic belongs in shared packages; enabled platforms own their interface and lifecycle. An iPhone provides physical iPhone testing. Watch, Mac, TV, and Vision Pro hardware behavior requires the relevant device, another tester, or remote access; cloud tests do not establish physical-device coverage.

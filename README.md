@@ -54,4 +54,6 @@ xcodebuild \
 
 ## Reference tools
 
+For setup troubleshooting and agent handoff, see [the experience journal](docs/setup-experience.md) and [agent instructions](AGENTS.md). The journal records observed problems, fixes, test evidence, and remaining gaps; update it as development proceeds.
+
 `App-Store-Connect-CLI/` is a separately cloned reference checkout, excluded from this repository. It will be assessed for Apple setup and release tooling in milestone 4. Current builds do not depend on it.
