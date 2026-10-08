@@ -53,7 +53,12 @@ Common logic belongs in shared packages; enabled platforms own their interface a
 
 ## Current status
 
-**Milestone 1 is in progress.** The repository contains the app skeleton and an initial workflow. The manifest, pinned Xcode 27 workflow, and meaningful smoke test are being prepared. Completion requires a green GitHub Actions run; no GitHub remote was configured when this revision began.
+**Milestone 1 is complete.** The app is generated from `project.yml` with pinned XcodeGen 2.46.0. GitHub Actions selected and verified Xcode 27.0 and the iOS 27 SDK, generated the project, built the app and test targets, and passed the welcome-screen simulator test. Regeneration also reproduced the checked-in project without changes.
+
+- Repository: [asavs/ios-app-starter](https://github.com/asavs/ios-app-starter) (private).
+- Verified implementation commit: `b67df32`.
+- Required remote check: [successful iOS build and simulator test](https://github.com/asavs/ios-app-starter/actions/runs/37822420937).
+- **Next: milestone 2**, reusable test execution and accessible success/failure reports.
 
 The cloned `App-Store-Connect-CLI` is a reference checkout for milestone 4, not an integrated template dependency. Audit its implementation, platform support, license, and command coverage before reuse.
 
