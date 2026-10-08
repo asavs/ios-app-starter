@@ -1,0 +1,19 @@
+# Demo identity used to validate this template against the registered Apple App ID.
+# Keep the reusable template defaults in ../project.yml unchanged.
+include: ../project.yml
+
+targets:
+  StarterApp:
+    settings:
+      base:
+        INFOPLIST_KEY_CFBundleDisplayName: "Starter App"
+        PRODUCT_BUNDLE_IDENTIFIER: com.asaschaeffer.starterappdemo
+  StarterAppTests:
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.asaschaeffer.starterappdemo.tests
+  StarterAppUITests:
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.asaschaeffer.starterappdemo.uitests
+
