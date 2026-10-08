@@ -1,0 +1,12 @@
+# Xcode local state
+.DS_Store
+**/xcuserdata/
+*.xcuserstate
+DerivedData/
+.build/
+build/
+
+# Local signing material
+*.p12
+*.mobileprovision
+AuthKey_*.p8
