@@ -1,16 +1,16 @@
 # iOS App Starter
 
-A native Apple app starter built around **Windows → GitHub Actions → TestFlight → iPhone**. Users do not need a separately managed Mac. GitHub-hosted macOS runners perform the Xcode work.
+A native Apple app starter built around **Windows â†’ GitHub Actions â†’ TestFlight â†’ iPhone**. Users do not need a separately managed Mac. GitHub-hosted macOS runners perform the Xcode work.
 
 The starter has a generated iPhone/iPad app and a passing remote build gate. Configuration validation, a renamed-app example, and portable success/failure reports have also been verified on GitHub. Signing, TestFlight delivery, and optional platforms are planned in [the roadmap](roadmap.md); they are not implemented yet.
 
 ## Develop from Windows
 
-1. On GitHub, choose **Use this template → Create a new repository**. Enable Actions in your new repository if needed. This is a public GitHub template.
+1. On GitHub, choose **Use this template â†’ Create a new repository**. Enable Actions in your new repository if needed. This is a public GitHub template.
 2. Edit Swift files under `StarterApp/StarterApp` using your preferred Windows editor or GitHub's browser editor.
 3. Edit `project.yml` for project settings. It is the source of truth for the generated Xcode project.
 4. Push to `main` or open a pull request. The **iOS** workflow generates the project, builds the app, and tests the welcome screen on an iPhone simulator.
-5. Open the workflow run in GitHub's **Actions** tab. Read its test summary and download the **ios-test-results-starter** artifact (or **ios-test-results-pocket-notes** for the customization example) for full logs, JSON counts, and the `.xcresult` bundle. Artifacts are retained for 14 days. You can also select **iOS → Run workflow** to run it manually.
+5. Open the workflow run in GitHub's **Actions** tab. Read its test summary and download the **ios-test-results-starter** artifact (or **ios-test-results-pocket-notes** / **ios-test-results-starter-app-demo** for the examples) for full logs, JSON counts, and the `.xcresult` bundle. Artifacts are retained for 14 days. You can also select **iOS â†’ Run workflow** to run it manually.
 
 This first workflow is unsigned and needs no Apple credentials. It does not yet produce a build you can install on your iPhone. Signed TestFlight delivery is milestone 6.
 
@@ -51,7 +51,7 @@ The workflow selects its simulator in job-level `IOS_TEST_DESTINATION` and expli
 
 **What Actions checks:** XcodeGen validates the native manifest and its references. `scripts/check-configuration.py` then inspects the generated project, shared scheme, and Xcode-resolved Debug/Release settings. Errors explain missing/invalid identifiers, blank names, invalid or inconsistent deployment minimums, missing tests, and unsupported platforms/capabilities. Initial capability/account signing setup is pending; entitlement files and enabled account capabilities are rejected for this unsigned starter. Do not enable Mac compatibility flags or add Watch, Mac, TV, or Vision Pro targets yet.
 
-CI runs the starter and [a native XcodeGen override example](examples/pocket-notes.yml) independently. Each builds and tests the welcome screen, then checks the compiled app's `Info.plist` against the validated name, identifier, deployment minimum, and device families. The example inherits your manifest but overrides the display name and three bundle identifiers; it is a regression check for customization, not a separate app you must configure. Artifacts include `configuration.json` and `built-app.json`, with only the checked public app settings. Setup/preflight failures appear in the Actions step logs; test summaries exist only after testing starts.
+CI runs the starter and two [native XcodeGen override examples](examples/pocket-notes.yml) independently. The [Starter App demo](examples/starter-app-demo.yml) validates the separately registered demo identity; the reusable `project.yml` default remains `com.example.StarterApp`. Each configuration builds and tests the welcome screen, then checks the compiled app's `Info.plist` against the validated name, identifier, deployment minimum, and device families. The examples inherit the manifest but override the display name and three bundle identifiers. Artifacts include `configuration.json` and `built-app.json`, with only the checked public app settings. Setup/preflight failures appear in the Actions step logs; test summaries exist only after testing starts.
 
 On an optional Mac, run generation followed by `python3 scripts/check-configuration.py`. Integration probes can be repeated with `python3 scripts/tests/check-configurations.py`; they use temporary projects and require Xcode, XcodeGen downloads, and no Apple credentials.
 
@@ -96,3 +96,4 @@ python scripts/apple-doctor.py
 The **Apple diagnostics** workflow tests the portable commands on Windows, Linux and macOS. A manual run also exports the current Xcode configuration; optional account reads use a separate `apple-credentials` environment on `main`. Reports explain what is missing, inaccessible or unverified. Signing and TestFlight delivery remain the next milestones.
 
 The CLI integration downloads pinned, checksum-verified `asc` 5.14.0 release binaries when requested. No source build, Go installation, cloud Mac account or Apple secret is needed for the ordinary diagnostic checks.
+
