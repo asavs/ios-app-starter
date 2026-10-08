@@ -71,7 +71,7 @@ With Xcode 27.0 and the iOS 27.0 simulator installed, run the same smoke test as
 bash scripts/test-ios.sh
 ```
 
-The script prints its report directory under `build/test-results/`. Set `IOS_TEST_DESTINATION` to use another installed simulator, and `IOS_TEST_OUTPUT_DIR` to choose the reports directory. A nonzero build or test result remains a nonzero command exit even though output is captured through `tee`. A successful command with no verified passing tests is also rejected. Individual tests have a 120-second execution allowance; simulator startup and cleanup are bounded separately by the workflow job limit. Routine CI skips verbose sysdiagnose collection after failures to avoid delaying reports. Set `IOS_TEST_DIAGNOSTICS=on-failure` for a dedicated diagnostic run if needed.
+The script prints its report directory under `build/test-results/`. Set `IOS_TEST_DESTINATION` to use another installed simulator, and `IOS_TEST_OUTPUT_DIR` to choose the reports directory. A nonzero build or test result remains a nonzero command exit even though output is captured through `tee`. A successful command with no verified passing tests is also rejected. Individual tests have a 300-second execution allowance; simulator startup has a five-minute step limit, build/test has a ten-minute step limit, and the job has a 30-minute overall limit. Adjust these workflow limits deliberately as the app grows. Routine CI skips verbose sysdiagnose collection after failures to avoid delaying reports. Set `IOS_TEST_DIAGNOSTICS=on-failure` for a dedicated diagnostic run if needed.
 
 ## Check failure reports
 

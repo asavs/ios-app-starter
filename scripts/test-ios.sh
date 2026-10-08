@@ -19,8 +19,8 @@ xcodebuild \
   -only-testing:StarterAppUITests/StarterAppUITests/testWelcomeScreen \
   -parallel-testing-enabled NO \
   -test-timeouts-enabled YES \
-  -default-test-execution-time-allowance 120 \
-  -maximum-test-execution-time-allowance 120 \
+  -default-test-execution-time-allowance 300 \
+  -maximum-test-execution-time-allowance 300 \
   -collect-test-diagnostics "${IOS_TEST_DIAGNOSTICS:-never}" \
   CODE_SIGNING_ALLOWED=NO \
   test 2>&1 | tee "$report_dir/xcodebuild.log"

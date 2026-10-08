@@ -81,6 +81,7 @@ jobs:
 
       - name: Build and test iOS app
         id: ios_tests
+        timeout-minutes: 10
         env:
           IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
           IOS_TEST_ARTIFACT_NAME: ios-test-results-${{ matrix.configuration }}
