@@ -69,6 +69,8 @@ Choose a writable cache location using the host's normal environment configurati
 
 **Local verification:** Five report tests pass: success counts, named assertion failure, pre-test failure without results, a successful command without results, and zero executed tests. Shell syntax and whitespace checks pass. Full success/failure report and artifact checks on GitHub are pending; do not mark milestone 2 complete yet.
 
+**Observed workflow validation failure:** The first milestone 2 push failed before executing jobs, and manual dispatch returned HTTP 422: `Unrecognized named-value: 'runner'` for `runner.temp` in job-level `env`. Moved the report-directory environment variable to the test step's `env`, where the runner context is supported. YAML parsing alone does not validate GitHub expression-context availability. Verify allowed contexts for the specific workflow field and confirm GitHub accepts the workflow before diagnosing app code.
+
 ## How to maintain this journal
 
 Add dated entries as work proceeds. Explain the symptom, confirmed cause or uncertainty, fix, verification, and downstream implication. Keep reusable guidance in the README or focused setup guides and link to it from here. Keep the roadmap status accurate; do not claim completion while required checks are pending.
