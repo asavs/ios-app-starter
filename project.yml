@@ -1,15 +1,15 @@
+# Keep project, target, module, and scheme names stable; customize the app below.
 name: StarterApp
 
 options:
   minimumXcodeGenVersion: 2.46.0
   xcodeVersion: "27.0"
   deploymentTarget:
-    iOS: "17.0"
+    iOS: "17.0" # App and tests inherit this minimum; initially supported: 17+.
 
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    TARGETED_DEVICE_FAMILY: "1,2"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
     CURRENT_PROJECT_VERSION: 1
@@ -23,6 +23,9 @@ targets:
       - StarterApp/StarterApp
     settings:
       base:
+        # User-facing name. Spaces are fine; this does not rename Swift modules.
+        INFOPLIST_KEY_CFBundleDisplayName: "Starter App"
+        TARGETED_DEVICE_FAMILY: "1,2" # 1 = iPhone, 2 = iPad; either or both.
         PRODUCT_BUNDLE_IDENTIFIER: com.example.StarterApp
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor

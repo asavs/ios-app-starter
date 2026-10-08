@@ -18,6 +18,14 @@ permissions:
 
 jobs:
   test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - configuration: starter
+            spec: project.yml
+          - configuration: pocket-notes
+            spec: examples/pocket-notes.yml
     runs-on: xcode-27
     timeout-minutes: 30
 
@@ -37,7 +45,16 @@ jobs:
           echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
 
       - name: Generate Xcode project
+        env:
+          IOS_PROJECT_SPEC: ${{ matrix.spec }}
         run: bash scripts/generate-project.sh
+
+      - name: Check resolved app configuration
+        run: python3 scripts/check-configuration.py --output build/configuration.json
+
+      - name: Verify invalid configurations fail clearly
+        if: matrix.configuration == 'starter'
+        run: python3 scripts/tests/check-configurations.py
 
       - name: Verify report handling
         run: python3 -m unittest discover -s scripts/tests -v
@@ -59,12 +76,19 @@ jobs:
           IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
         run: bash scripts/test-ios.sh
 
+      - name: Verify built app identity and minimum OS
+        env:
+          IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
+        run: python3 scripts/check-built-app.py build/configuration.json "$IOS_TEST_OUTPUT_DIR"
+
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: ios-test-results
+          name: ios-test-results-${{ matrix.configuration }}
           path: |
+            build/configuration.json
+            build/built-app.json
             ${{ runner.temp }}/ios-test-results/run.*/summary.md
             ${{ runner.temp }}/ios-test-results/run.*/results.json
             ${{ runner.temp }}/ios-test-results/run.*/exit-status.txt

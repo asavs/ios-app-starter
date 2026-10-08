@@ -2,7 +2,7 @@
 
 A native Apple app starter built around **Windows → GitHub Actions → TestFlight → iPhone**. Users do not need a separately managed Mac. GitHub-hosted macOS runners perform the Xcode work.
 
-The starter has a generated iPhone/iPad app and a passing remote build gate. Portable success/failure reports and artifact uploads have also been verified on GitHub. Signing, TestFlight delivery, configuration tooling, and optional platforms are planned in [the roadmap](roadmap.md); they are not implemented yet.
+The starter has a generated iPhone/iPad app and a passing remote build gate. Portable success/failure reports and artifact uploads have also been verified on GitHub. Signing, TestFlight delivery, and optional platforms are planned in [the roadmap](roadmap.md); they are not implemented yet.
 
 ## Develop from Windows
 
@@ -10,7 +10,7 @@ The starter has a generated iPhone/iPad app and a passing remote build gate. Por
 2. Edit Swift files under `StarterApp/StarterApp` using your preferred Windows editor or GitHub's browser editor.
 3. Edit `project.yml` for project settings. It is the source of truth for the generated Xcode project.
 4. Push to `main` or open a pull request. The **iOS** workflow generates the project, builds the app, and tests the welcome screen on an iPhone simulator.
-5. Open the workflow run in GitHub's **Actions** tab. Read its test summary and download the **ios-test-results** artifact for full logs, JSON counts, and the `.xcresult` bundle. Artifacts are retained for 14 days. You can also select **iOS → Run workflow** to run it manually.
+5. Open the workflow run in GitHub's **Actions** tab. Read its test summary and download the **ios-test-results-starter** artifact (or **ios-test-results-pocket-notes** for the customization example) for full logs, JSON counts, and the `.xcresult` bundle. Artifacts are retained for 14 days. You can also select **iOS → Run workflow** to run it manually.
 
 This first workflow is unsigned and needs no Apple credentials. It does not yet produce a build you can install on your iPhone. Signed TestFlight delivery is milestone 6.
 
@@ -29,6 +29,29 @@ This first workflow is unsigned and needs no Apple credentials. It does not yet 
 The iOS 17 deployment target is configured but minimum-OS runtime coverage is not yet established. Watch, native Mac, TV, and Vision Pro targets will be optional; they are not generated yet.
 
 The default bundle identifier is `com.example.StarterApp`; replace it before distribution.
+
+## Configure your app from Windows
+
+Edit the marked settings in `project.yml`, commit, and push. Actions regenerates the project before checking or building it; Windows users do not need XcodeGen installed locally. The checked-in project is convenient for Mac users.
+
+| What to change | Location in `project.yml` | Example |
+|---|---|---|
+| Name shown on the Home Screen | `targets.StarterApp.settings.base.INFOPLIST_KEY_CFBundleDisplayName` | `"Pocket Notes"` |
+| App identifier | `targets.StarterApp.settings.base.PRODUCT_BUNDLE_IDENTIFIER` | `org.example.pocketnotes` |
+| Unit-test identifier | Same setting under `StarterAppTests` | `org.example.pocketnotes.tests` |
+| UI-test identifier | Same setting under `StarterAppUITests` | `org.example.pocketnotes.uitests` |
+| Minimum iOS/iPadOS | `options.deploymentTarget.iOS` | `"17.0"` |
+| Supported devices | `targets.StarterApp.settings.base.TARGETED_DEVICE_FAMILY` | `"1,2"` for both, `"1"` for iPhone, `"2"` for iPad |
+
+Choose distinct reverse-DNS bundle identifiers containing letters, numbers, hyphens, and periods. The `com.example` identifiers are usable for unsigned template checks; choose your own before signing/distribution. Keep project name, target names, Swift module/product names, and the `StarterApp` scheme stable. The displayed app name is independent of those internal names.
+
+The initial supported deployment minimum is 17.0 or newer, up to the selected SDK version. Raising it does not install a newer test runtime: choose a compatible `IOS_TEST_DESTINATION` in the workflow if you raise it beyond the current simulator OS. For iPad-only apps, select an installed iPad simulator in `IOS_TEST_DESTINATION`. App and test targets must share the minimum; use the project-level setting instead of target overrides. A build against a newer SDK does not establish runtime coverage on the declared minimum.
+
+**What Actions checks:** XcodeGen validates the native manifest and its references. `scripts/check-configuration.py` then inspects the generated project, shared scheme, and Xcode-resolved Debug/Release settings. Errors explain missing/invalid identifiers, blank names, invalid or inconsistent deployment minimums, missing tests, and unsupported platforms/capabilities. Initial capability/account signing setup is pending; entitlement files and enabled account capabilities are rejected for this unsigned starter. Do not enable Mac compatibility flags or add Watch, Mac, TV, or Vision Pro targets yet.
+
+CI runs the starter and [a native XcodeGen override example](examples/pocket-notes.yml) independently. Each builds and tests the welcome screen, then checks the compiled app's `Info.plist` against the validated name, identifier, deployment minimum, and device families. The example inherits your manifest but overrides the display name and three bundle identifiers; it is a regression check for customization, not a separate app you must configure. Artifacts include `configuration.json` and `built-app.json`, with only the checked public app settings. Setup/preflight failures appear in the Actions step logs; test summaries exist only after testing starts.
+
+On an optional Mac, run generation followed by `python3 scripts/check-configuration.py`. Integration probes can be repeated with `python3 scripts/tests/check-configurations.py`; they use temporary projects and require Xcode, XcodeGen downloads, and no Apple credentials.
 
 ## Optional local Mac development
 

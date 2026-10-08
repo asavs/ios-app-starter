@@ -1,0 +1,17 @@
+# Native XcodeGen include/override; not a second configuration format.
+include: ../project.yml
+
+targets:
+  StarterApp:
+    settings:
+      base:
+        INFOPLIST_KEY_CFBundleDisplayName: "Pocket Notes"
+        PRODUCT_BUNDLE_IDENTIFIER: org.example.pocketnotes
+  StarterAppTests:
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.example.pocketnotes.tests
+  StarterAppUITests:
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.example.pocketnotes.uitests

@@ -14,6 +14,7 @@ curl --fail --location --silent --show-error --retry 3 \
 printf '%s  %s\n' "$generator_sha256" "$generator_dir/xcodegen.zip" \
   | shasum -a 256 --check
 unzip -q "$generator_dir/xcodegen.zip" -d "$generator_dir"
+mkdir -p "${IOS_PROJECT_DIR:-$repo_dir/StarterApp}"
 "$generator_dir/xcodegen/bin/xcodegen" generate \
-  --spec "$repo_dir/project.yml" \
-  --project "$repo_dir/StarterApp"
+  --spec "${IOS_PROJECT_SPEC:-$repo_dir/project.yml}" \
+  --project "${IOS_PROJECT_DIR:-$repo_dir/StarterApp}"
