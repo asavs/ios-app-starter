@@ -159,3 +159,12 @@ Add dated entries as work proceeds. Explain the symptom, confirmed cause or unce
 - Verification of the live environment name, repository metadata and renamed manual diagnostic workflow is recorded below after completion. No Apple credentials or account operations are part of this rename.
 
 - Rename implementation commit `32ba9eb` passed [manual diagnostics verification 37840884205](https://github.com/asavs/ios-app-starter/actions/runs/37840884205): all three portable jobs, fresh Xcode configuration and the Windows account job succeeded. Downloaded the newly named `apple-credentials-diagnostics` artifact and confirmed missing credentials/unverified account reads were reported correctly. Queried environment inventory: only `apple-credentials` remains. Repository description was read back and matches the broader planned scope; public visibility and template status remain enabled.
+
+
+## 2026-10-08 — Schedule Windows setup follow-ups
+
+Reviewed GitHub issues #1–4 and PR #5 at head `3f0983d`. Inspected the latest run 37849556702's downloaded configuration, compiled-app and test JSON for all three lanes: expected identities, SDK 27.0, minimum iOS 17.0, iPhone/iPad families, one passing test each and zero failures. All twelve invalid-configuration probes passed. No blocking change was found in the unsigned demo PR; it remains open at this planning update, and signing/device delivery remain unverified.
+
+Added explicit milestone 5 dependency gates in `roadmap.md`: clear account-check status (#2), consistent manifest/identity selection, permissions before key selection (#1), capability/default guidance before App ID setup plus signed-entitlement verification (#3), name/display-name guidance before record creation (#4), and protected no-echo credential entry (#7). The existing diagnostics workflow still selects the default manifest; its demo-selection gap must be fixed before demo account checks/signing. Queue delays (#6) remain an observation to investigate if recurring, not a guessed app defect. Scheduling an issue is not completing it; closure requires acceptance evidence.
+
+This change updates planning only. No project, workflow, Apple account, credential or signing changes were made, and no new build result is inferred from the documentation edit.
