@@ -80,9 +80,10 @@ Common logic belongs in shared packages; enabled platforms own their interface a
 - Verified implementation commit: `76c9db4`.
 - [Successful starter and Pocket Notes acceptance run](https://github.com/asavs/ios-app-starter/actions/runs/37833792319): both built with Xcode 27.0/iOS SDK 27.0 and passed one welcome-screen test each on iOS 27.0. Downloaded artifacts confirm distinct app names/identifiers, iOS 17.0 minimum, and iPhone/iPad support in the compiled apps. All twelve invalid-configuration probes passed.
 - Slow bootstrap/automation exposed the previous 120-second test allowance. CI now prepares the simulator explicitly, allows 300 seconds per test, and bounds build/test to ten minutes. Native runner timing still varies; the journal records the observed failures and limits of the diagnosis.
-- **Next: milestone 4**, Apple setup guidance and read-only diagnostics, including assessment of the reference App Store Connect CLI.
+- **Milestone 4 is complete:** Windows-first Apple setup/agent guidance, pinned CLI integration, and read-only Markdown/JSON diagnostics. [Portable Windows/Linux/macOS verification](https://github.com/asavs/ios-app-starter/actions/runs/37838797337) passed all nine tests; [fresh Xcode configuration/report verification](https://github.com/asavs/ios-app-starter/actions/runs/37838190831) and [missing-secret account-job verification](https://github.com/asavs/ios-app-starter/actions/runs/37838380306) passed. [Fresh iOS builds/tests and report uploads](https://github.com/asavs/ios-app-starter/actions/runs/37838166104) also passed for both example configurations. No live Apple account was authenticated; those checks remain explicitly unverified.
+- **Next: milestone 5**, secure credential handling, signing setup and validation of a signed archive.
 
-The cloned `App-Store-Connect-CLI` is a reference checkout for milestone 4, not an integrated template dependency. Audit its implementation, platform support, license, and command coverage before reuse.
+The cloned `App-Store-Connect-CLI` remains an ignored reference checkout. Milestone 4 audited it and integrates the pinned 5.14.0 release binary through narrow read commands; unsigned app builds do not depend on the CLI.
 
 ## References
 

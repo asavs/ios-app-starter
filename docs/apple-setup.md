@@ -44,6 +44,8 @@ Use an existing approved key when possible. Only configure credentials when you 
 | `ASC_ISSUER_ID` | Issuer ID for a team key; omit for an individual key |
 | `ASC_PRIVATE_KEY` | Complete downloaded `.p8` PEM contents, entered directly into GitHub Secrets |
 
+In GitHub, use **Settings → Environments → apple-account → Environment secrets → Add secret**. See [GitHub's secret-entry instructions](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets#creating-secrets-for-an-environment) and [environment protections](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments).
+
 Set environment **variable** `ASC_KEY_TYPE` to `team` or `individual`; the default is `team`. Do not use ordinary variables for private material. Protect `main` and review workflow changes: code allowed to run with secrets can access them. The workflow's account job is manually enabled, restricted to `main`, and separate from PR jobs. It performs no login, key creation, account mutation, archive, or upload.
 
 Run **Apple diagnostics** on `main`, enabling its account checkbox. Missing secrets produce `not_configured`/`not_verified`, rather than fabricated account results. The report includes only sanitized findings and counts. Do not upload raw CLI responses or credential files. Review artifact access before sharing a diagnostic, even though it excludes credentials and account identifiers.
