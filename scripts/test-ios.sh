@@ -17,6 +17,9 @@ xcodebuild \
   -derivedDataPath "$report_dir/DerivedData" \
   -resultBundlePath "$report_dir/Tests.xcresult" \
   -only-testing:StarterAppUITests/StarterAppUITests/testWelcomeScreen \
+  -test-timeouts-enabled YES \
+  -default-test-execution-time-allowance 120 \
+  -maximum-test-execution-time-allowance 120 \
   CODE_SIGNING_ALLOWED=NO \
   test 2>&1 | tee "$report_dir/xcodebuild.log"
 pipeline_status=("${PIPESTATUS[@]}")

@@ -49,9 +49,9 @@ jobs:
           from pathlib import Path
           path = Path('StarterApp/StarterAppUITests/StarterAppUITests.swift')
           source = path.read_text()
-          needle = 'app.staticTexts["Hello, world!"]'
+          needle = 'XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 10))'
           assert source.count(needle) == 1, 'Smoke-test assertion changed; update failure probe.'
-          path.write_text(source.replace(needle, 'app.staticTexts["DELIBERATE FAILURE PROBE"]'))
+          path.write_text(source.replace(needle, needle + '\n        XCTFail("Deliberate failure probe: verify report delivery")'))
           PY
 
       - name: Build and test iOS app

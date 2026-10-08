@@ -71,6 +71,8 @@ Choose a writable cache location using the host's normal environment configurati
 
 **Observed workflow validation failure:** The first milestone 2 push failed before executing jobs, and manual dispatch returned HTTP 422: `Unrecognized named-value: 'runner'` for `runner.temp` in job-level `env`. Moved the report-directory environment variable to the test step's `env`, where the runner context is supported. YAML parsing alone does not validate GitHub expression-context availability. Verify allowed contexts for the specific workflow field and confirm GitHub accepts the workflow before diagnosing app code.
 
+**Slow failure probe:** The original negative run substituted a nonexistent UI label and stayed in the build/test step for roughly nine minutes while the normal run passed. Cancelled that run; no completed diagnostic report was available at that point, so the cause was not established. Changed the runner-only probe to an explicit `XCTFail` after the genuine welcome-screen assertion and enabled Xcode's 120-second per-test execution allowance. This bounds individual test execution, not simulator startup or all runner operations; the 30-minute job limit remains the overall bound. A cancelled probe is not evidence that failure reporting works; repeat and inspect a completed probe.
+
 ## How to maintain this journal
 
 Add dated entries as work proceeds. Explain the symptom, confirmed cause or uncertainty, fix, verification, and downstream implication. Keep reusable guidance in the README or focused setup guides and link to it from here. Keep the roadmap status accurate; do not claim completion while required checks are pending.
