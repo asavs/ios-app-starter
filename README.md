@@ -2,7 +2,7 @@
 
 A native Apple app starter built around **Windows → GitHub Actions → TestFlight → iPhone**. Users do not need a separately managed Mac. GitHub-hosted macOS runners perform the Xcode work.
 
-The starter has a generated iPhone/iPad app and a passing remote build gate. Milestone 2 adds portable test reports. Signing, TestFlight delivery, configuration tooling, and optional platforms are planned in [the roadmap](roadmap.md); they are not implemented yet.
+The starter has a generated iPhone/iPad app and a passing remote build gate. Portable success/failure reports and artifact uploads have also been verified on GitHub. Signing, TestFlight delivery, configuration tooling, and optional platforms are planned in [the roadmap](roadmap.md); they are not implemented yet.
 
 ## Develop from Windows
 
@@ -46,11 +46,11 @@ With Xcode 27.0 and the iOS 27.0 simulator installed, run the same smoke test as
 bash scripts/test-ios.sh
 ```
 
-The script prints its report directory under `build/test-results/`. Set `IOS_TEST_DESTINATION` to use another installed simulator, and `IOS_TEST_OUTPUT_DIR` to choose the reports directory. A nonzero build or test result remains a nonzero command exit even though output is captured through `tee`. A successful command with no verified passing tests is also rejected.
+The script prints its report directory under `build/test-results/`. Set `IOS_TEST_DESTINATION` to use another installed simulator, and `IOS_TEST_OUTPUT_DIR` to choose the reports directory. A nonzero build or test result remains a nonzero command exit even though output is captured through `tee`. A successful command with no verified passing tests is also rejected. Individual tests have a 120-second execution allowance; simulator startup and cleanup are bounded separately by the workflow job limit. Routine CI skips verbose sysdiagnose collection after failures to avoid delaying reports. Set `IOS_TEST_DIAGNOSTICS=on-failure` for a dedicated diagnostic run if needed.
 
 ## Check failure reports
 
-To check the complete failure-reporting path, manually run **iOS** with **verify_failure_reporting** selected. This changes only the runner's temporary smoke-test assertion, deliberately produces a failed test, and should make that run red. Inspect the summary for the test name and assertion failure; download the artifact to see the same details and complete logs. Normal push and PR runs never enable the probe. It does not upload an app or change committed source.
+To check the complete failure-reporting path, manually run **iOS** with **verify_failure_reporting** selected. This injects an explicit failure after the welcome-screen assertion in the runner's temporary checkout, deliberately produces a failed test, and should make that run red. Inspect the summary for the test name and assertion failure; download the artifact to see the same details and complete logs. Normal push and PR runs never enable the probe. It does not upload an app or change committed source.
 
 If failure happens before the test command starts, inspect the failed setup step in the Actions logs; test artifacts may not exist yet. `.xcresult` is primarily useful with Xcode, while Markdown, JSON, and text logs can be read on Windows.
 

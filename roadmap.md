@@ -60,7 +60,12 @@ Common logic belongs in shared packages; enabled platforms own their interface a
 - Repository: [asavs/ios-app-starter](https://github.com/asavs/ios-app-starter) (private).
 - Verified implementation commit: `b67df32`.
 - Required remote check: [successful iOS build and simulator test](https://github.com/asavs/ios-app-starter/actions/runs/37822420937).
-- **Milestone 2 is in progress:** reusable test execution, Markdown/JSON reports, and retained logs/result bundles. Completion requires a successful run and an intentional assertion-failure run with inspected reports and artifacts.
+- **Milestone 2 is complete:** reusable `scripts/test-ios.sh`, Markdown/JSON summaries, and retained logs/result bundles. Five report tests and a shell failure-status check passed locally; success and explicit assertion-failure reports/artifacts were downloaded and inspected on GitHub.
+- Verified milestone 2 implementation commit: `f122dae`.
+- [Successful build/test and report upload](https://github.com/asavs/ios-app-starter/actions/runs/37826317826).
+- [Deliberate assertion-failure check](https://github.com/asavs/ios-app-starter/actions/runs/37826318371): expected red run; named failure, exit 65, logs, and result bundle verified.
+- GitHub repository metadata confirms **template repository enabled**; visibility remains private.
+- **Next: milestone 3**, validated app configuration and project generation.
 
 The cloned `App-Store-Connect-CLI` is a reference checkout for milestone 4, not an integrated template dependency. Audit its implementation, platform support, license, and command coverage before reuse.
 
