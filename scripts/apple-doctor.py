@@ -44,7 +44,9 @@ class Reader:
                 self.env[name] = environment[name]
         self.env.update(ASC_CONFIG_PATH=str(Path(directory) / "absent-config.json"),
                         ASC_BYPASS_KEYCHAIN="1", ASC_STRICT_AUTH="1",
-                        ASC_TELEMETRY_DISABLED="1", DO_NOT_TRACK="1")
+                        ASC_TELEMETRY_DISABLED="1", DO_NOT_TRACK="1",
+                        TMPDIR=str(Path(directory).resolve()), TMP=str(Path(directory).resolve()),
+                        TEMP=str(Path(directory).resolve()))
 
     def read(self, command):
         # Commands are constructed only below, never from a user-supplied shell string.

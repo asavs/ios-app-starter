@@ -54,6 +54,8 @@ class DiagnosticsTests(unittest.TestCase):
             self.assertNotIn("ASC_DEBUG", reader.env)
             self.assertEqual(reader.env["ASC_BYPASS_KEYCHAIN"], "1")
             self.assertEqual(reader.env["ASC_TELEMETRY_DISABLED"], "1")
+            self.assertEqual(reader.env["TEMP"], str(Path(directory).resolve()))
+            self.assertEqual(reader.env["TMPDIR"], reader.env["TEMP"])
             for code, output, error, expected in [(1, "", "Forbidden " + CANARY, "inaccessible"),
                                                 (1, "", "HTTP 404 " + CANARY, "not_verified"),
                                                 (0, CANARY, "", "not_verified"),
@@ -69,6 +71,19 @@ class DiagnosticsTests(unittest.TestCase):
             reader = doctor.Reader("asc", ENV, directory)
             with patch.object(subprocess, "run", side_effect=subprocess.TimeoutExpired("asc", 120)):
                 self.assertEqual(reader.read(["apps", "list"]), ("not_verified", None))
+
+    def test_wrapper_cleans_child_key_material_after_timeout(self):
+        files = []
+        def interrupted_child(*args, **kwargs):
+            path = Path(kwargs["env"]["TEMP"]) / "asc-key-timeout.p8"
+            path.write_text(CANARY)
+            files.append(path)
+            raise subprocess.TimeoutExpired("asc", 120)
+        with patch.object(subprocess, "run", side_effect=interrupted_child):
+            report = doctor.diagnose(RECORDS, True, "asc", environment=ENV)
+        self.assertTrue(files)
+        self.assertTrue(all(not path.exists() for path in files))
+        self.assertNotIn(CANARY, json.dumps(report))
 
     def test_malformed_or_mismatched_configuration_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
