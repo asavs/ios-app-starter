@@ -4,7 +4,7 @@ This is a living handoff for people and agents setting up the starter. Read it a
 
 ## 2026-10-08 — Repository visibility and credentials
 
-**Decision:** The repository was created private because visibility had not been specified. There is no architectural requirement for this starter to be private. It remains private until the user authorizes a visibility change.
+**Decision:** The repository was created private because visibility had not been specified. There is no architectural requirement for this starter to be private. It was initially kept private pending user authorization; the public transition is recorded below.
 
 A public template can use GitHub Secrets for signing and upload credentials. Ordinary GitHub Variables are intended for non-sensitive configuration. Secrets can be injected into a job's environment when needed, but should not be embedded in workflow YAML or application code. Environment secrets are limited to jobs using that environment; configured reviewer requirements can gate access. Current build/test CI uses no Apple credentials and no release environment.
 
@@ -59,7 +59,7 @@ Choose a writable cache location using the host's normal environment configurati
 
 ## 2026-10-08 — GitHub template setting and milestone 2
 
-**Template setting:** The user requested a GitHub template repository. Ran `gh repo edit asavs/ios-app-starter --template`, then queried repository metadata and verified `isTemplate: true`. Visibility remains private. People with access can use GitHub's **Use this template** button; marking a repository as a template does not make it public or copy credentials/settings into generated repositories. New owners must configure their own Actions and later release secrets.
+**Template setting:** The user requested a GitHub template repository. Ran `gh repo edit asavs/ios-app-starter --template`, then queried repository metadata and verified `isTemplate: true`. Visibility was private at this step. People with access could use GitHub's **Use this template** button; marking a repository as a template does not make it public or copy credentials/settings into generated repositories. New owners must configure their own Actions and later release secrets.
 
 **Reporting design:** `scripts/test-ios.sh` is the shared local-Mac/GitHub command. It creates a fresh report directory for every invocation, saves the build log, captures pipeline statuses immediately after `tee`, exports result-summary JSON with `xcresulttool`, and runs the Python Markdown reporter. The reporter rejects empty/unverified test runs instead of treating a zero command status as sufficient evidence.
 
@@ -84,6 +84,16 @@ Both final runs use implementation commit `f122dae`:
 - Downloaded and inspected both artifacts: Markdown and JSON summaries, exit status, complete logs, and `.xcresult` were present; DerivedData was excluded. These reports are readable from Windows without Xcode.
 - Routine CI skips verbose diagnostics, retains standard result bundles, and uses pinned Node.js 24 checkout/upload actions. The job timeout is still the ultimate bound if simulator startup or finalization stalls.
 - Cancelled investigative runs do not count as passing or completed failure verification. Milestone 2 is complete based on the final two inspected runs.
+
+## 2026-10-08 — Public template and minimal configuration design
+
+**Visibility:** The user explicitly authorized public visibility. Changed the GitHub repository to public and queried its metadata again: `visibility: PUBLIC`, `isTemplate: true`, URL `https://github.com/asavs/ios-app-starter`. Updated the README and roadmap to match. Earlier private-creation entries describe historical state.
+
+**Design correction before implementation:** An initial proposal introduced a second app configuration file and custom validation/generation layer. The user asked to make the most of GitHub Actions and Xcode instead. No second configuration system was implemented. Revised milestone 3 to keep `project.yml` authoritative, use XcodeGen's built-in generation/structural validation, and inspect the generated project through `xcodebuild` in existing Actions jobs. Small policy checks are appropriate only where the existing tools do not enforce a template requirement.
+
+**Breadcrumb for future agents:** Do not confuse native project validity with template policy or runtime compatibility. A valid Xcode project may still contain a placeholder bundle ID, unsupported template platforms, or capabilities that need account provisioning. Use actual resolved build settings and a customized remote build as evidence. App display name and internal module/target names need not be identical; unnecessary target renaming can break test imports and workflow selection. Milestone 3 remains pending until its required checks pass.
+
+References: [XcodeGen project specification](https://github.com/yonaskolb/XcodeGen/blob/2.46.0/Docs/ProjectSpec.md), [Apple command-line build and test guidance](https://developer.apple.com/library/archive/technotes/tn2339/_index.html).
 
 ## How to maintain this journal
 

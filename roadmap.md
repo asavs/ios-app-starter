@@ -37,6 +37,17 @@ Each milestone can span several small, reviewable commits. **Do not begin the ne
 | **12** | **Optional live iMessage bridge.** Deployment on a persistent owned or rented Mac signed into Messages; model credentials remain on the backend. | CI validates the bridge artifact and deployment configuration. A separate, explicitly enabled live send/receive acceptance check passes. |
 | **13** | **App Store publication and additional build options.** Metadata, release validation, submission tooling, and an optional self-hosted build path. | Upload, review submission, and publication are distinct, reviewable actions. Ordinary pull request CI remains on hosted runners; untrusted code cannot target a persistent runner holding a Messages session. |
 
+## Milestone 3 implementation approach
+
+Reuse the existing infrastructure: `project.yml` is the configuration, XcodeGen generates and validates the project structure, and GitHub Actions runs `xcodebuild` to inspect resolved settings, build, and test. Do not introduce a separate `app.config.json`, configuration service, custom project generator, or hosted setup backend.
+
+- Document app display name, bundle identifiers, deployment minimum, device families, targets, and schemes in the existing manifest. Keep display/product naming separate from internal Swift module and test target names so customization does not accidentally break imports or CI selection.
+- Use XcodeGen's existing validation for malformed manifests and missing source/target references. Use `xcodebuild -list -json` and `-showBuildSettings -json` to check the actual generated project and selected scheme. Add only small checks for template policies that those tools do not enforce, such as the currently supported platform set and identifier format.
+- Prove customization with a changed app name and bundle ID that builds and passes the smoke test on GitHub. Verify representative invalid and unsupported configurations fail with useful messages. Generating a project alone is not the acceptance check.
+- Keep capability setup in Apple's native entitlements/build settings and the later signing milestones. A declared entitlement does not prove Apple has enabled the capability for the account.
+
+GitHub Actions orchestrates these commands; Xcode performs Apple's compilation, testing, and later signing/archive work. This remains a repository with scripts and workflows, without a separately operated service. Milestone 3 is still pending implementation and remote verification.
+
 ## First end-to-end acceptance check
 
 Milestone 6 is the first major success point: a person using **Windows, GitHub Actions, an iPhone, and an Apple Developer membership** can configure an app, change visible behavior, pass remote checks, trigger a signed build, and install it through TestFlight without using a Mac themselves.
@@ -57,14 +68,14 @@ Common logic belongs in shared packages; enabled platforms own their interface a
 
 **Milestone 1 is complete.** The app is generated from `project.yml` with pinned XcodeGen 2.46.0. GitHub Actions selected and verified Xcode 27.0 and the iOS 27 SDK, generated the project, built the app and test targets, and passed the welcome-screen simulator test. Regeneration also reproduced the checked-in project without changes.
 
-- Repository: [asavs/ios-app-starter](https://github.com/asavs/ios-app-starter) (private).
+- Repository: [asavs/ios-app-starter](https://github.com/asavs/ios-app-starter) (public).
 - Verified implementation commit: `b67df32`.
 - Required remote check: [successful iOS build and simulator test](https://github.com/asavs/ios-app-starter/actions/runs/37822420937).
 - **Milestone 2 is complete:** reusable `scripts/test-ios.sh`, Markdown/JSON summaries, and retained logs/result bundles. Five report tests and a shell failure-status check passed locally; success and explicit assertion-failure reports/artifacts were downloaded and inspected on GitHub.
 - Verified milestone 2 implementation commit: `f122dae`.
 - [Successful build/test and report upload](https://github.com/asavs/ios-app-starter/actions/runs/37826317826).
 - [Deliberate assertion-failure check](https://github.com/asavs/ios-app-starter/actions/runs/37826318371): expected red run; named failure, exit 65, logs, and result bundle verified.
-- GitHub repository metadata confirms **template repository enabled**; visibility remains private.
+- GitHub repository metadata confirms **template repository enabled**; visibility is public, as authorized by the user.
 - **Next: milestone 3**, validated app configuration and project generation.
 
 The cloned `App-Store-Connect-CLI` is a reference checkout for milestone 4, not an integrated template dependency. Audit its implementation, platform support, license, and command coverage before reuse.

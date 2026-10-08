@@ -6,7 +6,7 @@ The starter has a generated iPhone/iPad app and a passing remote build gate. Por
 
 ## Develop from Windows
 
-1. On GitHub, choose **Use this template → Create a new repository**. Enable Actions in your new repository if needed. This template is currently private, so you must have access to use it.
+1. On GitHub, choose **Use this template → Create a new repository**. Enable Actions in your new repository if needed. This is a public GitHub template.
 2. Edit Swift files under `StarterApp/StarterApp` using your preferred Windows editor or GitHub's browser editor.
 3. Edit `project.yml` for project settings. It is the source of truth for the generated Xcode project.
 4. Push to `main` or open a pull request. The **iOS** workflow generates the project, builds the app, and tests the welcome screen on an iPhone simulator.
