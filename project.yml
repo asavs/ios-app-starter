@@ -1,0 +1,66 @@
+name: StarterApp
+
+options:
+  minimumXcodeGenVersion: 2.46.0
+  xcodeVersion: "27.0"
+  deploymentTarget:
+    iOS: "17.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    CODE_SIGN_STYLE: Automatic
+    GENERATE_INFOPLIST_FILE: YES
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: "1.0"
+
+targets:
+  StarterApp:
+    type: application
+    platform: iOS
+    sources:
+      - StarterApp/StarterApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.StarterApp
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: NO
+  StarterAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - StarterApp/StarterAppTests
+    dependencies:
+      - target: StarterApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.StarterAppTests
+  StarterAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - StarterApp/StarterAppUITests
+    dependencies:
+      - target: StarterApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.StarterAppUITests
+
+schemes:
+  StarterApp:
+    build:
+      targets:
+        StarterApp: all
+    test:
+      targets:
+        - StarterAppTests
+        - StarterAppUITests
