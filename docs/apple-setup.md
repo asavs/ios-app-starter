@@ -84,6 +84,12 @@ Use an existing approved key when possible. Only configure credentials when you 
 
 Both modes require exactly one branch rule for `main`. Solo-owner approval provides a deliberate manual checkpoint, without an independent second person. Choose it explicitly for a personal repository; do not configure a collaborator solely to satisfy the template. Organization repositories use independent approval. An agent must present the selected policy and intended Apple signing changes before credential setup.
 
+### Collect the approval gates together
+
+To avoid interrupting setup for predictable decisions, the agent should first inspect the current repository, team, app identity, existing key and assets, then present one concrete approval request covering the planned phases. Name the repository/environment policy and who will approve; the exact Apple team, existing app/bundle ID and key type/role; transfer of that existing key into the named GitHub environment; read-only diagnostics for the selected manifest; permission for the agent to approve the expected `apple-credentials` deployment gates for those specific runs; and, if signing is in scope, Xcode automatic signing and its possible profile/certificate changes. State what is expressly excluded, such as new app records, unrelated capability changes, revocation and TestFlight upload.
+
+Do not ask for or accept passwords, 2FA codes, payment or agreement decisions. The account owner completes sign-in and those human-only steps. If the intended team, app, key, assets or effects are unknown, inspect first and ask only about the unresolved choice. A diagnostic approval covers read-only account requests; it does not authorize signing. A signing approval covers the named app and allowed automatic-signing effects; it does not authorize TestFlight. Each GitHub environment deployment is an actual approval action: only approve it when the owner explicitly included that workflow and effect in the authorization. Solo-owner approval is the repository owner's approval, not an independent review.
+
 | Name | Value |
 | --- | --- |
 | `ASC_KEY_ID` | API key ID |
