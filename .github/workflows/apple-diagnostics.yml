@@ -26,8 +26,11 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-      - name: Test diagnosis, permission handling and redaction
-        run: python3 -m unittest discover -s scripts/tests -p test_apple_doctor.py -v
+      - name: Cache verified public CLI downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/tool-downloads/asc
+          key: asc-v1-${{ runner.os }}-${{ runner.arch }}-5.14.0-${{ hashFiles('scripts/install-asc.py', 'scripts/tool_download.py') }}
       - name: Download pinned native CLI
         run: python3 scripts/install-asc.py
       - name: Exercise native CLI without credentials
@@ -40,8 +43,10 @@ jobs:
           "$binary" bundle-ids list --help
           "$binary" certificates list --help
           "$binary" bundle-ids profiles list --help
-      - name: Exercise invalid credentials through the native CLI wrapper
-        run: python3 -m unittest discover -s scripts/tests -p test_apple_doctor.py -v
+      - name: Verify same-job tool download reuse
+        run: python3 scripts/install-asc.py
+      - name: Test diagnostics, reports and download-cache integrity
+        run: python3 -m unittest discover -s scripts/tests -v
       - name: Write credential-free readiness report
         run: python3 scripts/apple-doctor.py
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
@@ -59,6 +64,12 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
+      - name: Cache verified XcodeGen archive
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/tool-downloads/xcodegen
+          key: xcodegen-v1-${{ runner.os }}-${{ runner.arch }}-2.46.0-${{ hashFiles('scripts/generate-project.sh', 'scripts/tool_download.py') }}
+
       - name: Verify toolchain and export current configuration
         run: |
           test "$(xcodebuild -version | head -n 1)" = 'Xcode 27.0'
@@ -88,6 +99,11 @@ jobs:
         with:
           name: apple-configuration
           path: build
+      - name: Restore verified public CLI downloads
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/tool-downloads/asc
+          key: asc-v1-${{ runner.os }}-${{ runner.arch }}-5.14.0-${{ hashFiles('scripts/install-asc.py', 'scripts/tool_download.py') }}
       - run: python3 scripts/install-asc.py
       - name: Read account state and write sanitized report
         env:

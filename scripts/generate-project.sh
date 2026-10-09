@@ -8,12 +8,14 @@ generator_sha256='4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf01968
 generator_dir="$(mktemp -d)"
 trap 'rm -rf "$generator_dir"' EXIT
 
-curl --fail --location --silent --show-error --retry 3 \
-  "https://github.com/yonaskolb/XcodeGen/releases/download/${generator_version}/xcodegen.zip" \
-  --output "$generator_dir/xcodegen.zip"
-printf '%s  %s\n' "$generator_sha256" "$generator_dir/xcodegen.zip" \
-  | shasum -a 256 --check
-unzip -q "$generator_dir/xcodegen.zip" -d "$generator_dir"
+# Cache the original archive, not mutable extracted executables. Every reuse
+# verifies its checksum, then extracts into this invocation's clean directory.
+archive="$(python3 "$repo_dir/scripts/tool_download.py" \
+  --url "https://github.com/yonaskolb/XcodeGen/releases/download/${generator_version}/xcodegen.zip" \
+  --sha256 "$generator_sha256" \
+  --filename "xcodegen-${generator_version}.zip" \
+  --cache-dir "${IOS_XCODEGEN_CACHE_DIR:-$repo_dir/build/tool-downloads/xcodegen}")"
+unzip -q "$archive" -d "$generator_dir"
 mkdir -p "${IOS_PROJECT_DIR:-$repo_dir/StarterApp}"
 "$generator_dir/xcodegen/bin/xcodegen" generate \
   --spec "${IOS_PROJECT_SPEC:-$repo_dir/project.yml}" \

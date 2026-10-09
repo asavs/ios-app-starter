@@ -96,3 +96,9 @@ python scripts/apple-doctor.py
 The **Apple diagnostics** workflow tests the portable commands on Windows, Linux and macOS. A manual run also exports the current Xcode configuration; optional account reads use a separate `apple-credentials` environment on `main`. Reports explain what is missing, inaccessible or unverified. Signing and TestFlight delivery remain the next milestones.
 
 The CLI integration downloads pinned, checksum-verified `asc` 5.14.0 release binaries when requested. No source build, Go installation, cloud Mac account or Apple secret is needed for the ordinary diagnostic checks.
+
+## CI tool-download caching
+
+Actions caches only the public, pinned XcodeGen archive and `asc` release downloads under `build/tool-downloads/`. Cache keys separate operating system, architecture, version and the scripts containing the pinned digests. Every use rechecks SHA-256; a missing or invalid cache downloads and verifies the pinned asset again. XcodeGen extracts into a clean temporary directory, so repeated configuration probes reuse the archive without reusing mutable executables.
+
+The scripts also reuse verified downloads within a job or local checkout. Project generation requires Python 3, curl and unzip alongside the existing Mac tools. Override `IOS_XCODEGEN_CACHE_DIR` or the CLI installer's `--cache-dir` for an isolated download cache. The account job restores public tool downloads but does not save caches. Credentials, profiles, compiler output, signed archives and test reports are outside these cache paths. Cache corruption that recurs after restore may require deleting the affected Actions cache entry because existing entries are immutable.
