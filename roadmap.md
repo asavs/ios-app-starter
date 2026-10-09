@@ -41,6 +41,8 @@ Each milestone can span several small, reviewable commits. **Do not begin the ne
 
 [PR #5](https://github.com/asavs/ios-app-starter/pull/5) adds the demo configuration and its unsigned regression lane. Its reviewed head `3f0983d` passed [all three iOS configurations](https://github.com/asavs/ios-app-starter/actions/runs/37849556702); downloaded artifacts confirm one passing smoke test per configuration and the expected compiled identities. The PR is ready to merge, but remains open at this planning update. Its acceptance does not establish signing or TestFlight readiness. Issues below are follow-up work, not blockers for that unsigned demo PR.
 
+Before expanding the milestone 5 workflows, make a small CI-efficiency improvement: reuse checksum-verified XcodeGen downloads across generation calls and cache reviewed tool downloads by version/digest/OS/architecture. Measure cold and warm runs before adding compiler-output caching; keep signed outputs and credentials out of caches. Cache misses must remain functional and required build/test checks must still execute. Swift package dependency caching becomes relevant when packages are introduced. Consider avoiding superseded unsigned runs and unnecessary simulator builds for documentation changes while preserving required-check reporting. This is an optimization task, not evidence of signing readiness.
+
 Implement milestone 5 in this order. Each gate must be satisfied before its dependent action, and all milestone 5 acceptance checks must pass before starting TestFlight delivery.
 
 | When | Tracked work | Required evidence / gate |

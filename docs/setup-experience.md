@@ -168,3 +168,10 @@ Reviewed GitHub issues #1–4 and PR #5 at head `3f0983d`. Inspected the latest 
 Added explicit milestone 5 dependency gates in `roadmap.md`: clear account-check status (#2), consistent manifest/identity selection, permissions before key selection (#1), capability/default guidance before App ID setup plus signed-entitlement verification (#3), name/display-name guidance before record creation (#4), and protected no-echo credential entry (#7). The existing diagnostics workflow still selects the default manifest; its demo-selection gap must be fixed before demo account checks/signing. Queue delays (#6) remain an observation to investigate if recurring, not a guessed app defect. Scheduling an issue is not completing it; closure requires acceptance evidence.
 
 This change updates planning only. No project, workflow, Apple account, credential or signing changes were made, and no new build result is inferred from the documentation edit.
+
+
+## 2026-10-08 — CI caching audit before signing work
+
+The GitHub cache usage endpoint reported zero active caches and zero cached bytes. Neither workflow currently configures Actions caching. `generate-project.sh` downloads and extracts pinned XcodeGen into a new temporary directory on every invocation, including each invalid-configuration probe. `test-ios.sh` deliberately creates a fresh per-run DerivedData directory. No Swift package dependencies are declared in the current manifest, so package-cache setup would not yet save dependency resolution work.
+
+Scheduled a small tool-download/reuse optimization before expanding milestone 5 workflows. Retain checksum verification on cache hits, separate keys by pinned tool and native platform, and verify cold/missing-cache behavior. Measure compile/bootstrap timing before caching DerivedData; a cache does not remove runner queue time or simulator startup. Credentials, profiles, signing private keys and signed release outputs must stay outside caches. No caching implementation or speed improvement is claimed by this audit.
