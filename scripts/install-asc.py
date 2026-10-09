@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """Download a reviewed release binary without executing a remote installer."""
 import argparse
-import hashlib
 import platform
 from pathlib import Path
 import subprocess
-import tempfile
+from tool_download import verified_download
 
 VERSION = "5.14.0"
 HASHES = {
@@ -17,21 +16,16 @@ HASHES = {
 }
 
 
-def install(destination):
+def install(destination, cache_dir=None):
     system = {"Darwin": "macOS", "Linux": "linux", "Windows": "windows"}.get(platform.system())
     arch = {"x86_64": "amd64", "AMD64": "amd64", "arm64": "arm64", "aarch64": "arm64"}.get(platform.machine())
     asset = f"{system}_{arch}" + (".exe" if system == "windows" else "")
     if asset not in HASHES:
         raise ValueError("No reviewed native asc binary for this operating system/architecture")
     url = f"https://github.com/rorkai/App-Store-Connect-CLI/releases/download/{VERSION}/asc_{VERSION}_{asset}"
-    with tempfile.TemporaryDirectory(prefix="asc-download-") as temporary:
-        downloaded = Path(temporary) / "asc-download"
-        subprocess.run(["curl.exe" if system == "windows" else "curl", "--fail", "--silent",
-                        "--show-error", "--location", "--retry", "3", "--max-time", "120",
-                        "--output", str(downloaded), url], check=True)
-        data = downloaded.read_bytes()
-    if hashlib.sha256(data).hexdigest() != HASHES[asset]:
-        raise ValueError("asc download checksum mismatch; binary was not saved")
+    cache_dir = cache_dir or Path(__file__).resolve().parents[1] / "build/tool-downloads/asc"
+    downloaded = verified_download(url, HASHES[asset], f"asc_{VERSION}_{asset}", cache_dir)
+    data = downloaded.read_bytes()
     destination.mkdir(parents=True, exist_ok=True)
     binary = destination / ("asc.exe" if system == "windows" else "asc")
     binary.write_bytes(data)
@@ -43,7 +37,9 @@ def install(destination):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--destination", type=Path, default=Path("build/tools"))
+    parser.add_argument("--cache-dir", type=Path, help="Cache public downloads only; every hit is checksum-verified")
     try:
-        install(parser.parse_args().destination)
+        args = parser.parse_args()
+        install(args.destination, args.cache_dir)
     except (OSError, ValueError, subprocess.CalledProcessError) as error:
         parser.exit(1, f"Installation failed: {error}\n")

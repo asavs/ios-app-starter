@@ -46,6 +46,12 @@ jobs:
           test "$(xcrun --sdk iphoneos --show-sdk-version)" = '27.0'
           echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
 
+      - name: Cache verified XcodeGen archive
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/tool-downloads/xcodegen
+          key: xcodegen-v1-${{ runner.os }}-${{ runner.arch }}-2.46.0-${{ hashFiles('scripts/generate-project.sh', 'scripts/tool_download.py') }}
+
       - name: Generate Xcode project
         env:
           IOS_PROJECT_SPEC: ${{ matrix.spec }}
