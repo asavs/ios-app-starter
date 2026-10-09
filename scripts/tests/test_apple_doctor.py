@@ -1,4 +1,6 @@
 import importlib.util
+import contextlib
+import io
 import json
 import os
 from pathlib import Path
@@ -27,6 +29,42 @@ class FakeReader:
 
 
 class DiagnosticsTests(unittest.TestCase):
+    def test_account_summary_distinguishes_skips_failures_and_completed_reads(self):
+        cases = [
+            ({"environment": {}}, "not_configured", 0),
+            ({"environment": ENV, "records": None}, "missing_configuration", 0),
+            ({"environment": ENV}, "missing_tool", 0),
+            ({"environment": ENV, "reader": FakeReader([("authentication_failed", None)] * 3)}, "authentication_failed", 0),
+            ({"environment": ENV, "reader": FakeReader([("inaccessible", None)] * 3)}, "inaccessible", 0),
+            ({"environment": ENV, "reader": FakeReader([("verified", []), ("verified", []), ("verified", [])])}, "incomplete", 3),
+            ({"environment": ENV, "reader": FakeReader([("verified", []), ("verified", [{"id": "B123"}]), ("verified", []), ("verified", [])])}, "completed", 4),
+        ]
+        for overrides, status, count in cases:
+            with self.subTest(status=status):
+                report = doctor.diagnose(**{"records": RECORDS, "account": True, **overrides})
+                self.assertEqual(report["accountSummary"]["status"], status)
+                self.assertEqual(report["accountSummary"]["successfulChecks"], count)
+                self.assertNotIn(CANARY, json.dumps(report) + doctor.markdown(report))
+        self.assertEqual(doctor.diagnose(environment={})["accountSummary"]["status"], "not_requested")
+
+    def test_github_summary_and_warning_are_sanitized_and_completed_reads_do_not_warn(self):
+        with tempfile.TemporaryDirectory() as directory:
+            summary = Path(directory) / "summary.md"
+            report = doctor.diagnose(RECORDS, True, environment={})
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                doctor.publish_summary(report, doctor.markdown(report), {
+                    "GITHUB_ACTIONS": "true", "GITHUB_STEP_SUMMARY": str(summary), "ASC_PRIVATE_KEY": CANARY})
+            self.assertIn("::warning::Account reads were requested but skipped", stdout.getvalue())
+            self.assertIn("**Account checks: not_configured**", summary.read_text(encoding="utf-8"))
+            self.assertNotIn(CANARY, summary.read_text(encoding="utf-8") + stdout.getvalue())
+            reader = FakeReader([("verified", []), ("verified", [{"id": "B123"}]), ("verified", []), ("verified", [])])
+            report = doctor.diagnose(RECORDS, True, environment=ENV, reader=reader)
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                doctor.publish_summary(report, doctor.markdown(report), {"GITHUB_ACTIONS": "true"})
+            self.assertEqual(stdout.getvalue(), "")
+
     def test_offline_does_not_contact_apple_or_read_private_key(self):
         with patch.object(subprocess, "run", side_effect=AssertionError("network command")):
             report = doctor.diagnose(RECORDS, environment=ENV)

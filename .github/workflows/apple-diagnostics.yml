@@ -5,6 +5,11 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
+      configuration:
+        description: 'Native app manifest to inspect (edit project.yml for your own app)'
+        type: choice
+        options: [starter, pocket-notes, starter-app-demo]
+        default: starter
       account:
         description: 'Opt in to read-only Apple account checks using apple-credentials environment secrets'
         type: boolean
@@ -26,6 +31,12 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
+      - name: Verify requested account-check warning without credentials
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          # Explicitly clear credential fields: this probe must never contact Apple.
+          ASC_KEY_ID= ASC_ISSUER_ID= ASC_PRIVATE_KEY= ASC_PRIVATE_KEY_PATH= ASC_PRIVATE_KEY_B64= python3 scripts/apple-doctor.py --account --output-dir build/missing-credentials-probe
       - name: Cache verified public CLI downloads
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -71,11 +82,21 @@ jobs:
           key: xcodegen-v1-${{ runner.os }}-${{ runner.arch }}-2.46.0-${{ hashFiles('scripts/generate-project.sh', 'scripts/tool_download.py') }}
 
       - name: Verify toolchain and export current configuration
+        env:
+          SELECTED_CONFIGURATION: ${{ inputs.configuration }}
         run: |
+          case "$SELECTED_CONFIGURATION" in
+            starter) export IOS_PROJECT_SPEC="$PWD/project.yml" ;;
+            pocket-notes) export IOS_PROJECT_SPEC="$PWD/examples/pocket-notes.yml" ;;
+            starter-app-demo) export IOS_PROJECT_SPEC="$PWD/examples/starter-app-demo.yml" ;;
+            *) echo 'Unsupported configuration selection'; exit 1 ;;
+          esac
           test "$(xcodebuild -version | head -n 1)" = 'Xcode 27.0'
           test "$(xcrun --sdk iphoneos --show-sdk-version)" = '27.0'
           bash scripts/generate-project.sh
           python3 scripts/check-configuration.py --output build/configuration.json
+          printf '## Selected app configuration\n\nManifest: `%s`\n\nCommit: `%s`\n\n' "${IOS_PROJECT_SPEC#"$PWD/"}" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          python3 -c 'import json; print("Bundle identifier: `" + json.load(open("build/configuration.json"))[0]["bundleIdentifier"] + "`\n")' >> "$GITHUB_STEP_SUMMARY"
           python3 scripts/apple-doctor.py --configuration build/configuration.json
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:

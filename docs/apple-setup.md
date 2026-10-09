@@ -14,6 +14,41 @@ The current starter has one iPhone/iPad app target plus its test targets. Mac, W
 
 A computer-use agent can explain the pages, navigate, inspect visible account state, diagnose missing permissions and prepare a concrete plan. The human handles identity verification, passwords/2FA, payment and agreement decisions. Key creation, permission changes and account mutations need a specific authorized plan; agreeing to diagnostics does not authorize them. Avoid capturing private-key contents in screenshots or logs. There is no Apple browser automation or MCP dependency in this template.
 
+## Choose access for the operation
+
+Apple explicitly excludes provisioning endpoints from **individual API keys**, even when the associated user has an elevated role. A **team key** can use those endpoints subject to its role, and covers all team apps. The role of the person creating a key and the role assigned to that key are separate decisions. See [Apple's key-type restrictions](https://developer.apple.com/documentation/appstoreconnectapi/creating-api-keys-for-app-store-connect-api).
+
+The pinned wrapper executes the following commands with `--paginate --output json`. This table maps the access needed; it does not certify an untested key's permissions.
+
+| Operation | Access plan |
+| --- | --- |
+| `apps list --bundle-id <exported ID>` | App Store Connect app-read access. An individual key inherits the user's selected apps; a team key covers all apps. Reuse existing permitted access. |
+| `bundle-ids list --identifier <exported ID>` | Provisioning endpoint: team key and permission to read registered identifiers. |
+| `certificates list --certificate-type DISTRIBUTION,IOS_DISTRIBUTION --fields certificateType,expirationDate` | Provisioning endpoint: team key and certificate inventory access. This team-wide read does not retrieve the signing private key. |
+| `bundle-ids profiles list --id <accessible resource ID>` | Provisioning endpoint: team key and profile-read access. Runs only when a matching bundle ID resource is accessible. |
+
+These provisioning resources are described in Apple's [Bundle IDs](https://developer.apple.com/documentation/appstoreconnectapi/bundle-ids), [Certificates](https://developer.apple.com/documentation/appstoreconnectapi/certificates), and [Profiles](https://developer.apple.com/documentation/appstoreconnectapi/profiles) references. App reads may succeed while provisioning reads are denied. Keep those findings unknown; do not create duplicate identifiers or request a broader key merely to turn the report green.
+
+For the later signing workflow, select a path before choosing new credentials:
+
+| Planned step | Permission and verification gate |
+| --- | --- |
+| Archive with already prepared signing assets | Reuse an authorized distribution certificate **with its private key** and a matching valid profile. Local signing does not itself require an API key. Validate the archive on the hosted runner. |
+| Automatic signing with provisioning updates | Use a team key for provisioning access. Xcode may create or update identifiers, certificates and profiles, so preview those intended changes first. An app-read or profile-list success does not verify creation permission. |
+| Create distribution assets when needed | Check the intended key role against Apple's [role matrix](https://developer.apple.com/help/account/access/roles/). It permits App Manager with separately granted Certificates, Identifiers & Profiles access; Developer is insufficient for distribution-asset creation. The [certificate overview](https://developer.apple.com/help/account/certificates/certificates-overview/) and [distribution-profile guide](https://developer.apple.com/help/account/provisioning-profiles/create-an-app-store-provisioning-profile/) instead specify Account Holder or Admin. This documentation discrepancy remains unresolved by a live run. Treat App Manager as a candidate to verify, not a guaranteed signing credential, and require an explicit decision before using broader access. |
+| Create an App Store Connect app record | Account Holder, Admin or App Manager, plus required agreements. This is separate from registering an App ID. |
+| Upload to TestFlight (milestone 6) | Check upload permission separately when that workflow is implemented. A key accepted for diagnosis has not been verified for uploading. |
+
+The narrower first choice is to reuse existing access and assets, with no new key during diagnosis. For organization users, Certificates, Identifiers & Profiles is separate access; users invited to an individual's App Store Connect account are not members of that person's Developer Program team. Human enrollment, API-access approval and agreements stay with the owner. Before credential entry, record the intended team, selected manifest/bundle ID, key type and role, whether each operation is a read or a change, and the chosen automatic/manual signing path. Never broaden, replace or revoke an existing key automatically. Issue #1's live signing-permission gate remains open until the chosen path is verified.
+
+## App identity and Apple's defaults
+
+The manifest's bundle identifier links the app to its Apple records. **Home Screen display name** (`INFOPLIST_KEY_CFBundleDisplayName`) and **App Store Connect record name** are separate. Apple's record-name availability rules can reject a name another developer uses without preventing that Home Screen name. If creation rejects a name, present an alternative for approval before retrying; do not change the app identifier or create duplicate records to work around the name. See [Apple's new-app instructions](https://developer.apple.com/help/app-store-connect/create-an-app-record/add-a-new-app/).
+
+Before creating a record, confirm the team, intended app access, platform, bundle ID, record name, primary language and SKU. The SKU is internal and cannot be changed after creation ([Apple app-information reference](https://developer.apple.com/help/app-store-connect/reference/app-information/app-information)). First inspect and reuse a matching existing record. Our demo uses the existing **Starter App Template Demo** record; its Home Screen name is **Starter App**. Template adopters edit `project.yml` with their own identity and use the `starter` selection; they should not register or sign our demo identifier.
+
+**In-App Purchase is enabled by default for an explicit App ID**, and Apple's form disables a checkbox when a service is enabled by default ([Apple App ID registration](https://developer.apple.com/help/account/identifiers/register-an-app-id/)). A checked, disabled toggle is therefore expected; it does not mean this starter implements purchases or needs StoreKit code. Leave unrelated optional capabilities off. Account capabilities are an allowlist, separate from the project's requested capabilities and the actual signed entitlements. At signed-archive validation, inspect the generated signing settings, profile and signed app entitlements for consistency with the selected app and planned features. That evidence is still pending for issue #3; an unsigned simulator build cannot supply it.
+
 ## Run diagnostics without credentials
 
 The command requires Python 3 and works on Windows, Linux and macOS. It does not require Xcode, the CLI, a key or an Apple account:
@@ -32,7 +67,7 @@ python scripts/apple-doctor.py --configuration C:\Downloads\ios-test-results-sta
 
 Match the run's commit to your current `project.yml`. The export contains Xcode's resolved Debug and Release settings; this script consumes that report rather than attempting to run Xcode or introducing another configuration format on Windows. An old export does not verify your current changes. Minimum iOS 17 in the export does not prove a test was run on iOS 17.
 
-Alternatively, run **Actions → Apple diagnostics → Run workflow**, leaving account reads disabled. Its hosted Mac validates and exports the current project; the other jobs exercise portable diagnostics and the native CLI on Windows, Linux and macOS. Download `apple-project-diagnostics` for the project report. Ordinary push/PR checks use no Apple secrets.
+Alternatively, run **Actions → Apple diagnostics → Run workflow**, choose **configuration** (`starter`, `pocket-notes`, or `starter-app-demo`), and leave account reads disabled. `starter` uses your current `project.yml`; the other choices use native example overrides. Its hosted Mac validates and exports that selection; the same run's export supplies the account job if later enabled. The configuration job summary shows the manifest, commit and resolved bundle identifier. Download `apple-project-diagnostics` for the report and `apple-configuration` for the export. Ordinary push/PR checks use no Apple secrets. A future archive workflow must reuse this same selection; signing has not been implemented yet.
 
 ## Optional authenticated reads
 
@@ -50,7 +85,7 @@ In GitHub, use **Settings → Environments → apple-credentials → Environment
 
 Set environment **variable** `ASC_KEY_TYPE` to `team` or `individual`; the default is `team`. Do not use ordinary variables for private material. Protect `main` and review workflow changes: code allowed to run with secrets can access them. The workflow's account job is manually enabled, restricted to `main`, and separate from PR jobs. It performs no login, key creation, account mutation, archive, or upload.
 
-Run **Apple diagnostics** on `main`, enabling its account checkbox. Missing secrets produce `not_configured`/`not_verified`, rather than fabricated account results. The report includes only sanitized findings and counts. Do not upload raw CLI responses or credential files. Review artifact access before sharing a diagnostic, even though it excludes credentials and account identifiers.
+Run **Apple diagnostics** on `main`, choose the intended configuration and enable its account checkbox only when ready for authenticated reads. Missing secrets produce a prominent **requested but skipped** warning and job summary. The headline distinguishes skipped, authentication-failed, inaccessible, incomplete and completed checks, with the number of successfully resolved record checks. A completed empty read still counts as a successful check, while its finding is `missing`; a profile check remains unverified if no accessible bundle ID was established. Green means the diagnostic ran, not that Apple setup is ready. The report includes only sanitized findings and counts. Do not upload raw CLI responses or credential files. Review artifact access before sharing a diagnostic, even though it excludes credentials and upstream account identifiers.
 
 For local Windows use, Python 3 and `curl.exe` are prerequisites; no Go toolchain is needed:
 
