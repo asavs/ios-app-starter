@@ -10,6 +10,16 @@ import subprocess
 import tempfile
 
 BUNDLE = re.compile(r"[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+\Z")
+ACCOUNT_MESSAGES = {
+    "not_requested": "Account reads were not requested; no Apple account readiness was verified.",
+    "not_configured": "Account reads were requested but skipped: complete credentials were not supplied.",
+    "missing_configuration": "Account reads were requested but skipped: no Xcode configuration export was supplied.",
+    "missing_tool": "Account reads were requested but skipped: no CLI binary was supplied.",
+    "completed": "All account checks completed. Record presence does not establish signing readiness.",
+    "authentication_failed": "Account checks encountered authentication failures; review the key before relying on results.",
+    "inaccessible": "Account checks encountered denied access; inaccessible records are not proven missing.",
+    "incomplete": "Some account checks remain unverified; review the individual findings before proceeding.",
+}
 
 
 def finding(check, status, evidence, next_action):
@@ -127,27 +137,55 @@ def diagnose(records=None, account=False, binary=None, environment=None, reader=
     findings.append(finding("credentials", "configured" if complete else "not_configured",
         "Environment credential fields are complete; validity is not established." if complete else "Complete environment credentials were not supplied.",
         "Use the Apple setup guide; enter secrets securely, never into chat. Offline diagnostics do not read key files or contact Apple."))
+    account_status = "not_requested"
+    successful = 0
     if account and complete and bundle and (binary or reader):
         if reader:
-            findings.extend(account_checks(reader, bundle))
+            checks = account_checks(reader, bundle)
         else:
             with tempfile.TemporaryDirectory(prefix="apple-doctor-") as directory:
-                findings.extend(account_checks(Reader(binary, environment, directory), bundle))
+                checks = account_checks(Reader(binary, environment, directory), bundle)
+        findings.extend(checks)
+        statuses = [item["status"] for item in checks]
+        successful = sum(status in ("present", "missing") for status in statuses)
+        account_status = ("completed" if successful == len(checks) else
+                          "authentication_failed" if "authentication_failed" in statuses else
+                          "inaccessible" if "inaccessible" in statuses else "incomplete")
     else:
+        if account:
+            account_status = ("not_configured" if not complete else
+                              "missing_configuration" if not bundle else "missing_tool")
         findings.append(finding("account_reads", "not_verified", "Authenticated account reads were not performed.",
             "Opt in with --account --asc after supplying a configuration export and complete credentials."))
     for check, action in [("membership_and_agreements", "The Account Holder must review active membership and agreements in Apple's websites."),
                           ("signing_readiness", "Complete milestone 5: validate a signed archive with matching credentials and profiles."),
                           ("device_delivery", "Complete milestone 6: upload to TestFlight and install on the iPhone.")]:
         findings.append(finding(check, "not_verified", "This diagnostic does not establish readiness for this step.", action))
-    return {"schemaVersion": 1, "generatedAt": datetime.now(timezone.utc).isoformat(), "accountRequested": account, "findings": findings}
+    return {"schemaVersion": 1, "generatedAt": datetime.now(timezone.utc).isoformat(), "accountRequested": account,
+            "accountSummary": {"status": account_status, "successfulChecks": successful,
+                               "message": ACCOUNT_MESSAGES[account_status]}, "findings": findings}
 
 
 def markdown(report):
     lines = ["# Apple setup diagnostics", "", "Read-only report; account changes and signing were not performed.", ""]
+    summary = report["accountSummary"]
+    lines.extend([f"**Account checks: {summary['status']}** — {summary['message']}",
+                  f"Successful record checks: **{summary['successfulChecks']} of 4**. Signing and device delivery remain unverified.", ""])
     for item in report["findings"]:
         lines.extend([f"- **{item['check']} — {item['status']}**: {item['evidence']} Next: {item['nextAction']}", ""])
     return "\n".join(lines)
+
+
+def publish_summary(report, content, environment=None):
+    """Publish only our sanitized report and fixed warning text, never upstream output."""
+    environment = os.environ if environment is None else environment
+    if environment.get("GITHUB_STEP_SUMMARY"):
+        with Path(environment["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as summary:
+            summary.write(content + "\n")
+    if environment.get("GITHUB_ACTIONS") == "true" and report["accountRequested"]:
+        status = report["accountSummary"]["status"]
+        if status != "completed":
+            print("::warning::" + ACCOUNT_MESSAGES[status])
 
 
 if __name__ == "__main__":
@@ -163,6 +201,7 @@ if __name__ == "__main__":
         (args.output_dir / "report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
         content = markdown(report)
         (args.output_dir / "report.md").write_text(content, encoding="utf-8")
+        publish_summary(report, content)
         print(content)
     except (OSError, ValueError, TypeError, KeyError):
         parser.exit(1, "Diagnostics could not read the configuration or write the report; no raw input was logged.\n")
