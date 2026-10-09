@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = {"StarterApp", "StarterAppTests", "StarterAppUITests"}
+TEAM_ID = re.compile(r"[A-Z0-9]{10}\Z")
 
 
 def command_json(*args):
@@ -81,7 +82,7 @@ def check(project):
         settings = {entry["target"]: entry["buildSettings"] for entry in resolved}
         if set(settings) != TARGETS:
             raise ValueError(f"{config}: cannot inspect all template targets")
-        minimums, identifiers = set(), set()
+        minimums, identifiers, teams = set(), set(), set()
         for target, values in settings.items():
             prefix = f"{config}/{target}"
             identifier = values.get("PRODUCT_BUNDLE_IDENTIFIER", "")
@@ -92,6 +93,10 @@ def check(project):
             if identifier in identifiers:
                 raise ValueError(f"{prefix}: each app/test bundle needs a distinct PRODUCT_BUNDLE_IDENTIFIER")
             identifiers.add(identifier)
+            team = values.get("DEVELOPMENT_TEAM", "").strip()
+            if team and not TEAM_ID.fullmatch(team):
+                raise ValueError(f"{prefix}: DEVELOPMENT_TEAM must be a 10-character Apple Team ID")
+            teams.add(team)
             minimum = values.get("IPHONEOS_DEPLOYMENT_TARGET", "")
             parsed = version(minimum)
             if not version("17.0") <= parsed <= version(sdk):
@@ -109,6 +114,8 @@ def check(project):
         if len(minimums) != 1:
             raise ValueError(f"{config}: app and test deployment targets must match; "
                              "remove target overrides and use options.deploymentTarget.iOS")
+        if len(teams) != 1:
+            raise ValueError(f"{config}: all app/test targets must use the same DEVELOPMENT_TEAM")
         app = settings["StarterApp"]
         if app.get("PRODUCT_MODULE_NAME") != "StarterApp" or app.get("PRODUCT_NAME") != "StarterApp":
             raise ValueError(f"{config}: keep PRODUCT_NAME/PRODUCT_MODULE_NAME as StarterApp; "
@@ -121,6 +128,7 @@ def check(project):
                 raise ValueError(f"{config}: {flag} is not supported yet; keep it NO")
         records.append({"configuration": config, "displayName": name,
                         "bundleIdentifier": app["PRODUCT_BUNDLE_IDENTIFIER"],
+                        "teamIdentifier": app.get("DEVELOPMENT_TEAM", "").strip(),
                         "minimumIOS": app["IPHONEOS_DEPLOYMENT_TARGET"],
                         "deviceFamilies": app["TARGETED_DEVICE_FAMILY"], "sdk": sdk})
     return records

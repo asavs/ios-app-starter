@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 
 BUNDLE = re.compile(r"[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+\Z")
+TEAM_ID = re.compile(r"[A-Z0-9]{10}\Z")
 ACCOUNT_MESSAGES = {
     "not_requested": "Account reads were not requested; no Apple account readiness was verified.",
     "not_configured": "Account reads were requested but skipped: complete credentials were not supplied.",
@@ -37,10 +38,15 @@ def configuration(path):
             raise ValueError("Invalid configuration record")
         if not BUNDLE.fullmatch(str(record.get("bundleIdentifier", ""))):
             raise ValueError("Invalid exported bundle identifier")
+        team = record.get("teamIdentifier", "")
+        if team and not TEAM_ID.fullmatch(str(team)):
+            raise ValueError("Invalid exported Apple Team ID")
         if not re.fullmatch(r"\d+(?:\.\d+)*", str(record.get("minimumIOS", ""))):
             raise ValueError("Invalid exported deployment minimum")
     if len({r["bundleIdentifier"] for r in records}) != 1:
         raise ValueError("Debug and Release bundle identifiers differ")
+    if len({r.get("teamIdentifier", "") for r in records}) != 1:
+        raise ValueError("Debug and Release Apple Team IDs differ")
     return records
 
 
