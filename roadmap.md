@@ -62,6 +62,29 @@ Milestone 5 finishes only after a signed archive for the selected identity passe
 
 [#6: preview-runner queue delays](https://github.com/asavs/ios-app-starter/issues/6) remains a separate CI observation. Investigate if it recurs; a queue delay alone does not block credential design or justify declaring the app defective. Required build/signing checks must still complete successfully before their milestone advances.
 
+## Next execution sequence and Xcode outputs
+
+The next hands-on walkthrough runs in the existing Windows chat that authored PR #8; use [the exact handoff prompt](docs/windows-milestone-5-handoff.md). Windows CI verifies executable portability, while this walkthrough verifies real PowerShell paths, browser/account setup, secure credential entry and readable reports. Windows is an acceptance surface, not a requirement for operating signing; all Xcode work remains on GitHub-hosted macOS. Use the platform already holding the securely stored key rather than copying it to another machine merely for a test.
+
+1. **Windows, milestone 5:** Fetch the updated PR, preserve local changes and both journals, start credential-free diagnostics, and inspect current configuration/test artifacts. After review and required CI pass, merge PR #8 and verify main. This installs the workflow on main without claiming signed-archive acceptance.
+2. **Windows, milestone 5:** Present and approve the environment policy, existing key and intended operations. Solo-owner approval is the recommended personal-repository path, subject to explicit selection; independent approval remains available. Verify the approved protections before secret transfer. Confirm existing key-file availability without exposing its contents. Do not create a replacement key or broaden roles automatically.
+3. **GitHub, operated from Windows, milestone 5:** After explicit opt-in, run authenticated read-only diagnostics for the existing demo with that run's fresh native export. After concrete signing-plan approval, run automatic signing and inspect the actual archive validation report. Failures return to milestone 5 diagnosis; only a validated real signed archive completes it.
+4. **Report improvement in the existing milestone 2 tooling:** Add individual test-failure details and screenshot attachments extracted by the runner's native `xcresulttool`, linked from the existing Markdown/JSON report. This is a small repository/workflow enhancement rather than a new service. It can be developed independently of account setup, but must not delay or replace milestone 5 acceptance. Verify successful and deliberately failing runs, artifact readability from Windows, and failure exit status. Preserve `.xcresult` for optional Xcode inspection; upload screenshots only from controlled test data.
+5. **Milestone 6, after milestone 5 passes:** Add reviewed export configuration, build numbers and protected manual TestFlight upload; then perform the visible-app-change, GitHub-build and iPhone-install loop from Windows. Recheck upload permissions, and keep App Store publication separate. Device diagnostics/minimum-OS runtime coverage follow in milestone 7; optional platforms remain milestone 9.
+
+Use Xcode as a source of native configuration and evidence, with these storage boundaries:
+
+| Xcode-derived material | Repository / artifact decision |
+| --- | --- |
+| Target settings, shared schemes, entitlements and capability configuration | Review and represent settings through `project.yml`; regenerate the checked-in project when the manifest changes. Commit native source files when the relevant capability is supported. A UI change must not become an untracked second source of truth. |
+| `.xctestplan` files | Commit when multiple test configurations justify them; do not add one only to duplicate the current single smoke test. |
+| `ExportOptions.plist` | Review and commit non-secret export choices during milestone 6, based on the selected Xcode's actual supported options. |
+| Resolved settings, compiled-app identity, structured failures and screenshots | Produce fresh per-run GitHub artifacts; associate them with the manifest and commit. Existing configuration/identity/summary exports already cover part of this. |
+| Archives and debug symbols | Retain through an explicitly reviewed release/diagnostics policy when needed; do not commit generated binaries into Git history. The initial signing-validation job deliberately removes its archive. |
+| Private keys, certificate private keys and account sessions | Secure credential storage only; never repository files or public artifacts. |
+
+No local Xcode installation is needed to produce these outputs. Local Xcode remains an optional debugging aid. A green local build with preexisting accounts/Keychain state cannot replace the fresh hosted-runner gate.
+
 ## Milestone 3 implementation approach
 
 Reuse the existing infrastructure: `project.yml` is the configuration, XcodeGen generates and validates the project structure, and GitHub Actions runs `xcodebuild` to inspect resolved settings, build, and test. Do not introduce a separate `app.config.json`, configuration service, custom project generator, or hosted setup backend.
