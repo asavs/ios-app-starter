@@ -29,6 +29,8 @@ The pinned wrapper executes the following commands with `--paginate --output jso
 
 These provisioning resources are described in Apple's [Bundle IDs](https://developer.apple.com/documentation/appstoreconnectapi/bundle-ids), [Certificates](https://developer.apple.com/documentation/appstoreconnectapi/certificates), and [Profiles](https://developer.apple.com/documentation/appstoreconnectapi/profiles) references. App reads may succeed while provisioning reads are denied. Keep those findings unknown; do not create duplicate identifiers or request a broader key merely to turn the report green.
 
+Our proposed starting role for read-only diagnostics is **Developer**, using an individual key for app-only access or a team key when provisioning reads are needed. For automatic distribution-asset preparation, **App Manager** is the candidate supported by the role matrix, subject to the discrepancy below. These are plans to verify with existing authorized access, not verified minimum API roles: Apple's endpoint references do not specify an exact minimum role for every inventory read, and no live key has been tested here. If that access is denied, stop and review the operation and account permissions; retain the existing key and present any revised role plan before credential setup.
+
 For the later signing workflow, select a path before choosing new credentials:
 
 | Planned step | Permission and verification gate |

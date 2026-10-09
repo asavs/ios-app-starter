@@ -62,7 +62,7 @@ class Reader:
         # Commands are constructed only below, never from a user-supplied shell string.
         try:
             result = subprocess.run([self.binary, *command, "--paginate", "--output", "json"],
-                                    env=self.env, capture_output=True, text=True, timeout=120)
+                                    env=self.env, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
         except (OSError, subprocess.TimeoutExpired):
             return "not_verified", None
         if result.returncode:
