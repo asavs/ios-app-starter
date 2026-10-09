@@ -44,7 +44,9 @@ def environment_path(repo):
     return f"repos/{repo}/environments/{ENVIRONMENT}"
 
 
-def verify_protections(repo):
+def verify_protections(repo, approval_policy="independent"):
+    if approval_policy not in ("independent", "solo-owner"):
+        raise BootstrapError("Choose an explicit supported approval policy.")
     environment = gh_json(["api", environment_path(repo)])
     policy = environment.get("deployment_branch_policy") or {}
     if policy != {"protected_branches": False, "custom_branch_policies": True}:
@@ -57,8 +59,22 @@ def verify_protections(repo):
 
     rules = environment.get("protection_rules", [])
     review = next((rule for rule in rules if rule.get("type") == "required_reviewers"), None)
-    if not review or not review.get("reviewers") or review.get("prevent_self_review") is not True:
+    if not review or not review.get("reviewers"):
+        raise BootstrapError("apple-credentials needs required reviewers before credentials can be stored.")
+    if approval_policy == "independent" and review.get("prevent_self_review") is not True:
         raise BootstrapError("apple-credentials needs required reviewers with self-review prevented before credentials can be stored.")
+    if approval_policy == "solo-owner":
+        metadata = gh_json(["api", f"repos/{repo}"])
+        caller = gh_json(["api", "user"])
+        owner = metadata.get("owner", {})
+        login = owner.get("login", "")
+        reviewers = review["reviewers"]
+        if (owner.get("type") != "User" or not login
+                or str(caller.get("login", "")).casefold() != login.casefold()
+                or len(reviewers) != 1 or reviewers[0].get("type") != "User"
+                or str(reviewers[0].get("reviewer", {}).get("login", "")).casefold() != login.casefold()
+                or review.get("prevent_self_review") is not False):
+            raise BootstrapError("Solo-owner policy requires a personal repository, its authenticated owner as the sole required reviewer, and self-review allowed.")
 
 
 def read_key(path, repository_root):
@@ -102,13 +118,13 @@ def bootstrap(args):
     if args.issuer_id and not ISSUER_ID.fullmatch(args.issuer_id):
         raise BootstrapError("The issuer ID format is invalid.")
 
-    key_bytes = read_key(args.private_key_file, Path(__file__).resolve().parents[1])
-    verify_protections(args.repo)
+    verify_protections(args.repo, args.approval_policy)
     existing = existing_secret_names(args.repo)
     if existing.intersection(SECRET_NAMES) and not args.replace_existing:
         raise BootstrapError("Credential secret names already exist; review them first or rerun with --replace-existing.")
     if args.key_type == "individual" and "ASC_ISSUER_ID" in existing:
         raise BootstrapError("An issuer secret already exists; remove or replace the stale team-key configuration before using an individual key.")
+    key_bytes = read_key(args.private_key_file, Path(__file__).resolve().parents[1])
 
     # The discriminator is non-sensitive. The key file is sent only on gh's stdin;
     # it never appears in command arguments, stdout, stderr, logs, or artifacts.
@@ -133,6 +149,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", required=True, help="GitHub destination in owner/repository form")
     parser.add_argument("--key-type", choices=("team", "individual"), required=True)
+    parser.add_argument("--approval-policy", choices=("independent", "solo-owner"), required=True,
+                        help="Explicit review policy to verify; this command does not change environment protections")
     parser.add_argument("--key-id", required=True, help="Non-secret App Store Connect key ID")
     parser.add_argument("--issuer-id", help="Required for a team key; omit for an individual key")
     parser.add_argument("--private-key-file", required=True, type=Path,

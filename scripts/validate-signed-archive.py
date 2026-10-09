@@ -8,33 +8,32 @@ import plistlib
 import re
 import subprocess
 import sys
+from signing_configuration import read_config
 
 
-def run(args):
+def run(args, *, stream="stdout"):
     result = subprocess.run(args, capture_output=True, check=False)
     if result.returncode:
         raise ValueError(f"Validation command failed: {Path(args[0]).name}.")
-    return result.stdout
+    return getattr(result, stream)
 
 
 def compatible(allowed, actual):
     if isinstance(allowed, bool):
-        return allowed == actual
+        return isinstance(actual, bool) and allowed == actual
     if isinstance(allowed, str):
         if allowed.endswith("*"):
             return isinstance(actual, str) and actual.startswith(allowed[:-1])
         return allowed == actual
     if isinstance(allowed, list):
-        return actual in allowed
+        return isinstance(actual, list) and all(any(compatible(option, value) for option in allowed) for value in actual)
+    if isinstance(allowed, dict):
+        return isinstance(actual, dict) and all(key in allowed and compatible(allowed[key], value) for key, value in actual.items())
     return allowed == actual
 
 
 def validate(archive, config_path):
-    config = json.loads(Path(config_path).read_text(encoding="utf-8"))
-    records = config.get("configurations", [])
-    if len(records) != 2 or {r.get("configuration") for r in records} != {"Debug", "Release"}:
-        raise ValueError("Expected fresh Debug and Release configuration export.")
-    app_config = next(r for r in records if r["configuration"] == "Release")
+    app_config = read_config(config_path)
     app = Path(archive) / "Products/Applications/StarterApp.app"
     if not app.is_dir():
         raise ValueError("Archive does not contain StarterApp.app.")
@@ -45,7 +44,7 @@ def validate(archive, config_path):
         if str(info.get(key, "")) != str(actual):
             raise ValueError(f"Archived app {key} does not match the fresh configuration export.")
     run(["/usr/bin/codesign", "--verify", "--deep", "--strict", str(app)])
-    details = run(["/usr/bin/codesign", "-dvv", str(app)]).decode("utf-8", "replace")
+    details = run(["/usr/bin/codesign", "-dvv", str(app)], stream="stderr").decode("utf-8", "replace")
     team_match = re.search(r"^TeamIdentifier=([A-Z0-9]{10})$", details, re.M)
     authority_match = re.search(r"^Authority=Apple Distribution: .+ \(([A-Z0-9]{10})\)$", details, re.M)
     team = app_config["teamIdentifier"]
@@ -68,6 +67,9 @@ def validate(archive, config_path):
         raise ValueError("Embedded profile is not an iOS profile.")
     allowed_app_id = profile.get("Entitlements", {}).get("application-identifier", "")
     expected_app_id = f"{team}.{app_config['bundleIdentifier']}"
+    prefixes = profile.get("ApplicationIdentifierPrefix", [])
+    if prefixes and prefixes != [team]:
+        raise ValueError("Legacy App ID prefixes are not supported by this signing path; use a reviewed manual signing configuration.")
     if not compatible(allowed_app_id, expected_app_id):
         raise ValueError("Provisioning profile application identifier does not cover the archived app.")
 
@@ -75,13 +77,18 @@ def validate(archive, config_path):
     profile_entitlements = profile.get("Entitlements", {})
     if entitlements.get("get-task-allow", True) is not False:
         raise ValueError("Archived app has get-task-allow enabled.")
+    if profile_entitlements.get("get-task-allow", True) is not False:
+        raise ValueError("Embedded profile permits debugging; an App Store distribution profile is required.")
+    if (entitlements.get("application-identifier") != expected_app_id
+            or entitlements.get("com.apple.developer.team-identifier") != team):
+        raise ValueError("Signed application/team identifiers do not match the selected configuration.")
     for name, value in entitlements.items():
         if name in ("application-identifier", "com.apple.developer.team-identifier", "get-task-allow"):
             continue
         if name not in profile_entitlements or not compatible(profile_entitlements[name], value):
             raise ValueError(f"Archived entitlement {name} is not allowed by the embedded profile.")
     for name in ("application-identifier", "com.apple.developer.team-identifier"):
-        if name in entitlements and not compatible(profile_entitlements.get(name), entitlements[name]):
+        if not compatible(profile_entitlements.get(name), entitlements[name]):
             raise ValueError(f"Archived entitlement {name} does not match the embedded profile.")
 
     # The signing identity must also appear in the profile's DeveloperCertificates.

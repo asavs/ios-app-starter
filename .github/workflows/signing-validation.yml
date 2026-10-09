@@ -1,6 +1,9 @@
 name: Signed archive validation
 
 on:
+  pull_request:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       configuration:
@@ -8,24 +11,66 @@ on:
         type: choice
         required: true
         options: [starter, pocket-notes, starter-app-demo]
+      perform_signing:
+        description: Approve authenticated reads and automatic signing (may create profiles/certificates); main only
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
+  preflight:
+    runs-on: xcode-27
+    timeout-minutes: 10
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
+      IOS_CONFIGURATION: ${{ github.event_name == 'workflow_dispatch' && inputs.configuration || 'starter-app-demo' }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Cache verified public XcodeGen archive
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/tool-downloads/xcodegen
+          key: xcodegen-v1-${{ runner.os }}-${{ runner.arch }}-2.46.0-${{ hashFiles('scripts/generate-project.sh', 'scripts/tool_download.py') }}
+      - name: Verify native signing export without credentials
+        run: |
+          test "$(xcodebuild -version | head -n 1)" = 'Xcode 27.0'
+          test "$(xcrun --sdk iphoneos --show-sdk-version)" = '27.0'
+          case "$IOS_CONFIGURATION" in
+            starter) export IOS_PROJECT_SPEC="$PWD/project.yml" ;;
+            pocket-notes) export IOS_PROJECT_SPEC="$PWD/examples/pocket-notes.yml" ;;
+            starter-app-demo) export IOS_PROJECT_SPEC="$PWD/examples/starter-app-demo.yml" ;;
+            *) echo 'Unsupported manifest choice'; exit 2 ;;
+          esac
+          bash scripts/generate-project.sh
+          python3 scripts/check-configuration.py --output "$RUNNER_TEMP/signing-preflight/configuration.json"
+          python3 scripts/check-signing-config.py "$RUNNER_TEMP/signing-preflight/configuration.json"
+          IOS_SIGNING_CONFIGURATION_EXPORT="$RUNNER_TEMP/signing-preflight/configuration.json" python3 -m unittest discover -s scripts/tests -p 'test_signing.py' -v
+          printf '## Signing preflight passed\n\nFresh native export and validator fixtures passed. No credentials, authenticated reads or Apple signing were used.\n' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: signing-preflight
+          path: ${{ runner.temp }}/signing-preflight/configuration.json
+          retention-days: 7
   archive:
-    if: github.ref == 'refs/heads/main'
+    needs: preflight
+    if: github.event_name == 'workflow_dispatch' && inputs.perform_signing && github.ref == 'refs/heads/main'
     environment: apple-credentials
     runs-on: xcode-27
     timeout-minutes: 35
     env:
       IOS_CONFIGURATION: ${{ inputs.configuration }}
-      IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-signing
     steps:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
+
+      - name: Initialize runner report directory
+        run: echo "IOS_TEST_OUTPUT_DIR=$RUNNER_TEMP/ios-signing" >> "$GITHUB_ENV"
 
       - name: Select and verify Xcode
         env:
@@ -72,11 +117,13 @@ jobs:
         id: key
         env:
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
-          RUNNER_TEMP: ${{ runner.temp }}
-          GITHUB_OUTPUT: ${{ runner.temp }}/key-output
-        run: |
-          python3 scripts/materialize-asc-key.py
-          cat "$GITHUB_OUTPUT" >> "$GITHUB_ENV"
+        run: python3 scripts/materialize-asc-key.py
+
+      - name: Restore verified public CLI downloads
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/tool-downloads/asc
+          key: asc-v1-${{ runner.os }}-${{ runner.arch }}-5.14.0-${{ hashFiles('scripts/install-asc.py', 'scripts/tool_download.py') }}
 
       - name: Install pinned App Store Connect CLI
         run: python3 scripts/install-asc.py
@@ -85,7 +132,7 @@ jobs:
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_PRIVATE_KEY_PATH: ${{ runner.temp }}/asc-private-key.p8
+          ASC_PRIVATE_KEY_PATH: ${{ steps.key.outputs.key_path }}
           ASC_KEY_TYPE: ${{ vars.ASC_KEY_TYPE }}
         run: python3 scripts/apple-doctor.py --configuration "$IOS_TEST_OUTPUT_DIR/configuration.json" --account --asc build/tools/asc --output-dir "$IOS_TEST_OUTPUT_DIR/apple-diagnostics"
 
@@ -101,6 +148,8 @@ jobs:
 
       - name: Archive with Xcode automatic signing
         env:
+          IOS_SIGNING_TEAM: ${{ steps.app.outputs.teamIdentifier }}
+          ASC_PRIVATE_KEY_PATH: ${{ steps.key.outputs.key_path }}
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
@@ -111,13 +160,13 @@ jobs:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/StarterApp.xcarchive" \
-            -authenticationKeyPath "$key_path" \
+            -authenticationKeyPath "$ASC_PRIVATE_KEY_PATH" \
             -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             -allowProvisioningUpdates \
             CODE_SIGN_STYLE=Automatic \
             CODE_SIGN_IDENTITY='Apple Distribution' \
-            DEVELOPMENT_TEAM='${{ steps.app.outputs.teamIdentifier }}' \
+            "DEVELOPMENT_TEAM=$IOS_SIGNING_TEAM" \
             | xcbeautify
 
       - name: Validate signed archive
@@ -135,5 +184,5 @@ jobs:
       - name: Remove signing material and archive
         if: always()
         run: |
-          rm -f "$RUNNER_TEMP/asc-private-key.p8" "$RUNNER_TEMP/key-output"
+          rm -f "$RUNNER_TEMP/asc-private-key.p8"
           rm -rf "$RUNNER_TEMP/StarterApp.xcarchive" "$RUNNER_TEMP/signing-certificates"
