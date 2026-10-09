@@ -13,6 +13,10 @@ cases = [
         "PRODUCT_BUNDLE_IDENTIFIER": ""}}}}}, "PRODUCT_BUNDLE_IDENTIFIER"),
     ("invalid-identifier", {"targets": {"StarterApp": {"settings": {"base": {
         "PRODUCT_BUNDLE_IDENTIFIER": "bad identifier!"}}}}}, "PRODUCT_BUNDLE_IDENTIFIER"),
+    ("invalid-team-id", {"settings": {"base": {"DEVELOPMENT_TEAM": "not-a-team"}}}, "DEVELOPMENT_TEAM"),
+    ("mismatched-team-id", {"settings": {"base": {"DEVELOPMENT_TEAM": "AAAAAAAAAA"}},
+                             "targets": {"StarterAppUITests": {"settings": {"base": {
+                                 "DEVELOPMENT_TEAM": "BBBBBBBBBB"}}}}}, "same DEVELOPMENT_TEAM"),
     ("empty-name", {"targets": {"StarterApp": {"settings": {"base": {
         "INFOPLIST_KEY_CFBundleDisplayName": " "}}}}}, "CFBundleDisplayName"),
     ("mismatched-minimum", {"targets": {"StarterAppUITests": {"deploymentTarget": "18.0"}}},

@@ -2,6 +2,10 @@
 # Keep the reusable template defaults in ../project.yml unchanged.
 include: ../project.yml
 
+settings:
+  base:
+    DEVELOPMENT_TEAM: 9L6Y9T3PPW
+
 targets:
   StarterApp:
     settings:
