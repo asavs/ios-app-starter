@@ -93,7 +93,7 @@ Follow [the Windows-first Apple setup guide](docs/apple-setup.md) for membership
 python scripts/apple-doctor.py
 ```
 
-The **Apple diagnostics** workflow tests the portable commands on Windows, Linux and macOS. A manual run also exports the current Xcode configuration; optional account reads use a separate `apple-credentials` environment on `main`. Reports explain what is missing, inaccessible or unverified. Signing and TestFlight delivery remain the next milestones.
+The **Apple diagnostics** workflow tests the portable commands on Windows, Linux and macOS. A manual run lets you choose `starter`, `pocket-notes` or `starter-app-demo` and exports that manifest's current Xcode configuration. Edit `project.yml` and choose `starter` for your own app. Optional account reads consume the same run's export and use a separate `apple-credentials` environment on `main`. The job summary identifies skipped, failed or completed account checks; a green diagnostic does not establish signing readiness. Signing and TestFlight delivery remain the next milestones.
 
 The CLI integration downloads pinned, checksum-verified `asc` 5.14.0 release binaries when requested. No source build, Go installation, cloud Mac account or Apple secret is needed for the ordinary diagnostic checks.
 
