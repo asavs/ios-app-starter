@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import plistlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -59,6 +60,25 @@ class SigningTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("teamIdentifier=" + records()[1]["teamIdentifier"], output.read_text())
 
+    def test_export_options_are_automatic_and_export_only_for_selected_team(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory) / "configuration.json"
+            output = Path(directory) / "ExportOptions.plist"
+            config.write_text(json.dumps(records()), encoding="utf-8")
+            result = subprocess.run([sys.executable, str(ROOT / "scripts/write-export-options.py"),
+                                     str(config), str(output)], capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            values = plistlib.loads(output.read_bytes())
+            self.assertEqual(values, {"destination": "export", "method": "app-store-connect",
+                                      "signingStyle": "automatic", "teamID": records()[1]["teamIdentifier"]})
+
+            config.write_text(json.dumps([dict(item, teamIdentifier="") for item in records()]), encoding="utf-8")
+            output.unlink()
+            result = subprocess.run([sys.executable, str(ROOT / "scripts/write-export-options.py"),
+                                     str(config), str(output)], capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(output.exists())
+
     def test_entitlement_coverage_supports_array_subsets_and_rejects_extra_access(self):
         self.assertTrue(validator.compatible(["TEAM.*", "SHARED.group"], ["TEAM.app", "SHARED.group"]))
         self.assertFalse(validator.compatible(["TEAM.*"], ["TEAM.app", "OTHER.app"]))
@@ -83,7 +103,10 @@ class SigningTests(unittest.TestCase):
         info = {"CFBundleIdentifier": selected["bundleIdentifier"], "CFBundleDisplayName": selected["displayName"],
                 "MinimumOSVersion": selected["minimumIOS"]}
         (app / "Info.plist").write_bytes(plistlib.dumps(info))
-        (app / "embedded.mobileprovision").write_bytes(b"fixture CMS")
+        distribution_app = Path(directory) / "distribution/Payload/StarterApp.app"
+        distribution_app.parent.mkdir(parents=True)
+        shutil.copytree(app, distribution_app)
+        (distribution_app / "embedded.mobileprovision").write_bytes(b"fixture CMS")
         config = Path(directory) / "configuration.json"
         config.write_text(json.dumps(records()), encoding="utf-8")
         profile = {"TeamIdentifier": [team], "ApplicationIdentifierPrefix": [team], "Platform": ["iOS"],
@@ -92,7 +115,7 @@ class SigningTests(unittest.TestCase):
                                     "get-task-allow": False, "keychain-access-groups": [team + ".*"]}}
         entitlements = {"application-identifier": identity, "com.apple.developer.team-identifier": team,
                         "get-task-allow": False, "keychain-access-groups": [identity]}
-        return archive, config, profile, entitlements
+        return archive, config, profile, entitlements, distribution_app
 
     def commands(self, profile, entitlements, *, signature_ok=True, expiry="Jan  1 00:00:00 2099 GMT"):
         def command(args, **kwargs):
@@ -119,10 +142,11 @@ class SigningTests(unittest.TestCase):
 
     def test_valid_archive_fixture_checks_native_export_without_leaking_metadata(self):
         with tempfile.TemporaryDirectory() as directory:
-            archive, config, profile, entitlements = self.fixture(directory)
+            archive, config, profile, entitlements, distribution_app = self.fixture(directory)
             with patch.object(validator.subprocess, "run", side_effect=self.commands(profile, entitlements)):
-                report = validator.validate(archive, config)
+                report = validator.validate(archive, config, distribution_app)
             self.assertEqual(report["status"], "passed")
+            self.assertEqual(report["validatedArtifact"], "app-store-connect-export-from-archive")
             self.assertEqual(report["bundleIdentifier"], records()[1]["bundleIdentifier"])
             self.assertNotIn(CANARY.decode(), json.dumps(report))
 
@@ -130,7 +154,7 @@ class SigningTests(unittest.TestCase):
         for case in ("signature", "profile_expired", "certificate_expired", "certificate_mismatch",
                      "profile_debug", "ad_hoc", "legacy_prefix", "wrong_signed_id", "missing_team", "extra_group"):
             with self.subTest(case=case), tempfile.TemporaryDirectory() as directory:
-                archive, config, profile, entitlements = self.fixture(directory)
+                archive, config, profile, entitlements, distribution_app = self.fixture(directory)
                 signature_ok, expiry = True, "Jan  1 00:00:00 2099 GMT"
                 if case == "signature": signature_ok = False
                 if case == "profile_expired": profile["ExpirationDate"] = dt.datetime(2000, 1, 1)
@@ -146,16 +170,27 @@ class SigningTests(unittest.TestCase):
                 if case == "extra_group": entitlements["keychain-access-groups"].append("OTHERTEAM1.extra")
                 with patch.object(validator.subprocess, "run", side_effect=self.commands(profile, entitlements, signature_ok=signature_ok, expiry=expiry)):
                     with self.assertRaises(ValueError):
-                        validator.validate(archive, config)
+                        validator.validate(archive, config, distribution_app)
 
     def test_changed_archive_bundle_is_rejected_before_signing_commands(self):
         with tempfile.TemporaryDirectory() as directory:
-            archive, config, _, _ = self.fixture(directory)
+            archive, config, _, _, distribution_app = self.fixture(directory)
             info = archive / "Products/Applications/StarterApp.app/Info.plist"
             data = plistlib.loads(info.read_bytes()); data["CFBundleIdentifier"] = "org.other.app"
             info.write_bytes(plistlib.dumps(data))
             with patch.object(validator.subprocess, "run") as command:
-                with self.assertRaises(ValueError): validator.validate(archive, config)
+                with self.assertRaises(ValueError): validator.validate(archive, config, distribution_app)
+                command.assert_not_called()
+
+    def test_changed_distribution_bundle_is_rejected_before_signing_commands(self):
+        with tempfile.TemporaryDirectory() as directory:
+            archive, config, _, _, distribution_app = self.fixture(directory)
+            info = distribution_app / "Info.plist"
+            data = plistlib.loads(info.read_bytes()); data["CFBundleIdentifier"] = "org.other.app"
+            info.write_bytes(plistlib.dumps(data))
+            with patch.object(validator.subprocess, "run") as command:
+                with self.assertRaises(ValueError):
+                    validator.validate(archive, config, distribution_app)
                 command.assert_not_called()
 
 

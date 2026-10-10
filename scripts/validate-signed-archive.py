@@ -32,17 +32,23 @@ def compatible(allowed, actual):
     return allowed == actual
 
 
-def validate(archive, config_path):
+def validate(archive, config_path, distribution_app):
     app_config = read_config(config_path)
-    app = Path(archive) / "Products/Applications/StarterApp.app"
-    if not app.is_dir():
+    archived_app = Path(archive) / "Products/Applications/StarterApp.app"
+    app = Path(distribution_app)
+    if not archived_app.is_dir():
         raise ValueError("Archive does not contain StarterApp.app.")
-    info = plistlib.loads((app / "Info.plist").read_bytes())
+    if not app.is_dir() or app.name != "StarterApp.app":
+        raise ValueError("Distribution export does not contain StarterApp.app.")
+    info = plistlib.loads((archived_app / "Info.plist").read_bytes())
+    exported_info = plistlib.loads((app / "Info.plist").read_bytes())
     for key, actual in (("CFBundleIdentifier", app_config["bundleIdentifier"]),
                         ("CFBundleDisplayName", app_config["displayName"]),
                         ("MinimumOSVersion", app_config["minimumIOS"])):
         if str(info.get(key, "")) != str(actual):
             raise ValueError(f"Archived app {key} does not match the fresh configuration export.")
+        if str(exported_info.get(key, "")) != str(actual):
+            raise ValueError(f"Distribution app {key} does not match the fresh configuration export.")
     run(["/usr/bin/codesign", "--verify", "--deep", "--strict", str(app)])
     details = run(["/usr/bin/codesign", "-dvv", str(app)], stream="stderr").decode("utf-8", "replace")
     team_match = re.search(r"^TeamIdentifier=([A-Z0-9]{10})$", details, re.M)
@@ -92,7 +98,7 @@ def validate(archive, config_path):
             raise ValueError(f"Archived entitlement {name} does not match the embedded profile.")
 
     # The signing identity must also appear in the profile's DeveloperCertificates.
-    cert_dir = Path(archive).parent / "signing-certificates"
+    cert_dir = Path(distribution_app).parent / "signing-certificates"
     cert_dir.mkdir(exist_ok=True)
     result = subprocess.run(["/usr/bin/codesign", "-d", "--extract-certificates", str(app)],
                             cwd=cert_dir, capture_output=True, check=False)
@@ -109,7 +115,8 @@ def validate(archive, config_path):
                                                "%b %d %H:%M:%S %Y %Z").replace(tzinfo=dt.timezone.utc)
     if certificate_expiry <= now:
         raise ValueError("Archive signing certificate is expired.")
-    return {"status": "passed", "bundleIdentifier": app_config["bundleIdentifier"], "teamIdentifier": team,
+    return {"status": "passed", "validatedArtifact": "app-store-connect-export-from-archive",
+            "bundleIdentifier": app_config["bundleIdentifier"], "teamIdentifier": team,
             "displayName": app_config["displayName"], "profileExpires": expires.astimezone(dt.timezone.utc).isoformat(),
             "certificateExpires": certificate_expiry.isoformat(), "entitlementKeys": sorted(entitlements)}
 
@@ -118,12 +125,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("archive", type=Path)
     parser.add_argument("configuration", type=Path)
+    parser.add_argument("--distribution-app", type=Path, required=True,
+                        help="StarterApp.app extracted from Xcode's App Store Connect export")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     try:
-        report = validate(args.archive, args.configuration)
+        report = validate(args.archive, args.configuration, args.distribution_app)
         args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-        print("Signed archive passed identity, team, certificate, profile, expiry, and entitlement checks.")
+        print("Archive-derived App Store Connect package passed identity, team, certificate, profile, expiry, and entitlement checks.")
         return 0
     except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError, plistlib.InvalidFileException):
         print("Signed archive validation failed; raw signing metadata was not logged.", file=sys.stderr)

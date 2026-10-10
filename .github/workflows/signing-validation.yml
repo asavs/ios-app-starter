@@ -49,7 +49,34 @@ jobs:
           python3 scripts/check-configuration.py --output "$RUNNER_TEMP/signing-preflight/configuration.json"
           python3 scripts/check-signing-config.py "$RUNNER_TEMP/signing-preflight/configuration.json"
           IOS_SIGNING_CONFIGURATION_EXPORT="$RUNNER_TEMP/signing-preflight/configuration.json" python3 -m unittest discover -s scripts/tests -p 'test_signing.py' -v
-          printf '## Signing preflight passed\n\nFresh native export and validator fixtures passed. No credentials, authenticated reads or Apple signing were used.\n' >> "$GITHUB_STEP_SUMMARY"
+          python3 scripts/write-export-options.py "$RUNNER_TEMP/signing-preflight/configuration.json" "$RUNNER_TEMP/signing-preflight/ExportOptions.plist"
+          IOS_SIGNING_TEAM="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))[0]["teamIdentifier"])' "$RUNNER_TEMP/signing-preflight/configuration.json")"
+          xcodebuild archive \
+            -project StarterApp/StarterApp.xcodeproj \
+            -scheme StarterApp \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/signing-preflight/StarterApp.xcarchive" \
+            -quiet \
+            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY= \
+            "DEVELOPMENT_TEAM=$IOS_SIGNING_TEAM"
+          python3 - "$RUNNER_TEMP/signing-preflight/StarterApp.xcarchive" "$RUNNER_TEMP/signing-preflight/configuration.json" <<'PY'
+          import json, plistlib, sys
+          from pathlib import Path
+          archive, config = Path(sys.argv[1]), json.loads(Path(sys.argv[2]).read_text(encoding='utf-8'))[-1]
+          info_path = archive / 'Products/Applications/StarterApp.app/Info.plist'
+          if not info_path.is_file(): raise SystemExit('Unsigned archive is missing StarterApp.app/Info.plist.')
+          info = plistlib.loads(info_path.read_bytes())
+          for key, expected in (('CFBundleIdentifier', config['bundleIdentifier']),
+                                ('CFBundleDisplayName', config['displayName']),
+                                ('MinimumOSVersion', config['minimumIOS'])):
+              if info.get(key) != expected: raise SystemExit('Unsigned archive metadata does not match the selected configuration.')
+          PY
+          rm -rf "$RUNNER_TEMP/signing-preflight/StarterApp.xcarchive"
+          printf '## Signing preflight passed\n\nFresh native export, validator fixtures, App Store export options, and an unsigned archive passed. No credentials, authenticated reads or Apple signing were used.\n' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: signing-preflight
@@ -146,12 +173,9 @@ jobs:
               raise SystemExit('Apple identity checks are incomplete; signing was not started.')
           PY
 
-      - name: Archive with Xcode automatic signing
+      - name: Archive without account-side signing changes
         env:
           IOS_SIGNING_TEAM: ${{ steps.app.outputs.teamIdentifier }}
-          ASC_PRIVATE_KEY_PATH: ${{ steps.key.outputs.key_path }}
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
           set -o pipefail
           xcodebuild archive \
@@ -160,17 +184,46 @@ jobs:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/StarterApp.xcarchive" \
+            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY= \
+            "DEVELOPMENT_TEAM=$IOS_SIGNING_TEAM" \
+            | xcbeautify
+
+      - name: Prepare App Store export options
+        run: |
+          python3 scripts/write-export-options.py "$IOS_TEST_OUTPUT_DIR/configuration.json" "$IOS_TEST_OUTPUT_DIR/ExportOptions.plist"
+
+      - name: Export App Store Connect distribution package
+        id: distribution
+        env:
+          ASC_PRIVATE_KEY_PATH: ${{ steps.key.outputs.key_path }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          set -o pipefail
+          EXPORT_DIR="$RUNNER_TEMP/ios-signing/export"
+          PACKAGE_DIR="$RUNNER_TEMP/ios-signing/distribution-package"
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/StarterApp.xcarchive" \
+            -exportPath "$EXPORT_DIR" \
+            -exportOptionsPlist "$IOS_TEST_OUTPUT_DIR/ExportOptions.plist" \
             -authenticationKeyPath "$ASC_PRIVATE_KEY_PATH" \
             -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             -allowProvisioningUpdates \
-            CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY='Apple Distribution' \
-            "DEVELOPMENT_TEAM=$IOS_SIGNING_TEAM" \
             | xcbeautify
+          IPA_COUNT="$(find "$EXPORT_DIR" -maxdepth 1 -type f -name '*.ipa' | wc -l | tr -d ' ')"
+          test "$IPA_COUNT" = 1
+          IPA_PATH="$(find "$EXPORT_DIR" -maxdepth 1 -type f -name '*.ipa' -print -quit)"
+          mkdir -p "$PACKAGE_DIR"
+          ditto -x -k "$IPA_PATH" "$PACKAGE_DIR"
+          test -d "$PACKAGE_DIR/Payload/StarterApp.app"
+          printf 'app_path=%s\n' "$PACKAGE_DIR/Payload/StarterApp.app" >> "$GITHUB_OUTPUT"
 
-      - name: Validate signed archive
-        run: python3 scripts/validate-signed-archive.py "$RUNNER_TEMP/StarterApp.xcarchive" "$IOS_TEST_OUTPUT_DIR/configuration.json" --output "$IOS_TEST_OUTPUT_DIR/signing-validation.json"
+      - name: Validate archive-derived distribution signature
+        run: python3 scripts/validate-signed-archive.py "$RUNNER_TEMP/StarterApp.xcarchive" "$IOS_TEST_OUTPUT_DIR/configuration.json" --distribution-app "${{ steps.distribution.outputs.app_path }}" --output "$IOS_TEST_OUTPUT_DIR/signing-validation.json"
 
       - name: Upload sanitized validation report
         if: always()
@@ -185,4 +238,4 @@ jobs:
         if: always()
         run: |
           rm -f "$RUNNER_TEMP/asc-private-key.p8"
-          rm -rf "$RUNNER_TEMP/StarterApp.xcarchive" "$RUNNER_TEMP/signing-certificates"
+          rm -rf "$RUNNER_TEMP/StarterApp.xcarchive" "$RUNNER_TEMP/ios-signing/export" "$RUNNER_TEMP/ios-signing/distribution-package" "$RUNNER_TEMP/ios-signing/signing-certificates"
