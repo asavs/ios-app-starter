@@ -130,7 +130,9 @@ def check(project):
                         "bundleIdentifier": app["PRODUCT_BUNDLE_IDENTIFIER"],
                         "teamIdentifier": app.get("DEVELOPMENT_TEAM", "").strip(),
                         "minimumIOS": app["IPHONEOS_DEPLOYMENT_TARGET"],
-                        "deviceFamilies": app["TARGETED_DEVICE_FAMILY"], "sdk": sdk})
+                        "deviceFamilies": app["TARGETED_DEVICE_FAMILY"], "sdk": sdk,
+                        "marketingVersion": app.get("MARKETING_VERSION", ""),
+                        "buildNumber": app.get("CURRENT_PROJECT_VERSION", "")})
     return records
 
 
