@@ -250,6 +250,9 @@ def main():
                     app, json.loads(args.plan.read_text(encoding='utf-8')), reader)
         args.output.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
         print('Wrote sanitized TestFlight report; report status does not establish device installation.')
+        if args.command == 'processing' and report['status'] in ('FAILED', 'INVALID'):
+            print('Apple processing failed; inspect App Store Connect before another upload.')
+            return 1
         return 0
     except (OSError, ValueError, TypeError, KeyError, AttributeError, plistlib.InvalidFileException) as error:
         message = str(error) if isinstance(error, ReleaseError) else 'TestFlight operation could not establish a verified result; raw account/signing output was not logged.'

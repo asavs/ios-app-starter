@@ -214,6 +214,17 @@ class TestFlightTests(unittest.TestCase):
             self.assertEqual(result['testFlightAvailability'], 'not_verified')
             self.assertEqual(result['installation'], 'not_verified')
 
+    def test_failed_processing_makes_command_fail_while_preserving_report(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args, app, plan, _, _ = self.fixture(directory)
+            reader = FakeReader([('verified', [identity(app)]), ('verified', [
+                {'attributes': {'version': plan['buildNumber'], 'processingState': 'INVALID'}}])])
+            argv = ['testflight-release.py', 'processing', '--account', '--asc', str(args.ipa),
+                    '--configuration', str(args.configuration), '--plan', str(args.plan), '--output', str(args.output)]
+            with patch.object(sys, 'argv', argv), patch.object(release, 'Reader', return_value=reader), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(release.main(), 1)
+            self.assertEqual(json.loads(args.output.read_text())['status'], 'INVALID')
+
     def test_native_cli_supports_fixed_release_read_flags_without_credentials(self):
         binary = ROOT / ('build/tools/asc.exe' if sys.platform == 'win32' else 'build/tools/asc')
         if not binary.is_file(): self.skipTest('Pinned CLI is not installed')
