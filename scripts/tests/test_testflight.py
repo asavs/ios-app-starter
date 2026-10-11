@@ -100,8 +100,10 @@ class TestFlightTests(unittest.TestCase):
         product = archive / 'Products/Applications/StarterApp.app'; product.mkdir(parents=True)
         info = {'CFBundleIdentifier': app['bundleIdentifier'], 'CFBundleDisplayName': app['displayName'],
                 'MinimumOSVersion': app['minimumIOS'], 'CFBundleShortVersionString': app['marketingVersion'],
-                'CFBundleVersion': delivery['buildNumber']}
+                'CFBundleVersion': delivery['buildNumber'],
+                'CFBundleIcons': {'CFBundlePrimaryIcon': {'CFBundleIconName': 'AppIcon'}}}
         (product / 'Info.plist').write_bytes(plistlib.dumps(info))
+        (product / 'AppIcon60x60@2x.png').write_bytes(b'fixture icon')
         ipa = base / 'Fixture.ipa'; ipa.write_bytes(b'fixture package')
         validation = base / 'validation.json'
         report = dict(delivery, status='validated_for_upload', validatedArtifact='app-store-connect-export-from-archive',
@@ -126,6 +128,12 @@ class TestFlightTests(unittest.TestCase):
                 with self.subTest(key=key), self.assertRaises(ValueError): release.verify_apps(app, plan, args.archive, product)
                 (product / 'Info.plist').write_bytes(plistlib.dumps(info))
 
+    def test_missing_compiled_icon_blocks_delivery(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args, app, plan, product, _ = self.fixture(directory)
+            (product / 'AppIcon60x60@2x.png').unlink()
+            with self.assertRaisesRegex(ValueError, 'AppIcon'): release.verify_apps(app, plan, args.archive)
+
     def test_exact_package_validation_binds_signature_version_and_digest(self):
         for signature_ok in (True, False):
             with self.subTest(signature_ok=signature_ok), tempfile.TemporaryDirectory() as directory:
@@ -137,7 +145,9 @@ class TestFlightTests(unittest.TestCase):
                 plan = Path(directory) / 'plan.json'; plan.write_text(json.dumps(delivery))
                 for product in (archive / 'Products/Applications/StarterApp.app', source):
                     path = product / 'Info.plist'; info = plistlib.loads(path.read_bytes())
-                    info.update(CFBundleVersion=delivery['buildNumber'], CFBundleShortVersionString=delivery['marketingVersion'])
+                    info.update(CFBundleVersion=delivery['buildNumber'], CFBundleShortVersionString=delivery['marketingVersion'],
+                                CFBundleIcons={'CFBundlePrimaryIcon': {'CFBundleIconName': 'AppIcon'}})
+                    (product / 'AppIcon60x60@2x.png').write_bytes(b'fixture icon')
                     path.write_bytes(plistlib.dumps(info))
                 ipa = Path(directory) / 'Fixture.ipa'; ipa.write_bytes(b'fixture package')
                 args = SimpleNamespace(configuration=config, plan=plan, archive=archive, ipa=ipa)

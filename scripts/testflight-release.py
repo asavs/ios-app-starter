@@ -119,6 +119,9 @@ def verify_apps(app, delivery, archive, distribution_app=None):
         info = plistlib.loads((path / 'Info.plist').read_bytes())
         if any(info.get(key) != value for key, value in expected.items()):
             raise ReleaseError('Archive/export identity or version does not match the selected release plan.')
+        icon = info.get('CFBundleIcons', {}).get('CFBundlePrimaryIcon', {})
+        if icon.get('CFBundleIconName') != 'AppIcon' or not any(path.glob('AppIcon*.png')):
+            raise ReleaseError('Archive/export has no compiled AppIcon; add the required app icon before delivery.')
 
 
 def digest(path):
