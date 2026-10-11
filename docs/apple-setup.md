@@ -140,3 +140,8 @@ The upstream CLI is MIT licensed; see [the upstream license](https://github.com/
 Upstream telemetry defaults to enabled. The integration sets `ASC_TELEMETRY_DISABLED=1` and `DO_NOT_TRACK=1` without changing a user's preferences. The wrapper uses only `apps list`, `bundle-ids list`, `certificates list`, and `bundle-ids profiles list`, with JSON and pagination. Do not replace these with `auth login`, `auth doctor --fix`, web-session login, token output or arbitrary agent-generated CLI strings. Those commands have different effects and exposure risks.
 
 CI tests permission failures, incomplete credentials, malformed responses, timeouts and secret-canary redaction using fixtures. Native CLI help/version runs establish executable/flag availability on each platform. **A fixture pass is not a real Apple account check:** no live account credentials were supplied during template development. Use the opt-in workflow to establish findings for your account before milestone 5.
+
+
+## Milestone 6 delivery
+
+Milestone 5 signing acceptance for the demo is recorded in the roadmap. Upload requires a new, explicit TestFlight scope: use [the delivery guide](testflight-delivery.md) and [Windows handoff](windows-milestone-6-handoff.md). Existing signing/key approvals persist; do not request them again unless the plan changes. Check upload permission separately and keep Account Holder agreements/compliance decisions human. New release app/build reads use the same pinned CLI and isolated Reader through fixed commands in `scripts/testflight-release.py`; they require explicit `--account` and never broaden the diagnostic command interface or forward raw account output. No live release read/upload was performed during implementation.

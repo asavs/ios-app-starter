@@ -1,0 +1,19 @@
+# Windows milestone 6 acceptance handoff
+
+Use the existing Windows chat that proved milestone 5. Supply this prompt after the milestone 6 implementation PR is available; current code remains subject to review, merge and credential-free CI. The prompt authorizes preparation/review, with live upload and tester-account changes gated by a concrete human approval.
+
+```text
+Continue milestone 6 for https://github.com/asavs/ios-app-starter from this Windows chat. Milestone 5 is complete for starter-app-demo. Prove Windows → GitHub Actions → TestFlight → iPhone using the new TestFlight delivery workflow; no local or separately managed Mac is required.
+
+Preserve local work and fetch current main and the milestone 6 implementation PR. Read AGENTS.md, roadmap.md, README.md, docs/apple-setup.md, docs/testflight-delivery.md and the latest setup-experience journal. Review the implementation and current head's CI/artifacts before merging. Merge only once the review and required checks pass; verify main afterward. Keep milestone 6 open until actual iPhone acceptance.
+
+Reuse the approved environment protections and securely stored key; do not transfer credentials again or repeat approvals already explicitly granted. Present one concrete plan for the NEW TestFlight upload scope: existing demo bundle com.asaschaeffer.starterappdemo, team 9L6Y9T3PPW, existing App Store Connect record Starter App Template Demo, the existing team API key with its verified role, fixed app/build inventory reads, possible already approved signing effects, and internal-only upload. Confirm membership/agreements with the Account Holder. Do not broaden keys or roles automatically. Obtain explicit approval for upload; prior signing approval alone does not authorize it. Tester-group creation, build assignment and inviting testers require their own specific authorization or inclusion in the approved plan. Prefer the existing owner tester; do not invite unrelated people. Passwords/2FA, agreements and compliance answers remain human decisions.
+
+Make a small visible app change from Windows that the existing smoke test still verifies, commit it and inspect its passing remote checks and compiled identity. Avoid creating a new app record, identifier or capability. After approval, dispatch testflight-delivery.yml on main with configuration=starter-app-demo and perform_upload=true; complete authorized environment approval. GitHub performs archive, signed export, exact-package validation and upload. No external beta review or App Store publication is authorized.
+
+Download and inspect the sanitized release plan, signature/package validation, upload and processing reports. Check expected bundle/team, marketing version/build number and commit/run. A green preflight is unsigned; upload_accepted does not prove processing or installation. If upload times out or fails, inspect App Store Connect before retrying; the upload may have been accepted. A processing read may initially show not_visible_yet. Investigate failures within milestone 6 instead of claiming success.
+
+Use App Store Connect from Windows to verify processing, the human-approved export-compliance answers, and the intended internal tester's build access. On the iPhone, use TestFlight to install that exact version/build and verify the visible change. Do not ask for secrets in chat or expose private values in screenshots, logs, source, artifacts or command arguments.
+
+Record PowerShell/browser/artifact friction, tool versions, reproducible fixes, commit/run links, the tested iPhone OS, observed installation and remaining uncertainty in docs/setup-experience.md. Submit reviewable documentation/fixes as needed. Update roadmap milestone 6 to complete only after the entire real delivery/install loop passes; minimum-OS coverage and optional platforms remain later milestones. Finish with evidence and any precise human action still needed.
+```
