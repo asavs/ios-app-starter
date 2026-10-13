@@ -84,10 +84,10 @@ If failure happens before the test command starts, inspect the failed setup step
 With GitHub CLI authenticated and the repository checked out, review a pull request's hosted checks and sanitized artifacts together:
 
 ```powershell
-python scripts/review_ci.py --pr 22
+python scripts/review_ci.py --pr 123
 ```
 
-The command shows check conclusions and elapsed time, clearly labels skipped jobs, downloads recognized test and preflight artifacts to a temporary directory, and reports test counts, simulator runtime, compiled app identity, symbol UUIDs, and artifact links. It compares the current checkout commit with the PR head and prints `MATCH` or `MISMATCH`; use `--require-checkout-head` to fail when they differ, or `--no-download` to list checks and links only. A TestFlight preflight symbol match verifies the unsigned archive app/dSYM. Exported-IPA matching is reported only when a delivery artifact contains that check. The command reads only selected sanitized fields and never prints raw logs or account diagnostic contents.
+Replace `123` with the pull request number. The command shows check conclusions and elapsed time, clearly labels skipped jobs, downloads recognized test and preflight artifacts to a temporary directory, and reports test counts, simulator runtime, compiled app identity, symbol UUIDs, and artifact links. For merged pull requests it also finds workflows for the exact merge commit. It compares the current checkout commit with the PR head and prints `MATCH` or `MISMATCH`; use `--require-checkout-head` to fail when they differ, or `--no-download` to list checks and links only. A TestFlight preflight symbol match verifies the unsigned archive app/dSYM. Exported-IPA matching is reported only when a delivery artifact contains that check. The command reads only selected sanitized fields and never prints raw logs or account diagnostic contents.
 
 ## Reference tools
 
