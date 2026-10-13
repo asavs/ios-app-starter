@@ -2,7 +2,7 @@
 
 A native Apple app starter built around **Windows → GitHub Actions → TestFlight → iPhone**. Users do not need a separately managed Mac. GitHub-hosted macOS runners perform the Xcode work.
 
-The starter has a generated iPhone/iPad app and a passing remote build gate. Configuration validation, a renamed-app example, and portable success/failure reports have also been verified on GitHub. Distribution signing has been validated for the demo app. The protected TestFlight delivery implementation is awaiting live Windows/iPhone acceptance; optional platforms remain planned in [the roadmap](roadmap.md).
+The starter has a generated iPhone/iPad app and a passing remote build gate. Configuration validation, a renamed-app example, and portable success/failure reports have also been verified on GitHub. Distribution signing has been validated for the demo app. TestFlight delivery and iPhone acceptance are complete for the demo app; optional platforms remain planned in [the roadmap](roadmap.md).
 
 ## Develop from Windows
 
@@ -12,7 +12,7 @@ The starter has a generated iPhone/iPad app and a passing remote build gate. Con
 4. Push to `main` or open a pull request. The **iOS** workflow generates the project, builds the app, and tests the welcome screen on an iPhone simulator.
 5. Open the workflow run in GitHub's **Actions** tab. Read its test summary and download the **ios-test-results-starter** artifact (or **ios-test-results-pocket-notes** / **ios-test-results-starter-app-demo** for the examples) for full logs, JSON counts, and the `.xcresult` bundle. Artifacts are retained for 14 days. You can also select **iOS → Run workflow** to run it manually.
 
-This first workflow is unsigned and needs no Apple credentials. It produces no installable build. The separately approved [TestFlight delivery workflow](docs/testflight-delivery.md) is milestone 6; live upload and iPhone acceptance are still pending.
+This first workflow is unsigned and needs no Apple credentials. It produces no installable build. The separately approved [TestFlight delivery workflow](docs/testflight-delivery.md) is milestone 6; the demo upload and user-reported iPhone acceptance are complete.
 
 ## Current defaults
 
