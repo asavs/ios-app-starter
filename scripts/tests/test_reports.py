@@ -18,6 +18,10 @@ class ReportTests(unittest.TestCase):
             (path / "xcodebuild.log").write_text(log)
             env = os.environ.copy()
             env["GITHUB_STEP_SUMMARY"] = str(path / "github-summary.md")
+            env["IOS_TEST_ARTIFACT_NAME"] = "ios-test-results-starter"
+            env["GITHUB_SERVER_URL"] = "https://github.com"
+            env["GITHUB_REPOSITORY"] = "owner/repo"
+            env["GITHUB_RUN_ID"] = "123"
             process = subprocess.run(
                 [sys.executable, str(REPORTER), directory, str(status), "test simulator"],
                 env=env, capture_output=True, text=True,
@@ -31,6 +35,7 @@ class ReportTests(unittest.TestCase):
                                         passedTests=1, failedTests=0, skippedTests=0), 0)
         self.assertEqual(code, 0)
         self.assertIn("| 1 | 1 | 0 | 0 |", summary)
+        self.assertIn("[ios-test-results-starter](https://github.com/owner/repo/actions/runs/123)", summary)
 
     def test_assertion_failure_has_test_name_and_detail(self):
         code, summary = self.report(dict(result="Failed", totalTestCount=1,

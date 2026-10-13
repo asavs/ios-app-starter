@@ -80,8 +80,15 @@ def main():
         excerpt = diagnostics[-30:] or log.splitlines()[-40:]
         lines.extend(["### Build/test diagnostics", "", fenced("\n".join(excerpt))])
 
+    artifact_name = os.environ.get('IOS_TEST_ARTIFACT_NAME', 'ios-test-results')
+    run_url = "".join((os.environ.get("GITHUB_SERVER_URL", ""), "/",
+                       os.environ.get("GITHUB_REPOSITORY", ""), "/actions/runs/",
+                       os.environ.get("GITHUB_RUN_ID", "")))
+    artifact_link = f"[{artifact_name}]({run_url})" if all((
+        os.environ.get("GITHUB_SERVER_URL"), os.environ.get("GITHUB_REPOSITORY"),
+        os.environ.get("GITHUB_RUN_ID"))) else f"**{artifact_name}**"
     lines.extend([
-        f"Download the **{os.environ.get('IOS_TEST_ARTIFACT_NAME', 'ios-test-results')}** artifact on the Actions run page for "
+        f"Download {artifact_link} on the Actions run page for "
         "`summary.md`, `results.json`, the complete logs, and `Tests.xcresult` when available.",
         "Locally, these files are in the report directory printed by `test-ios.sh`.",
         "",
