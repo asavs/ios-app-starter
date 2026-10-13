@@ -66,6 +66,8 @@ Milestone 5's selected-identity signing acceptance is complete: the real archive
 
 ## Next execution sequence and Xcode outputs
 
+Follow the agreed [Mac/Windows execution and handoff order](docs/mac-windows-coordination.md): improve CI evidence first, then iteration speed, symbol storage, feedback export, device investigation, OS coverage and performance assessment. This sequence refines work within milestone 7; milestone 8 still waits for milestone 7 acceptance.
+
 Milestones 5 and 6 are complete for the acceptance app. Windows dispatched the protected hosted builds, inspected downloaded evidence, and the owner reported opening TestFlight build **1.0 (1.9.1)** on their iPhone. The acceptance documentation is in [PR #21](https://github.com/asavs/ios-app-starter/pull/21); its merge/check status must be verified separately from device acceptance.
 
 1. **Catch-up:** Keep the delivery guide, version/build instructions and owner tester path consistent with the recorded acceptance. Beta description and per-build What to Test belong to the delivery experience; full store listing/submission remains milestone 13. Metadata automation is not implemented.
