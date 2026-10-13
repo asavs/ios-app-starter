@@ -116,3 +116,15 @@ The scripts also reuse verified downloads within a job or local checkout. Projec
 ## Device diagnostics and compatibility
 
 Milestone 7 is next. See [the diagnostics plan](docs/device-diagnostics.md) for TestFlight feedback, exact-build symbols, Windows-accessible investigation and OS coverage gaps. These diagnostic commands and symbol-retention workflows are planned; current simulator coverage remains iOS 27.0 only.
+
+## Faster manual iteration
+
+The **iOS** manual workflow offers `configuration=starter`, `pocket-notes`, or `starter-app-demo` for one app, with `all` as the default. PR and main runs always keep all three configurations. For example, from PowerShell:
+
+```powershell
+gh workflow run ios.yml --ref main --field configuration=starter-app-demo --field verify_failure_reporting=false
+```
+
+Use `verify_failure_reporting=true` only for the controlled expected-red report check. Artifact names still identify the selected app. New commits on a PR cancel that PR's obsolete iOS run; main and manual runs have separate groups and are not cancelled by this policy. This lane remains unsigned and credential-free.
+
+The workflow uploads `ios-test-results-<configuration>` for each configuration it runs, so a single-app dispatch produces one matching test artifact and `all` produces all three.

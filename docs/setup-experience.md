@@ -406,3 +406,9 @@ Scheduled a small tool-download/reuse optimization before expanding milestone 5 
 - **Fix during verification:** The first reviewer draft sent Git commands through the GitHub CLI wrapper, which failed with an unhelpful `workflow` message. A separate Git command helper corrected this. The final local portable suite passed 54 tests with 3 platform/dependency skips. Coverage includes elapsed times, summary parsing, sanitized field selection, unsafe artifact-name rejection, identity summaries and skip/mismatch labels.
 - **Remaining acceptance:** PR #23 needs merge authorization and then a review of workflows/artifacts for its exact merge commit using the same Windows command. Keep milestone order 1 open until that post-merge result is checked. The 54-test local portable suite passed with 3 expected platform/dependency skips. No signing, authenticated Apple reads, delivery, symbol retention or TestFlight upload is needed. Exported-IPA symbol matching remains pending.
 - **Improvement needed:** Keep artifact names on a strict allowlist before download. Avoid downloading unrelated account diagnostics or exposing raw logs; preserve the clear archive-versus-IPA distinction.
+
+## 2026-10-13 — Order 2 targeted iteration implementation
+
+- **Gate:** Fetched main `dd583f0` and Windows branch `a531747`; read its recorded PR #23 exact-merge success and artifact evidence. Order 1 is verified by Windows; no duplicate reporting implementation was started.
+- **Decision/change:** Manual iOS dispatch selects one configuration or all (default). PR/main retain all three. Event-aware concurrency cancels obsolete runs only for the same PR; main/manual runs use unique run IDs. Existing artifact identities and credential-free boundaries remain.
+- **Verification:** Source review only; no tests run locally. Hosted full-matrix, targeted success/failure and cancellation evidence are pending Windows acceptance through the shared handoff. Milestone 7 remains open.
