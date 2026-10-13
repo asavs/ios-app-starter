@@ -1,0 +1,30 @@
+name: iOS runtime inventory
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: Hosted image to inspect without building or downloading runtimes
+        type: choice
+        default: xcode-27
+        options: [xcode-27, macos-15, macos-14]
+permissions:
+  contents: read
+jobs:
+  inventory:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Select pinned Xcode on primary image
+        if: inputs.runner == 'xcode-27'
+        run: echo 'DEVELOPER_DIR=/Applications/Xcode_27.0.app/Contents/Developer' >> "$GITHUB_ENV"
+      - name: Export current native inventory
+        run: python3 scripts/inventory-ios-runtimes.py --output "$RUNNER_TEMP/ios-runtime-inventory.json"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ios-runtime-inventory-${{ inputs.runner }}
+          path: ${{ runner.temp }}/ios-runtime-inventory.json
+          retention-days: 14
+          if-no-files-found: error
