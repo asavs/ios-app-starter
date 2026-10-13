@@ -44,7 +44,7 @@ def main():
         elif not args.asc or not args.asc.is_file():
             status = 'missing_tool'
         else:
-            command = ['testflight', 'feedback', 'list', '--app', args.app_id]
+            command = ['testflight', 'feedback', 'list', '--app', args.app_id, '--include', 'build']
             if args.build_id:
                 command += ['--build-id', args.build_id]
             with tempfile.TemporaryDirectory(prefix='testflight-feedback-') as temporary:
