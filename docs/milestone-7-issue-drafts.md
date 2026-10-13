@@ -1,5 +1,7 @@
 # Milestone 7 issue drafts
 
+**Priority revised 2026-10-13:** Follow [the shared order](mac-windows-coordination.md). Demonstrate ordinary TestFlight feedback through the browser first. The symbolication, CLI export and performance ideas below are conditional backlog, not mandatory prerequisites. OS coverage remains required.
+
 GitHub issue creation returned HTTP 401 on 2026-10-12. These drafts are not published issues. Publish from an authenticated GitHub session, check for duplicates first, then replace this file with links in the roadmap.
 
 ## Release symbols and hosted symbolication

@@ -412,3 +412,9 @@ Scheduled a small tool-download/reuse optimization before expanding milestone 5 
 - **Gate:** Fetched main `dd583f0` and Windows branch `a531747`; read its recorded PR #23 exact-merge success and artifact evidence. Order 1 is verified by Windows; no duplicate reporting implementation was started.
 - **Decision/change:** Manual iOS dispatch selects one configuration or all (default). PR/main retain all three. Event-aware concurrency cancels obsolete runs only for the same PR; main/manual runs use unique run IDs. Existing artifact identities and credential-free boundaries remain.
 - **Verification:** Source review only; no tests run locally. Hosted full-matrix, targeted success/failure and cancellation evidence are pending Windows acceptance through the shared handoff. Milestone 7 remains open.
+
+## 2026-10-13 — Simplify milestone 7 feedback priorities
+
+- **Owner decision:** Prioritize focused tester instructions and one controlled TestFlight feedback submission, browser review, sanitized task/issue triage and targeted retest. Separate private symbol infrastructure was judged premature before an observed investigation gap.
+- **Plan revision:** Shared order now continues from verified reporting/iteration to the tester loop, then OS coverage. CLI feedback automation, independent symbol storage/symbolication and performance collection are conditional improvements. Existing UUID checks stay useful; exported-IPA matching remains pending the next authorized delivery.
+- **Evidence/limits:** Preserved Windows' pushed order 2 acceptance record in the coordination document. This revision is documentation only; no tests, account reads, metadata changes, tester messages or uploads were performed. Next is writing reusable tester instructions, followed by Windows/owner acceptance with controlled feedback.
