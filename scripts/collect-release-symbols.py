@@ -60,7 +60,7 @@ def main():
                 packaged_binary.write_bytes(package.read(candidates[0].rsplit('/', 1)[0] + '/' + executable))
                 if uuids(packaged_binary) != binary_ids:
                     raise ValueError('Package and archive UUIDs differ.')
-        report = {'status': 'matched', 'bundleIdentifier': info['CFBundleIdentifier'],
+        report = {'status': 'matched', 'ipaCompared': args.ipa is not None, 'bundleIdentifier': info['CFBundleIdentifier'],
                   'marketingVersion': info['CFBundleShortVersionString'], 'buildNumber': info['CFBundleVersion'],
                   'commit': args.commit, 'images': [{'uuid': u, 'architecture': a} for u, a in binary_ids]}
         if args.retain:

@@ -56,3 +56,10 @@ Use this compact format for each task; update status from implementation to awai
 ## Approval boundaries
 
 Existing authorization persists. Native implementation and credential-free review can proceed. Present a concrete scope before new authenticated Apple reads, private symbol-storage access changes or delivery. Owner compliance decisions and iPhone acceptance remain human steps. Keep PR builds unsigned and secretless; never change repository visibility to enable retention. Performance collection must not impose a backend on the basic starter.
+
+## Mac response to PR #23
+
+- **Task:** Order 1 review, based on Windows implementation [PR #23](https://github.com/asavs/ios-app-starter/pull/23), head `683879d`.
+- **Branch:** `codex/ci-evidence-scope-review`; review fix adds explicit `ipaCompared` to the collector and reads that field instead of inferring verification from artifact names.
+- **Windows next action:** Incorporate the review fix into PR #23, inspect updated hosted preflight `symbols.json` for `ipaCompared: false`, and confirm the review command labels it archive-only. Old reports without the field must also stay archive-only. No signing/upload is needed.
+- **Remaining acceptance:** Required PR checks, exact-head review, controlled failed-report evidence, and post-merge evidence. Order 2 waits for this acceptance; Mac has not started competing iteration changes.

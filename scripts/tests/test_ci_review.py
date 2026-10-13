@@ -61,7 +61,7 @@ class CIReviewTests(unittest.TestCase):
                 "deviceFamilies": "1,2",
             }]), encoding="utf-8")
             (root / "symbols.json").write_text(json.dumps({
-                "status": "matched", "images": [],
+                "status": "matched", "images": [], "ipaCompared": True,
             }), encoding="utf-8")
             result = review_ci.artifact_evidence(root, "testflight-delivery-demo")
             self.assertEqual(result["apps"][0]["bundle"], "com.example.demo")

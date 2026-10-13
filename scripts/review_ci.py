@@ -133,7 +133,7 @@ def artifact_evidence(directory, artifact_name):
                 {"uuid": image.get("uuid"), "architecture": image.get("architecture")}
                 for image in images if isinstance(image, dict)
             ] if isinstance(images, list) else [],
-            "ipaCompared": artifact_name.startswith("testflight-delivery-"),
+            "ipaCompared": report.get("ipaCompared") is True,
         })
     return evidence
 
@@ -280,7 +280,7 @@ def render(report):
         "",
         "Skipped checks are displayed separately and do not count as passing. "
         "A symbol match from TestFlight preflight covers the archive app/dSYM; "
-        "only a delivery artifact establishes the exported-IPA comparison.",
+        "exported-IPA comparison requires an explicit `ipaCompared: true` in the symbol report.",
         "",
     ])
     return "\n".join(lines)
