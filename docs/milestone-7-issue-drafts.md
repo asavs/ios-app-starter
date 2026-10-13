@@ -4,7 +4,7 @@ GitHub issue creation returned HTTP 401 on 2026-10-12. These drafts are not publ
 
 ## Release symbols and hosted symbolication
 
-Milestone 7 needs exact-build symbols to investigate iPhone crashes from Windows. The current export policy requests symbol upload, but delivery deletes its archive and retains no dSYMs. Actual Release dSYM production has not been inspected.
+Milestone 7 needs exact-build symbols to investigate iPhone crashes from Windows. The export policy requests symbol upload. Commit `33ffe9e` adds UUID verification and optional private-repository dSYM retention; Windows reported hosted archive matching in PR #22. Exported-IPA matching, public-demo private storage and hosted symbolication remain open.
 
 Acceptance:
 - Inspect fresh hosted Release settings and distributed binary/dSYM UUIDs.
@@ -40,3 +40,17 @@ Acceptance:
 - Record physical device OS/build during the next authorized acceptance loop.
 
 Design: docs/device-diagnostics.md. Do not advance milestone 8 until milestone 7 required checks pass.
+
+## CI review and iteration backlog
+
+This reporting enhancement is separate from milestone 7's device-diagnostics acceptance. Milestone 2's original reporting gate remains complete.
+
+- Provide a compact Windows-accessible review command or Actions summary combining PR and exact post-merge results by configuration.
+- Include artifact-derived test counts, simulator runtime, app identity, archive symbol UUIDs and direct artifact/log links. Distinguish archived-app matching from exported-IPA matching.
+- Label signing/account/delivery skips as policy skips; never treat them as verified operations.
+- Compare the checkout commit/branch with the PR head before reviewing local source. Fetch artifacts on request and keep routine output small and sanitized.
+- Use [issue #20](https://github.com/asavs/ios-app-starter/issues/20) for a targeted manual simulator lane; preserve all three required PR/main configurations.
+- Cancel superseded PR runs with event-aware concurrency; preserve main verification and protected delivery serialization.
+- Measure cold/warm costs before changing build-output caching or eliminating repeated preflights. Exact merge-commit simulator evidence remains required.
+
+Acceptance: inspect successful and deliberately failed evidence from Windows, verify skip/scope labels and checkout mismatch detection, and show reduced review friction without weakening required coverage. No such consolidated review command is implemented yet.
