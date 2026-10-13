@@ -35,9 +35,9 @@ See Apple's [crash report symbolication guide](https://developer.apple.com/docum
 
 The app and test targets declare **iOS 17.0 minimum**, the selected CI toolchain is **Xcode 27.0 / iOS 27.0 SDK**, and current simulator coverage is **iOS 27.0 only**. A deployment target says which OS versions the app claims to support; it is not evidence that the app was run on those versions. The current one-test UI smoke test on an iOS 27 simulator does not verify iOS 17 behavior. The roadmap calls for provisioning minimum-OS coverage before advertising verified compatibility, then adding iOS 18 and 26 lanes when runtimes are available. Record the actual runtime/device and test evidence; do not infer coverage from SDK version or a physical phone on another OS. Check [current Xcode system requirements](https://developer.apple.com/xcode/system-requirements) and the runner's actual installed simulators before selecting lanes because hosted images change.
 
-## Recommended milestone 7 issue scopes
+## Conditional diagnostics backlog
 
-Keep these reviewable and independently verifiable:
+The agreed next task is a basic tester feedback loop using App Store Connect in the browser; see [the shared plan](mac-windows-coordination.md). Items below describe possible technical follow-ups. Symbol storage, CLI automation and performance collection wait for a demonstrated need; OS compatibility coverage remains a milestone requirement. Keep any implemented follow-up reviewable and independently verifiable:
 
 1. **Release symbol production and retention:** inspect current generated Release settings and archive UUIDs; explicitly set DWARF with dSYM if needed; retain exact-build dSYMs/archive under access controls and documented retention; confirm exported/uploaded symbols match.
 2. **Windows-accessible TestFlight feedback export:** add pinned-CLI fixed read commands for crash feedback, logs, and screenshot feedback; explicit opt-in; pagination/filters; safe sanitized artifacts; tests for no credentials, access errors, empty results, malformed responses, timeout, and redaction. First verify the pinned CLI 5.14.0 commands and Apple role/API behavior with an authorized account; never imply current authenticated access is verified.
