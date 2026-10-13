@@ -1,6 +1,6 @@
 # Device diagnostics and OS coverage
 
-**Status (2026-10-12): milestone 7 is planned, not implemented.** Milestone 6 TestFlight delivery is complete for the acceptance app, but this repository does not yet provide a Windows workflow for collecting/triaging device reports or a simulator lane for iOS 17. Treat this page as the design boundary and implementation checklist, not as a claim that diagnostics are already available.
+**Status (2026-10-12): milestone 7 is in progress.** Milestone 6 TestFlight delivery is complete for the acceptance app, but this repository does not yet provide a Windows workflow for collecting/triaging device reports or a simulator lane for iOS 17. Treat this page as the design boundary and implementation checklist, not as a claim that diagnostics are already available.
 
 ## What can be used now
 
@@ -53,3 +53,11 @@ Keep these reviewable and independently verifiable:
 - [Apple MetricKit updates](https://developer.apple.com/documentation/updates/metrickit)
 - [Apple App Store Connect Analytics](https://developer.apple.com/help/app-store-connect-analytics/)
 - [Pinned App Store Connect CLI 5.14.0 release](https://github.com/rorkai/App-Store-Connect-CLI/releases/tag/5.14.0), with local reference docs under the ignored `App-Store-Connect-CLI/commands/` tree.
+
+## Implemented symbol check and retention
+
+`python3 scripts/collect-release-symbols.py --archive <archive> --output <symbols.json>` checks the actual app/dSYM UUID and architecture pairs. `--ipa <package>` also verifies exported app identity and UUIDs. It currently supports the starter's single app, rejecting embedded extensions/frameworks until their checks are implemented. `--retain <new-directory>` copies only the matching dSYM and manifest, never an archive or signing assets.
+
+TestFlight preflight now checks archive symbols and publishes the small UUID manifest. Delivery checks both archive and validated IPA before upload. Its optional `retain_symbols` dispatch input retains symbols for 90 days, only in private repositories; an attempted public-repository retention fails before credential materialization. Repository readers can access these artifacts. Keep this input off for public repositories and select a separately reviewed private storage destination before public-app delivery when independent symbolication is required. This repository's public demo has no retained symbols from its earlier delivery. Retention cannot recover symbols for old builds.
+
+Private repository users can download `release-symbols-<configuration>-<build>` with `gh run download <run-id> --name <artifact-name>`. Preserve it in controlled storage before expiry. Retained symbols may reveal source paths and function names. Hosted Xcode 27 verification and a real exported-package check remain pending; local unsigned Xcode 26.6 archive evidence does not establish them.

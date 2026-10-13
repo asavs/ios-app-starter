@@ -52,3 +52,7 @@ After the implementation is reviewed, merged and its required checks pass:
 7. Install/open TestFlight on the iPhone, install that exact build and confirm the visible behavior change. Record the version/build, commit/run link, device OS and observed result without exposing account credentials or unrelated personal data. A physical iPhone checks that device's OS; it does not establish iOS 17 runtime compatibility unless the phone actually runs iOS 17.
 
 The demo's upload/processing/owner-reported installation and behavior loop completed milestone 6. Future app changes still need their own delivery and device acceptance. Keep App Store publication separate. The demo's distribution certificate expires February 8, 2027; the validator must continue rejecting expired assets rather than treating earlier signing evidence as current readiness.
+
+## Debug symbols
+
+Preflight verifies archive app/dSYM UUIDs; delivery additionally matches the exported IPA. See [symbol retention](device-diagnostics.md#implemented-symbol-check-and-retention). Optional `retain_symbols` keeps only dSYMs and their manifest for 90 days in private repositories. Public repositories reject this option; the default remains off. Older deliveries have no recoverable retained symbols in this repository.

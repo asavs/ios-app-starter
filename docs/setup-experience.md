@@ -373,3 +373,11 @@ Scheduled a small tool-download/reuse optimization before expanding milestone 5 
 
 
 - **Catch-up and GitHub limitation:** Corrected stale delivery/roadmap status, documented version/build and tester-text timing, and aligned README with the 20-minute CI step timeout. `gh issue create` (GraphQL) and REST issue creation both returned HTTP 401; public repository reads succeeded. Authentication for writes is unavailable in this session; no issues were created. Preserve the three [issue drafts](milestone-7-issue-drafts.md) for publication from the Windows agent's authenticated session. No credentials were requested or inspected. Documentation was reviewed against the workflow and source links; no runtime changes or tests were performed.
+
+## 2026-10-12 — Native Release symbols and reusable retention
+
+- **Observed tools:** This Mac selects Xcode 26.6 (17F113), iOS SDK 26.5, rather than hosted Xcode 27.0. Release settings already resolve `DEBUG_INFORMATION_FORMAT=dwarf-with-dsym`; no manifest/project change was necessary.
+- **Failure/fix:** Sandboxed Xcode settings inspection could not access native caches/services and produced empty settings. Authorized native inspection with a task-specific `/tmp` DerivedData path succeeded; no Apple credentials were used.
+- **Evidence:** A credential-free generic iOS Release archive succeeded. The new collector verified exact app/dSYM arm64 UUID equality and copied only the dSYM plus identity manifest into a new local retention directory. This confirms native symbol production locally, not the hosted Xcode 27 or signed export path.
+- **Implementation:** Preflight adds actual archive UUID checking. Delivery checks exported IPA identity/UUIDs too; optional retention uploads symbols only for 90 days in private repositories and blocks public retention before credential materialization. The public demo needs a reviewed private storage destination for independent symbolication; previous delivery symbols cannot be recovered by this change.
+- **Remaining gate:** Hosted preflight, exported-package checks and real Windows artifact inspection are pending. No simulator test, authenticated Apple request, signing, delivery, crash collection or symbolication was performed. Milestone 7 remains open.

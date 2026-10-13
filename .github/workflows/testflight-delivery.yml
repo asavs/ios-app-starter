@@ -16,6 +16,11 @@ on:
         type: boolean
         default: false
 
+      retain_symbols:
+        description: Retain debug symbols for 90 days (private repositories only)
+        type: boolean
+        default: false
+
 permissions:
   contents: read
 
@@ -74,6 +79,7 @@ jobs:
             "CURRENT_PROJECT_VERSION=$IOS_BUILD_NUMBER"
           python3 scripts/testflight-release.py verify --configuration "$RUNNER_TEMP/testflight-preflight/configuration.json" --plan "$RUNNER_TEMP/testflight-preflight/release-plan.json" --archive "$RUNNER_TEMP/testflight-preflight/StarterApp.xcarchive"
           IOS_SIGNING_CONFIGURATION_EXPORT="$RUNNER_TEMP/testflight-preflight/configuration.json" python3 -m unittest discover -s scripts/tests -p 'test_testflight.py' -v
+          python3 scripts/collect-release-symbols.py --archive "$RUNNER_TEMP/testflight-preflight/StarterApp.xcarchive" --output "$RUNNER_TEMP/testflight-preflight/symbols.json" --commit "$GITHUB_SHA"
           rm -rf "$RUNNER_TEMP/testflight-preflight/StarterApp.xcarchive"
           printf '## TestFlight preflight passed\n\nFresh native export, release tests, reviewed export options, upload-tool flags and an unsigned archive with planned build number passed. No credentials, authenticated reads, signing or upload were used.\n' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
@@ -83,6 +89,7 @@ jobs:
             ${{ runner.temp }}/testflight-preflight/configuration.json
             ${{ runner.temp }}/testflight-preflight/release-plan.json
             ${{ runner.temp }}/testflight-preflight/ExportOptions.plist
+            ${{ runner.temp }}/testflight-preflight/symbols.json
           retention-days: 7
   deliver:
     needs: preflight
@@ -101,6 +108,12 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
+
+      - name: Enforce private symbol retention
+        if: inputs.retain_symbols
+        env:
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
+        run: test "$REPOSITORY_PRIVATE" = true
 
       - name: Initialize runner report directory
         run: echo "IOS_TEST_OUTPUT_DIR=$RUNNER_TEMP/ios-testflight" >> "$GITHUB_ENV"
@@ -246,6 +259,26 @@ jobs:
           IPA_PATH: ${{ steps.distribution.outputs.ipa_path }}
         run: python3 scripts/testflight-release.py validate --configuration "$IOS_TEST_OUTPUT_DIR/configuration.json" --plan "$IOS_TEST_OUTPUT_DIR/release-plan.json" --archive "$RUNNER_TEMP/StarterApp.xcarchive" --ipa "$IPA_PATH" --output "$IOS_TEST_OUTPUT_DIR/delivery-validation.json"
 
+      - name: Verify release symbols and prepare optional retention
+        env:
+          RETAIN_SYMBOLS: ${{ inputs.retain_symbols }}
+          IPA_PATH: ${{ steps.distribution.outputs.ipa_path }}
+        run: |
+          SYMBOL_ARGS=()
+          if [ "$RETAIN_SYMBOLS" = true ]; then
+            SYMBOL_ARGS=(--retain "$RUNNER_TEMP/release-symbols")
+          fi
+          python3 scripts/collect-release-symbols.py --archive "$RUNNER_TEMP/StarterApp.xcarchive" --ipa "$IPA_PATH" --output "$IOS_TEST_OUTPUT_DIR/symbols.json" --commit "$GITHUB_SHA" "${SYMBOL_ARGS[@]}"
+
+      - name: Retain verified symbols before upload
+        if: inputs.retain_symbols
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: release-symbols-${{ inputs.configuration }}-${{ steps.release.outputs.build_number }}
+          path: ${{ runner.temp }}/release-symbols
+          retention-days: 90
+          if-no-files-found: error
+
       - name: Upload validated package to App Store Connect
         env:
           IPA_PATH: ${{ steps.distribution.outputs.ipa_path }}
@@ -293,6 +326,7 @@ jobs:
             ${{ runner.temp }}/ios-testflight/upload-report.json
             ${{ runner.temp }}/ios-testflight/processing-report.json
             ${{ runner.temp }}/ios-testflight/summary.md
+            ${{ runner.temp }}/ios-testflight/symbols.json
           retention-days: 7
           if-no-files-found: warn
 
@@ -300,4 +334,4 @@ jobs:
         if: always()
         run: |
           rm -f "$RUNNER_TEMP/asc-private-key.p8"
-          rm -rf "$RUNNER_TEMP/StarterApp.xcarchive" "$RUNNER_TEMP/ios-testflight/export" "$RUNNER_TEMP/ios-testflight/distribution-package" "$RUNNER_TEMP/signing-certificates"
+          rm -rf "$RUNNER_TEMP/StarterApp.xcarchive" "$RUNNER_TEMP/ios-testflight/export" "$RUNNER_TEMP/ios-testflight/distribution-package" "$RUNNER_TEMP/signing-certificates" "$RUNNER_TEMP/release-symbols"
