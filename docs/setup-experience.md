@@ -424,3 +424,9 @@ Scheduled a small tool-download/reuse optimization before expanding milestone 5 
 - **Implementation:** Added reusable test text, controlled TestFlight submission instructions, browser triage, sanitized issue format and fix/retest conventions in tester-feedback.md. Apple official guidance was checked on this date; no new tool/runtime dependency was introduced.
 - **Decision:** Continue tester feedback now. Windows tracks full development-round time alongside acceptance; functional reporting/iteration passes do not establish acceptable end-to-end speed. Owner-reported hour-long waits remain unexplained by individual run durations.
 - **Remaining acceptance:** Owner submits controlled feedback for the actual installed build; Windows reviews and commits sanitized context/results. No tests, account reads, metadata saves, messages, signing or uploads were performed to write the guide. No actual feedback submission is claimed.
+
+## 2026-10-13 — Correct feedback handoff to prefer CLI
+
+- **Correction:** Browser-first guidance unnecessarily imposed UI work despite pinned asc 5.14.0 feedback-list support. Added fixed portable read command using existing Reader isolation, opt-in credentials and pagination. No arbitrary command interface or new credential store was added.
+- **Output policy:** Console prints fixed status/count/scope only. Optional exclusive local private report outside checkout retains comments/device context/build relationship; excludes emails/screenshots/raw upstream output and is forbidden in Actions. Windows ACLs and sanitizing comment contents remain necessary.
+- **Remaining acceptance:** Windows verifies pinned executable flags and real feedback retrieval/build association with approved account reads, then records sanitized evidence. No tests or authenticated reads were run here; schema/runtime behavior remains pending acceptance.

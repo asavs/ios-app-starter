@@ -83,3 +83,7 @@ Existing authorization persists. Native implementation and credential-free revie
 ## Tester guide ready; Windows acceptance and devex tracking
 
 Mac prepared [tester-feedback.md](tester-feedback.md): focused test text, controlled submission, browser review, sanitized issue format and targeted retest. Windows now owns walking through it with the owner and committing exact-build evidence. No new build is needed for collection acceptance. Track the full edit-to-reviewed-evidence duration alongside the task; reporting/iteration features passed functional checks but the owner's hour-long development rounds remain unresolved. Do not pause feedback work for that investigation.
+
+## CLI-first feedback correction
+
+The Mac replaced browser-first review with `scripts/read-testflight-feedback.py`, backed by the pinned CLI and existing isolated Reader. Windows owns authenticated acceptance against the owner's submission, after explicit opt-in for the selected app. Use tester-feedback.md commands; privately inspect comments and verify build association, publish only a sanitized result. Browser interaction is reserved for visual inspection or documented API gaps. No live feedback read or command acceptance is claimed by implementation. Track devex during this acceptance.

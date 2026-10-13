@@ -1,6 +1,6 @@
 # Tester feedback loop
 
-Use TestFlight and App Store Connect first. This starter needs no feedback SDK, backend or custom portal. This guide implements the agreed milestone 7 instructions; a controlled real submission and review are still pending.
+Use TestFlight for submission and the pinned CLI for repeatable agent review. Use the App Store Connect browser for visual inspection or API gaps. This starter needs no feedback SDK, backend or custom portal. This guide implements the agreed milestone 7 instructions; a controlled real submission and review are still pending.
 
 ## Prepare the test
 
@@ -28,6 +28,17 @@ For future builds, replace these checks with the actual changed behavior and a f
 TestFlight sends feedback to Apple and the app developer. Feedback can include comments, screenshots and crash context; see [Apple's TestFlight overview](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview/).
 
 ## Windows review and triage
+
+Prefer the fixed read command below using the pinned installer and existing securely supplied credential fields documented in apple-setup.md. Do not log in again, broaden access or paste secrets into commands. Authenticated feedback reads require explicit owner opt-in for the selected app; this guide does not itself perform them.
+
+```powershell
+python scripts/install-asc.py
+python scripts/read-testflight-feedback.py --app-id <existing-app-id>
+python scripts/read-testflight-feedback.py --account --asc build/tools/asc.exe --app-id <existing-app-id> --private-report "$env:TEMP\starter-feedback.json"
+```
+
+The first read command is offline; the second retrieves paginated feedback. Use a new report filename and an existing controlled local directory. Console output contains only status/count/scope. Comments are saved only to the explicitly requested private report outside the checkout; email, screenshots/URLs and raw upstream output are excluded. Comments can still contain personal data: inspect privately and sanitize before publication. Windows file ACLs remain the user's responsibility. `--build-id` accepts Apple's resource ID, not `1.9.1`; without it the scope is all accessible feedback for the app. No result proves installed-build identity unless its build association is verified. Denied/unknown/skipped reads are not empty-success results. The command performs no metadata edits, deletes, invitations or notifications.
+
 
 Open the intended app in App Store Connect → TestFlight → Feedback. Inspect the submission for the selected version/build and distinguish screenshot/comment feedback from crash feedback. If it is not visible, record the time checked, filters and access outcome; an empty page does not establish that submission failed. Use [Apple's feedback guide](https://developer.apple.com/help/app-store-connect/test-a-beta-version/view-tester-feedback/).
 
