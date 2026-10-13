@@ -126,3 +126,5 @@ gh workflow run ios.yml --ref main --field configuration=starter-app-demo --fiel
 ```
 
 Use `verify_failure_reporting=true` only for the controlled expected-red report check. Artifact names still identify the selected app. New commits on a PR cancel that PR's obsolete iOS run; main and manual runs have separate groups and are not cancelled by this policy. This lane remains unsigned and credential-free.
+
+The workflow uploads `ios-test-results-<configuration>` for each configuration it runs, so a single-app dispatch produces one matching test artifact and `all` produces all three.
