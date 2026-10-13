@@ -80,6 +80,22 @@ jobs:
           python3 scripts/testflight-release.py verify --configuration "$RUNNER_TEMP/testflight-preflight/configuration.json" --plan "$RUNNER_TEMP/testflight-preflight/release-plan.json" --archive "$RUNNER_TEMP/testflight-preflight/StarterApp.xcarchive"
           IOS_SIGNING_CONFIGURATION_EXPORT="$RUNNER_TEMP/testflight-preflight/configuration.json" python3 -m unittest discover -s scripts/tests -p 'test_testflight.py' -v
           python3 scripts/collect-release-symbols.py --archive "$RUNNER_TEMP/testflight-preflight/StarterApp.xcarchive" --output "$RUNNER_TEMP/testflight-preflight/symbols.json" --commit "$GITHUB_SHA"
+          python3 - "$RUNNER_TEMP/testflight-preflight/symbols.json" "$GITHUB_STEP_SUMMARY" <<'PYSYMBOLS'
+          import json, os, sys
+          from pathlib import Path
+          report = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
+          run_url = '/'.join((os.environ['GITHUB_SERVER_URL'], os.environ['GITHUB_REPOSITORY'], 'actions', 'runs', os.environ['GITHUB_RUN_ID']))
+          lines = ['', '## Release symbol evidence', '',
+                   '- Toolchain: Xcode 27.0 / iOS SDK 27.0.',
+                   f"- App: `{report['bundleIdentifier']}` {report['marketingVersion']} ({report['buildNumber']})",
+                   '- Scope: unsigned archive app/dSYM UUID comparison; no exported IPA in preflight.',
+                   f"- UUID result: **{report['status']}**",
+                   f'- Artifacts: [testflight-preflight]({run_url})']
+          for image in report['images']:
+              lines.append(f"- `{image['uuid']}` ({image['architecture']})")
+          with Path(sys.argv[2]).open('a', encoding='utf-8') as summary:
+              summary.write('\n'.join(lines) + '\n')
+          PYSYMBOLS
           rm -rf "$RUNNER_TEMP/testflight-preflight/StarterApp.xcarchive"
           printf '## TestFlight preflight passed\n\nFresh native export, release tests, reviewed export options, upload-tool flags and an unsigned archive with planned build number passed. No credentials, authenticated reads, signing or upload were used.\n' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Confirm the simulator app actually contains the validated configuration."""
 import json
+import os
 from pathlib import Path
 import plistlib
 import sys
@@ -24,3 +25,22 @@ for key, value in checks.items():
         sys.exit(f"Built app {key}: expected {value!r}, found {actual.get(key)!r}")
 print('Built app configuration verified:\n' + json.dumps(checks, indent=2))
 configuration.with_name('built-app.json').write_text(json.dumps(checks, indent=2) + '\n')
+if os.environ.get('GITHUB_STEP_SUMMARY'):
+    runtime = os.environ.get('IOS_TEST_DESTINATION', 'not recorded')
+    artifact = os.environ.get('IOS_TEST_ARTIFACT_NAME', 'ios-test-results')
+    run_url = '/'.join((os.environ.get('GITHUB_SERVER_URL', ''),
+                        os.environ.get('GITHUB_REPOSITORY', ''), 'actions', 'runs',
+                        os.environ.get('GITHUB_RUN_ID', '')))
+    artifact_link = f'[{artifact}]({run_url})' if all((
+        os.environ.get('GITHUB_SERVER_URL'), os.environ.get('GITHUB_REPOSITORY'),
+        os.environ.get('GITHUB_RUN_ID'))) else f'**{artifact}**'
+    summary = (
+        '\n## Built app identity\n\n'
+        f"- Display name: `{checks['CFBundleDisplayName']}`\n"
+        f"- Bundle identifier: `{checks['CFBundleIdentifier']}`\n"
+        f"- Minimum OS: `{checks['MinimumOSVersion']}`; device families: `{checks['UIDeviceFamily']}`\n"
+        f'- Simulator destination: `{runtime}`\n'
+        f'- Test artifacts: {artifact_link}\n'
+    )
+    with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as output:
+        output.write(summary)

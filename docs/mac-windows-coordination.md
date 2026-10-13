@@ -46,11 +46,12 @@ Use this compact format for each task; update status from implementation to awai
 
 ## Current handoff
 
-- **Next task:** Order 1, consolidated CI evidence. Mac owns implementation; Windows owns adopter acceptance. Implementation has not started.
-- **Existing work:** `33ffe9e` introduced release symbol checks; [PR #22](https://github.com/asavs/ios-app-starter/pull/22) was reported reviewed/merged by Windows. The Mac must fetch and establish the current main revision before new implementation. Windows should record exact merge/run links and final reviewed simulator counts.
-- **Symbol evidence:** Windows reported hosted Xcode 27 archive/dSYM matching for demo build 1.0 (1.19.1), arm64 UUID `B3197B45-3C86-36B4-91A4-6EC891966551`. Exported-IPA comparison remains pending. No extra signing/upload should be dispatched just to complete reporting acceptance.
-- **Documentation:** `267cc12` records Windows review friction and the reporting backlog. This coordination document follows it; it must be pushed and reviewed as follow-up documentation if PR #22 is already merged.
-- **Windows next action:** Read this plan from its pushed branch, supply missing PR #22/post-merge evidence, and wait for the order 1 implementation handoff before exercising the new review command. Avoid starting a competing reporting implementation.
+- **Current task:** Order 1, consolidated CI evidence. Implementation is on `codex/ci-evidence-review`, based on merged main `09ad9d5`; shared handoff documentation commits were carried forward as `bb2d3d0` and `02f0cca`.
+- **Implemented:** `scripts/review_ci.py` combines PR checks, elapsed times, skip states, test/app/symbol evidence, artifact run links, checkout/head comparison, and workflows/artifacts for the exact merge commit. The iOS and TestFlight summaries now show compiled identity and archive/dSYM UUID evidence with run links. `README.md` documents the Windows command.
+- **Windows verification command:** `python scripts/review_ci.py --pr <number>`; use `--no-download` to review check states/links only and `--require-checkout-head` to fail when local `HEAD` differs from the PR head. It reads only selected sanitized fields from recognized artifacts and downloads them to a temporary directory.
+- **Evidence so far:** Full portable suite passed locally on Windows (54 tests, 3 platform/dependency skips). The command successfully reviewed [PR #22](https://github.com/asavs/ios-app-starter/pull/22) and exact merge `09ad9d5`, showing all three PR and main simulator reports as 1/1 passed on iOS 27.0, their app identities, archive UUID, and policy skips. Because this task branch is not PR #22's head, it correctly displayed `MISMATCH`. New branch PR checks and exact-head acceptance are still required.
+- **Known boundary:** TestFlight preflight's symbol report verifies archive app/dSYM matching. It does not verify an exported IPA. Do not dispatch signing or upload for reporting acceptance; `retain_symbols` remains off for this public repository.
+- **Next action:** Push the reviewable task branch, open its PR, run the portable Windows review command against that PR from the exact head checkout, and inspect its actual checks/artifacts. Merge only after this acceptance evidence is reviewed. Do not begin order 2 before order 1 acceptance is complete.
 
 ## Approval boundaries
 

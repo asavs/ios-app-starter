@@ -79,6 +79,16 @@ To check the complete failure-reporting path, manually run **iOS** with **verify
 
 If failure happens before the test command starts, inspect the failed setup step in the Actions logs; test artifacts may not exist yet. `.xcresult` is primarily useful with Xcode, while Markdown, JSON, and text logs can be read on Windows.
 
+## Review CI evidence from Windows
+
+With GitHub CLI authenticated and the repository checked out, review a pull request's hosted checks and sanitized artifacts together:
+
+```powershell
+python scripts/review_ci.py --pr 22
+```
+
+The command shows check conclusions and elapsed time, clearly labels skipped jobs, downloads recognized test and preflight artifacts to a temporary directory, and reports test counts, simulator runtime, compiled app identity, symbol UUIDs, and artifact links. It compares the current checkout commit with the PR head and prints `MATCH` or `MISMATCH`; use `--require-checkout-head` to fail when they differ, or `--no-download` to list checks and links only. A TestFlight preflight symbol match verifies the unsigned archive app/dSYM. Exported-IPA matching is reported only when a delivery artifact contains that check. The command reads only selected sanitized fields and never prints raw logs or account diagnostic contents.
+
 ## Reference tools
 
 For setup troubleshooting and agent handoff, see [the experience journal](docs/setup-experience.md) and [agent instructions](AGENTS.md). The journal records observed problems, fixes, test evidence, and remaining gaps; update it as development proceeds.
