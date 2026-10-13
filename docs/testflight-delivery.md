@@ -56,3 +56,7 @@ The demo's upload/processing/owner-reported installation and behavior loop compl
 ## Debug symbols
 
 Preflight verifies archive app/dSYM UUIDs; delivery additionally matches the exported IPA. See [symbol retention](device-diagnostics.md#implemented-symbol-check-and-retention). Optional `retain_symbols` keeps only dSYMs and their manifest for 90 days in private repositories. Public repositories reject this option; the default remains off. Older deliveries have no recoverable retained symbols in this repository.
+
+## Tester feedback
+
+Use [the tester feedback guide](tester-feedback.md) for focused What to Test notes, controlled submissions, Windows triage and targeted retest. Existing build access is sufficient to verify collection; do not upload merely for this exercise.

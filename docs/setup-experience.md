@@ -418,3 +418,9 @@ Scheduled a small tool-download/reuse optimization before expanding milestone 5 
 - **Owner decision:** Prioritize focused tester instructions and one controlled TestFlight feedback submission, browser review, sanitized task/issue triage and targeted retest. Separate private symbol infrastructure was judged premature before an observed investigation gap.
 - **Plan revision:** Shared order now continues from verified reporting/iteration to the tester loop, then OS coverage. CLI feedback automation, independent symbol storage/symbolication and performance collection are conditional improvements. Existing UUID checks stay useful; exported-IPA matching remains pending the next authorized delivery.
 - **Evidence/limits:** Preserved Windows' pushed order 2 acceptance record in the coordination document. This revision is documentation only; no tests, account reads, metadata changes, tester messages or uploads were performed. Next is writing reusable tester instructions, followed by Windows/owner acceptance with controlled feedback.
+
+## 2026-10-13 — Tester feedback guide and parallel devex tracking
+
+- **Implementation:** Added reusable test text, controlled TestFlight submission instructions, browser triage, sanitized issue format and fix/retest conventions in tester-feedback.md. Apple official guidance was checked on this date; no new tool/runtime dependency was introduced.
+- **Decision:** Continue tester feedback now. Windows tracks full development-round time alongside acceptance; functional reporting/iteration passes do not establish acceptable end-to-end speed. Owner-reported hour-long waits remain unexplained by individual run durations.
+- **Remaining acceptance:** Owner submits controlled feedback for the actual installed build; Windows reviews and commits sanitized context/results. No tests, account reads, metadata saves, messages, signing or uploads were performed to write the guide. No actual feedback submission is claimed.

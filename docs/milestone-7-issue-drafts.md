@@ -55,4 +55,4 @@ This reporting enhancement is separate from milestone 7's device-diagnostics acc
 - Cancel superseded PR runs with event-aware concurrency; preserve main verification and protected delivery serialization.
 - Measure cold/warm costs before changing build-output caching or eliminating repeated preflights. Exact merge-commit simulator evidence remains required.
 
-Acceptance: inspect successful and deliberately failed evidence from Windows, verify skip/scope labels and checkout mismatch detection, and show reduced review friction without weakening required coverage. No such consolidated review command is implemented yet.
+Acceptance: inspect successful and deliberately failed evidence from Windows, verify skip/scope labels and checkout mismatch detection, and show reduced review friction without weakening required coverage. The consolidated review command and targeted lane have passed functional Windows acceptance (PRs #23/#24). End-to-end development speed remains unresolved; Windows tracks queue, execution, review and handoff time during the tester feedback task.
