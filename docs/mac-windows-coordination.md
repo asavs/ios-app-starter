@@ -57,3 +57,12 @@ Use this compact format for each task; update status from implementation to awai
 ## Approval boundaries
 
 Existing authorization persists. Native implementation and credential-free review can proceed. Present a concrete scope before new authenticated Apple reads, private symbol-storage access changes or delivery. Owner compliance decisions and iPhone acceptance remain human steps. Keep PR builds unsigned and secretless; never change repository visibility to enable retention. Performance collection must not impose a backend on the basic starter.
+
+## Order 2 implementation handoff (2026-10-13)
+
+- **Prerequisite verified:** Windows' pushed handoff on `codex/ci-evidence-review` records PR #23 exact merge `dd583f0` and successful artifact review. Mac fetched and read it before beginning this task.
+- **Owner/branch:** Mac implementation on `codex/targeted-ios-iteration`, based on `dd583f0`; Windows owns hosted dispatch and adopter acceptance.
+- **Changes:** `ios.yml` adds a manual app choice (default all), keeps all three configurations on PR/main, and uses PR-number concurrency to cancel obsolete PR runs. Main/manual groups use unique run IDs. README supplies the PowerShell dispatch command.
+- **Windows acceptance:** Open the PR and inspect the full three-app artifacts. After review/merge and exact-main checks, dispatch `gh workflow run ios.yml --ref main --field configuration=starter-app-demo --field verify_failure_reporting=false`; inspect exactly one simulator job and its named artifact, actual counts/runtime/identity. Repeat with the controlled failure probe to verify expected-red reporting. Demonstrate an obsolete PR run is cancelled by a newer commit without cancelling main/manual runs. Check issue #20 before posting completion.
+- **Current evidence:** Workflow source reviewed; hosted dispatch/cancellation evidence pending. No local tests, account reads, signing or delivery performed. Keep order 2 open until Windows records run links and artifact findings.
+- **Next after acceptance:** Order 3, complete private symbol storage for the public demo; no visibility or storage-access changes are authorized by this iteration task.

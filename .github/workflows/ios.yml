@@ -6,12 +6,22 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
+      configuration:
+        description: App to test manually; PR and main always test all three
+        type: choice
+        default: all
+        options: [all, starter, pocket-notes, starter-app-demo]
       verify_failure_reporting:
         description: 'Deliberately fail the smoke test to check reports (expected red run)'
         type: boolean
         default: false
 
 run-name: ${{ github.event_name == 'workflow_dispatch' && inputs.verify_failure_reporting && 'iOS (deliberate test failure)' || 'iOS' }}
+
+# PR updates replace obsolete runs; main/manual runs get unique groups.
+concurrency:
+  group: ios-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -21,13 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - configuration: starter
-            spec: project.yml
-          - configuration: pocket-notes
-            spec: examples/pocket-notes.yml
-          - configuration: starter-app-demo
-            spec: examples/starter-app-demo.yml
+        configuration: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.configuration != 'all' && format('["{0}"]', inputs.configuration) || '["starter","pocket-notes","starter-app-demo"]') }}
     runs-on: xcode-27
     timeout-minutes: 30
     env:
@@ -56,7 +60,7 @@ jobs:
 
       - name: Generate Xcode project
         env:
-          IOS_PROJECT_SPEC: ${{ matrix.spec }}
+          IOS_PROJECT_SPEC: ${{ matrix.configuration == 'starter' && 'project.yml' || matrix.configuration == 'pocket-notes' && 'examples/pocket-notes.yml' || 'examples/starter-app-demo.yml' }}
         run: bash scripts/generate-project.sh
 
       - name: Check resolved app configuration
