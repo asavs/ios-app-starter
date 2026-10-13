@@ -146,6 +146,8 @@ def run_id_from_url(url):
 def elapsed(started_at, completed_at):
     if not started_at or not completed_at:
         return None
+    if started_at.startswith("0001-01-01") or completed_at.startswith("0001-01-01"):
+        return None
     try:
         start = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
         end = datetime.fromisoformat(completed_at.replace("Z", "+00:00"))
@@ -235,7 +237,10 @@ def render(report):
 
     lines.extend(["", "## Evidence artifacts", ""])
     if not report["artifacts"]:
-        lines.append("No matching, unexpired artifacts were found.")
+        pending = any((check.get("status") or "").lower() in ("queued", "in_progress", "pending")
+                      for check in report["checks"])
+        lines.append("No matching artifacts are available yet; checks are still running."
+                     if pending else "No matching, unexpired artifacts were found.")
     for artifact in report["artifacts"]:
         lines.append(f"### [{artifact['name']}]({artifact['runUrl']}) - {artifact['stage']}")
         if artifact.get("downloadSkipped"):

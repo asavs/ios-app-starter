@@ -86,6 +86,7 @@ class CIReviewTests(unittest.TestCase):
             review_ci.elapsed("2026-10-12T10:00:00Z", "2026-10-12T10:08:31Z"),
             "8m 31s",
         )
+        self.assertIsNone(review_ci.elapsed("2026-10-12T10:00:00Z", "0001-01-01T00:00:00Z"))
 
     def test_artifact_listing_rejects_unsafe_names(self):
         listing = {"artifacts": [
