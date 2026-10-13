@@ -71,7 +71,7 @@ With Xcode 27.0 and the iOS 27.0 simulator installed, run the same smoke test as
 bash scripts/test-ios.sh
 ```
 
-The script prints its report directory under `build/test-results/`. Set `IOS_TEST_DESTINATION` to use another installed simulator, and `IOS_TEST_OUTPUT_DIR` to choose the reports directory. A nonzero build or test result remains a nonzero command exit even though output is captured through `tee`. A successful command with no verified passing tests is also rejected. Individual tests have a 300-second execution allowance; simulator startup has a five-minute step limit, build/test has a ten-minute step limit, and the job has a 30-minute overall limit. Adjust these workflow limits deliberately as the app grows. Routine CI skips verbose sysdiagnose collection after failures to avoid delaying reports. Set `IOS_TEST_DIAGNOSTICS=on-failure` for a dedicated diagnostic run if needed.
+The script prints its report directory under `build/test-results/`. Set `IOS_TEST_DESTINATION` to use another installed simulator, and `IOS_TEST_OUTPUT_DIR` to choose the reports directory. A nonzero build or test result remains a nonzero command exit even though output is captured through `tee`. A successful command with no verified passing tests is also rejected. Individual tests have a 300-second execution allowance; simulator startup has a five-minute step limit, build/test has a 20-minute step limit, and the job has a 30-minute overall limit. Adjust these workflow limits deliberately as the app grows. Routine CI skips verbose sysdiagnose collection after failures to avoid delaying reports. Set `IOS_TEST_DIAGNOSTICS=on-failure` for a dedicated diagnostic run if needed.
 
 ## Check failure reports
 
@@ -93,7 +93,7 @@ Follow [the Windows-first Apple setup guide](docs/apple-setup.md) for membership
 python scripts/apple-doctor.py
 ```
 
-The **Apple diagnostics** workflow tests the portable commands on Windows, Linux and macOS. A manual run lets you choose `starter`, `pocket-notes` or `starter-app-demo` and exports that manifest's current Xcode configuration. Edit `project.yml` and choose `starter` for your own app. Optional account reads consume the same run's export and use a separate `apple-credentials` environment on `main`. The job summary identifies skipped, failed or completed account checks; a green diagnostic does not establish signing readiness. Demo signing passed milestone 5. Follow [TestFlight delivery](docs/testflight-delivery.md) for milestone 6; upload acceptance and actual iPhone installation are separate checks.
+The **Apple diagnostics** workflow tests the portable commands on Windows, Linux and macOS. A manual run lets you choose `starter`, `pocket-notes` or `starter-app-demo` and exports that manifest's current Xcode configuration. Edit `project.yml` and choose `starter` for your own app. Optional account reads consume the same run's export and use a separate `apple-credentials` environment on `main`. The job summary identifies skipped, failed or completed account checks; a green diagnostic does not establish signing readiness. Demo signing passed milestone 5. Follow [TestFlight delivery](docs/testflight-delivery.md) for workflow details; the demo's milestone 6 upload and owner-reported iPhone acceptance completed on 2026-10-12.
 
 The CLI integration downloads pinned, checksum-verified `asc` 5.14.0 release binaries when requested. No source build, Go installation, cloud Mac account or Apple secret is needed for the ordinary diagnostic checks.
 
@@ -102,3 +102,7 @@ The CLI integration downloads pinned, checksum-verified `asc` 5.14.0 release bin
 Actions caches only the public, pinned XcodeGen archive and `asc` release downloads under `build/tool-downloads/`. Cache keys separate operating system, architecture, version and the scripts containing the pinned digests. Every use rechecks SHA-256; a missing or invalid cache downloads and verifies the pinned asset again. XcodeGen extracts into a clean temporary directory, so repeated configuration probes reuse the archive without reusing mutable executables.
 
 The scripts also reuse verified downloads within a job or local checkout. Project generation requires Python 3, curl and unzip alongside the existing Mac tools. Override `IOS_XCODEGEN_CACHE_DIR` or the CLI installer's `--cache-dir` for an isolated download cache. The account job restores public tool downloads but does not save caches. Credentials, profiles, compiler output, signed archives and test reports are outside these cache paths. Cache corruption that recurs after restore may require deleting the affected Actions cache entry because existing entries are immutable.
+
+## Device diagnostics and compatibility
+
+Milestone 7 is next. See [the diagnostics plan](docs/device-diagnostics.md) for TestFlight feedback, exact-build symbols, Windows-accessible investigation and OS coverage gaps. These diagnostic commands and symbol-retention workflows are planned; current simulator coverage remains iOS 27.0 only.
