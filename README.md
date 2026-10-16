@@ -115,7 +115,9 @@ The scripts also reuse verified downloads within a job or local checkout. Projec
 
 ## Device diagnostics and compatibility
 
-Milestone 7 is next. See [the diagnostics plan](docs/device-diagnostics.md) for TestFlight feedback, exact-build symbols, Windows-accessible investigation and OS coverage gaps. These diagnostic commands and symbol-retention workflows are planned; current simulator coverage remains iOS 27.0 only.
+Milestone 7 is in progress. See [the diagnostics plan](docs/device-diagnostics.md) for the design boundary and [the tester feedback guide](docs/tester-feedback.md) for the verified loop: a tester submits TestFlight feedback, Windows reads it with the fixed `scripts/read-testflight-feedback.py` command or the App Store Connect browser, and actionable items become sanitized GitHub issues. TestFlight preflight verifies archive app/dSYM UUIDs; private-repository symbol retention is optional and off for this public template. The manual **iOS runtime inventory** workflow reports a hosted image's actual Xcode, SDK and simulator runtimes without building anything.
+
+Simulator test coverage remains iOS 27.0 only. Hosted inventory found no iOS 17 runtime on the `xcode-27` or `macos-15` images; a separate manual Xcode 16.4 / iOS 18.5 probe is pending acceptance. The iOS 17.0 minimum is a configured deployment target, not verified runtime compatibility. [Issue #29](https://github.com/asavs/ios-app-starter/issues/29) tracks the remaining gate.
 
 ## Faster manual iteration
 
