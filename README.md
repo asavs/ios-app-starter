@@ -73,11 +73,21 @@ bash scripts/test-ios.sh
 
 The script prints its report directory under `build/test-results/`. Set `IOS_TEST_DESTINATION` to use another installed simulator, and `IOS_TEST_OUTPUT_DIR` to choose the reports directory. A nonzero build or test result remains a nonzero command exit even though output is captured through `tee`. A successful command with no verified passing tests is also rejected. Individual tests have a 300-second execution allowance; simulator startup has a five-minute step limit, build/test has a 20-minute step limit, and the job has a 30-minute overall limit. Adjust these workflow limits deliberately as the app grows. Routine CI skips verbose sysdiagnose collection after failures to avoid delaying reports. Set `IOS_TEST_DIAGNOSTICS=on-failure` for a dedicated diagnostic run if needed.
 
+### Run on your iPhone from a Mac
+
+With an iPhone connected over USB or Wi-Fi (Developer Mode on, computer trusted), build a Debug app, install it and launch it without a commit, upload or TestFlight:
+
+```sh
+IOS_CONFIGURATION=starter-app-demo IOS_DEVELOPMENT_TEAM=<your 10-character team ID> bash scripts/run-on-device.sh
+```
+
+The script regenerates the project, picks the single connected paired iPhone or iPad (set `IOS_DEVICE` when several are paired), builds with Xcode automatic signing for the given team, installs with `devicectl`, launches the app, and prints the exact relaunch command. `IOS_DEVICE_CONSOLE=1` streams the app's console; `IOS_RUN_ON_DEVICE_DRY_RUN=1` prints every command without running them, which is how an agent previews the run. First use with a team lets Xcode create or refresh a development profile for that team and device, an account-side change you should expect. The default `com.example.StarterApp` identifier may not be provisionable under your team because bundle identifiers are global, so use the demo configuration or your own identifier. Logs and build products go to the gitignored `build/run-on-device/`.
+
 ## Check failure reports
 
 To check the complete failure-reporting path, manually run **iOS** with **verify_failure_reporting** selected. This injects an explicit failure after the welcome-screen assertion in the runner's temporary checkout, deliberately produces a failed test, and should make that run red. Inspect the summary for the test name and assertion failure; download the artifact to see the same details and complete logs. Normal push and PR runs never enable the probe. It does not upload an app or change committed source.
 
-If failure happens before the test command starts, inspect the failed setup step in the Actions logs; test artifacts may not exist yet. `.xcresult` is primarily useful with Xcode, while Markdown, JSON, and text logs can be read on Windows.
+Every test artifact contains `summary.md` and `failures.json` with the same facts: a stage (`passed`, `tests_failed`, `build_failed`, `setup_failed` or `unverified`), each failed test with its file, line and message, compiler errors with file, line and column, and the test-produced screenshots under `attachments/` (the smoke test always attaches `welcome-screen`). Agents read `failures.json`; people read `summary.md`, which is also the job summary. If failure happens before the test command starts, inspect the failed setup step in the Actions logs; test artifacts may not exist yet. `.xcresult` is primarily useful with Xcode, while Markdown, JSON, and text logs can be read on Windows.
 
 ## Review CI evidence from Windows
 
@@ -87,7 +97,14 @@ With GitHub CLI authenticated and the repository checked out, review a pull requ
 python scripts/review_ci.py --pr 123
 ```
 
-Replace `123` with the pull request number. The command shows check conclusions and elapsed time, clearly labels skipped jobs, downloads recognized test and preflight artifacts to a temporary directory, and reports test counts, simulator runtime, compiled app identity, symbol UUIDs, and artifact links. For merged pull requests it also finds workflows for the exact merge commit. It compares the current checkout commit with the PR head and prints `MATCH` or `MISMATCH`; use `--require-checkout-head` to fail when they differ, or `--no-download` to list checks and links only. A TestFlight preflight symbol match verifies the unsigned archive app/dSYM. Exported-IPA matching is reported only when a delivery artifact contains that check. The command reads only selected sanitized fields and never prints raw logs or account diagnostic contents.
+Or review one run, or the newest run on your branch, the same way:
+
+```powershell
+python scripts/review_ci.py --run 38974328806
+python scripts/review_ci.py --latest --workflow iOS --no-download
+```
+
+`--run` shows the workflow, event, head, each job's conclusion and elapsed time, and the recognized artifacts; for the compatibility matrix it prints the verified runtimes and every lane's status, device, toolchain and counts. `--latest` picks the newest run for the checkout branch (`--branch` to override, `--workflow` to filter) and says which run it chose. Replace `123` with the pull request number. The command shows check conclusions and elapsed time, clearly labels skipped jobs, downloads recognized test and preflight artifacts to a temporary directory, and reports test counts, simulator runtime, compiled app identity, symbol UUIDs, and artifact links. For merged pull requests it also finds workflows for the exact merge commit. It compares the current checkout commit with the PR head and prints `MATCH` or `MISMATCH`; use `--require-checkout-head` to fail when they differ, or `--no-download` to list checks and links only. A TestFlight preflight symbol match verifies the unsigned archive app/dSYM. Exported-IPA matching is reported only when a delivery artifact contains that check. The command reads only selected sanitized fields and never prints raw logs or account diagnostic contents.
 
 ## Reference tools
 

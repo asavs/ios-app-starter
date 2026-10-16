@@ -18,3 +18,6 @@ AuthKey_*.p8
 # Apple API credentials and local CLI profiles
 *.p8
 .asc/
+
+# Local agent-harness state (permissions, worktrees)
+.claude/
