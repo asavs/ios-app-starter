@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Review a pull request's hosted CI evidence from Windows using GitHub CLI."""
+"""Review hosted CI evidence from Windows using GitHub CLI.
+
+Modes: ``--pr <number>`` reviews a pull request's checks, merge-commit workflows and
+artifacts; ``--run <id>`` reviews one workflow run's jobs and artifacts; ``--latest``
+picks the most recent run for a branch (default: the current checkout branch),
+optionally filtered by workflow name, and reviews it like ``--run``.
+"""
 
 import argparse
 import json
@@ -14,16 +20,24 @@ from datetime import datetime
 ROOT = Path(__file__).resolve().parents[1]
 ARTIFACT_PREFIXES = (
     "ios-test-results-",
+    "ios-compat-",
     "testflight-preflight",
     "testflight-delivery-",
     "signing-preflight",
+    "compatibility-report",
 )
 RUN_ID_RE = re.compile(r"/actions/runs/(\d+)")
+RUN_ID_ARG_RE = re.compile(r"\d{1,20}\Z")
 ARTIFACT_NAME_RE = re.compile(
-    r"(?:ios-test-results-[a-z0-9-]+|testflight-preflight|"
-    r"testflight-delivery-[a-z0-9-]+|signing-preflight)\Z", re.IGNORECASE
+    r"(?:ios-test-results-[a-z0-9-]+|ios-compat-[a-z0-9-]+|testflight-preflight|"
+    r"testflight-delivery-[a-z0-9-]+|signing-preflight|compatibility-report)\Z", re.IGNORECASE
 )
 TEST_COUNTS_RE = re.compile(r"\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|")
+LANE_FIELDS = ("lane", "runtime_name", "runtime_version", "device", "xcode_version",
+               "sdk", "runner", "status", "total", "passed", "failed", "skipped")
+LATEST_RUN_LIMIT = 20
+PENDING_STATUSES = ("queued", "in_progress", "pending", "waiting", "requested")
+RUN_LIST_FIELDS = "databaseId,workflowName,event,headSha,status,conclusion,createdAt,url,attempt,number"
 
 
 class ReviewError(RuntimeError):
@@ -51,6 +65,15 @@ def git(args, *, cwd=ROOT, check=True):
         message = process.stderr.strip().splitlines()
         raise ReviewError(message[-1] if message else "Git command failed.")
     return process
+
+
+def gh_json(args, description):
+    """Run a GitHub CLI command and parse its JSON output."""
+    result = gh(args)
+    try:
+        return json.loads(result.stdout)
+    except ValueError as error:
+        raise ReviewError(f"GitHub returned an unreadable {description}.") from error
 
 
 def load_json_file(path):
@@ -84,9 +107,50 @@ def parse_test_summary(path):
             "failed": "## iOS tests: failed" in content}
 
 
+def lane_fields(record):
+    """Keep only the reviewed, non-sensitive fields of a compatibility lane record."""
+    return {key: record.get(key) for key in LANE_FIELDS}
+
+
+def compatibility_fields(report):
+    lanes = report.get("lanes", [])
+    runtimes = report.get("verifiedRuntimes", [])
+    return {
+        "verifiedRuntimes": [str(item) for item in runtimes] if isinstance(runtimes, list) else [],
+        "allPassed": bool(report.get("allPassed")),
+        "lanes": [lane_fields(lane) for lane in lanes if isinstance(lane, dict)]
+        if isinstance(lanes, list) else [],
+    }
+
+
+def parse_compatibility_markdown(path):
+    """Fallback when only compatibility-report.md is present: read the verified-runtimes line."""
+    try:
+        content = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    for line in content.splitlines():
+        if line.startswith("Verified runtimes:"):
+            value = line.partition(":")[2].strip()
+            runtimes = [] if value == "none" else [item.strip() for item in value.split(",") if item.strip()]
+            return {"verifiedRuntimes": runtimes, "allPassed": "All planned lanes passed." in content,
+                    "lanes": []}
+    return None
+
+
+def empty_evidence(artifact_name):
+    return {"name": artifact_name, "apps": [], "tests": [], "symbols": [], "lanes": [],
+            "compatibility": None}
+
+
+def has_evidence(evidence):
+    return bool(evidence["apps"] or evidence["tests"] or evidence["symbols"]
+                or evidence["lanes"] or evidence["compatibility"])
+
+
 def artifact_evidence(directory, artifact_name):
     """Extract only reviewed, sanitized fields from downloaded artifacts."""
-    evidence = {"name": artifact_name, "apps": [], "tests": [], "symbols": []}
+    evidence = empty_evidence(artifact_name)
     for path in directory.rglob("summary.md"):
         summary = parse_test_summary(path)
         if summary:
@@ -135,6 +199,22 @@ def artifact_evidence(directory, artifact_name):
             ] if isinstance(images, list) else [],
             "ipaCompared": artifact_name.startswith("testflight-delivery-"),
         })
+
+    for path in directory.rglob("lane-result.json"):
+        record = load_json_file(path)
+        if isinstance(record, dict):
+            evidence["lanes"].append(lane_fields(record))
+
+    for path in directory.rglob("compatibility-report.json"):
+        report = load_json_file(path)
+        if isinstance(report, dict):
+            evidence["compatibility"] = compatibility_fields(report)
+            break
+    if evidence["compatibility"] is None:
+        for path in directory.rglob("compatibility-report.md"):
+            evidence["compatibility"] = parse_compatibility_markdown(path)
+            if evidence["compatibility"]:
+                break
     return evidence
 
 
@@ -157,12 +237,25 @@ def elapsed(started_at, completed_at):
     return f"{seconds // 60}m {seconds % 60}s"
 
 
+def conclusion_label(record):
+    """Label skipped checks/jobs as policy skips so they never read as passes."""
+    conclusion = record.get("conclusion") or record.get("status") or "unknown"
+    return "policy/job skip" if str(conclusion).lower() == "skipped" else str(conclusion)
+
+
+def job_lines(jobs, indent=""):
+    lines = []
+    for job in jobs:
+        if not isinstance(job, dict):
+            continue
+        duration = elapsed(job.get("started_at"), job.get("completed_at"))
+        job_time = f"; {duration}" if duration else ""
+        lines.append(f"{indent}- {conclusion_label(job)} - {job.get('name')}{job_time}")
+    return lines
+
+
 def artifacts_for_run(repo, run_id):
-    result = gh(["api", f"repos/{repo}/actions/runs/{run_id}/artifacts"])
-    try:
-        body = json.loads(result.stdout)
-    except ValueError as error:
-        raise ReviewError("GitHub returned an unreadable artifact list.") from error
+    body = gh_json(["api", f"repos/{repo}/actions/runs/{run_id}/artifacts"], "artifact list")
     artifacts = body.get("artifacts", []) if isinstance(body, dict) else []
     return [item for item in artifacts if isinstance(item, dict)
             and isinstance(item.get("name"), str)
@@ -173,13 +266,13 @@ def artifacts_for_run(repo, run_id):
 
 def run_artifacts(repo, run_id, run_url, stage, temp_root, download):
     records = []
-    for artifact in artifacts_for_run(repo, run_id):
+    for artifact in sorted(artifacts_for_run(repo, run_id), key=lambda item: item["name"]):
         name = artifact["name"]
         record = {
             "name": name,
             "runUrl": run_url,
             "stage": stage,
-            "evidence": {"name": name, "apps": [], "tests": [], "symbols": []},
+            "evidence": empty_evidence(name),
         }
         if download:
             destination = temp_root / f"{run_id}-{name}"
@@ -191,7 +284,105 @@ def run_artifacts(repo, run_id, run_url, stage, temp_root, download):
     return records
 
 
-def render(report):
+def fetch_run_jobs(repo, run_id):
+    body = gh_json(["api", f"repos/{repo}/actions/runs/{run_id}/jobs?per_page=100"],
+                   "workflow job list")
+    jobs = body.get("jobs", []) if isinstance(body, dict) else []
+    return [job for job in jobs if isinstance(job, dict)]
+
+
+def fetch_run(repo, run_id):
+    run = gh_json(["api", f"repos/{repo}/actions/runs/{run_id}"], "workflow run")
+    if not isinstance(run, dict) or "id" not in run:
+        raise ReviewError(f"Workflow run {run_id} was not found in {repo}.")
+    run["jobs"] = fetch_run_jobs(repo, run_id)
+    return run
+
+
+def repo_name():
+    return gh(["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]).stdout.strip()
+
+
+def checkout_state():
+    checkout = git(["rev-parse", "HEAD"]).stdout.strip()
+    branch = git(["branch", "--show-current"], check=False).stdout.strip()
+    return checkout, branch
+
+
+def lane_text(lane):
+    counts = [lane.get(key) for key in ("total", "passed", "failed", "skipped")]
+    if all(isinstance(value, int) for value in counts):
+        total, passed, failed, skipped = counts
+        count_text = f"; tests {passed}/{total} passed, {failed} failed, {skipped} skipped"
+    else:
+        count_text = "; test counts unavailable"
+    return (f"**{lane.get('status') or 'unknown'}** - {lane.get('lane') or 'lane'}: "
+            f"{lane.get('runtime_name') or 'unknown runtime'} ({lane.get('runtime_version') or '?'}) "
+            f"on `{lane.get('device') or 'unknown device'}`; Xcode {lane.get('xcode_version') or '?'} / "
+            f"SDK {lane.get('sdk') or '?'}; runner `{lane.get('runner') or '?'}`{count_text}")
+
+
+def artifact_lines(artifacts, pending):
+    lines = ["## Evidence artifacts", ""]
+    if not artifacts:
+        lines.append("No matching artifacts are available yet; the run is still in progress."
+                     if pending else "No matching, unexpired artifacts were found.")
+    for artifact in artifacts:
+        lines.append(f"### [{artifact['name']}]({artifact['runUrl']}) - {artifact['stage']}")
+        if artifact.get("downloadSkipped"):
+            lines.append("- Download skipped by `--no-download`.")
+        evidence = artifact["evidence"]
+        for app in evidence["apps"]:
+            lines.append(
+                f"- App: `{app.get('displayName') or 'unknown'}` - "
+                f"`{app.get('bundle') or 'unknown'}`; minimum OS "
+                f"`{app.get('minimumOS') or 'unknown'}`; device families "
+                f"`{app.get('deviceFamilies') or 'unknown'}`"
+            )
+        for test in evidence["tests"]:
+            counts = test["counts"]
+            if counts:
+                total, passed, failed, skipped = counts
+                lines.append(
+                    f"- Tests: **{passed}/{total} passed**, {failed} failed, "
+                    f"{skipped} skipped; runtime `{test['runtime'] or 'not recorded'}`; "
+                    f"report {'passed' if test['passed'] else 'failed/unknown'}"
+                )
+            else:
+                lines.append("- Test counts unavailable; inspect the linked run artifacts/logs.")
+        for symbol in evidence["symbols"]:
+            scope = "app/dSYM and exported IPA" if symbol["ipaCompared"] else "archive app/dSYM"
+            lines.append(
+                f"- Symbols: **{symbol.get('status', 'unknown')}** ({scope}); "
+                f"`{symbol.get('bundle') or 'unknown'}` {symbol.get('version') or ''} "
+                f"({symbol.get('build') or 'unknown'}); commit `{symbol.get('commit') or 'unknown'}`"
+            )
+            for image in symbol["images"]:
+                lines.append(f"  - `{image.get('uuid', 'unknown')}` ({image.get('architecture', 'unknown')})")
+        for lane in evidence["lanes"]:
+            lines.append(f"- Lane: {lane_text(lane)}")
+        compatibility = evidence.get("compatibility")
+        if compatibility:
+            runtimes = ", ".join(compatibility["verifiedRuntimes"]) or "none"
+            outcome = ("all planned lanes passed" if compatibility["allPassed"]
+                       else "some planned lanes did not pass; only verified runtimes count")
+            lines.append(f"- Compatibility: verified runtimes **{runtimes}**; {outcome}")
+            for lane in compatibility["lanes"]:
+                lines.append(f"  - {lane_text(lane)}")
+        if not artifact.get("downloadSkipped") and not has_evidence(evidence):
+            lines.append("- No recognized sanitized summary was found in this artifact.")
+    return lines
+
+
+FOOTER = (
+    "Skipped checks are displayed separately and do not count as passing. "
+    "A symbol match from TestFlight preflight covers the archive app/dSYM; "
+    "only a delivery artifact establishes the exported-IPA comparison. "
+    "Compatibility lanes verify simulator runtimes only; an unverified or missing lane establishes nothing."
+)
+
+
+def render_pr(report):
     lines = [
         f"# CI evidence for PR #{report['number']}",
         "",
@@ -204,12 +395,10 @@ def render(report):
         "",
     ]
     for check in report["checks"]:
-        conclusion = check.get("conclusion") or check.get("status") or "unknown"
-        label = "policy/job skip" if conclusion.lower() == "skipped" else conclusion
         run_link = f" ({check['detailsUrl']})" if check.get("detailsUrl") else ""
         duration = elapsed(check.get("startedAt"), check.get("completedAt"))
         elapsed_text = f"; {duration}" if duration else ""
-        lines.append(f"- **{label}** - {check.get('workflowName') or 'check'} / "
+        lines.append(f"- **{conclusion_label(check)}** - {check.get('workflowName') or 'check'} / "
                      f"{check.get('name', 'unnamed check')}{elapsed_text}{run_link}")
     if not report["checks"]:
         lines.append("- No checks are currently reported.")
@@ -226,78 +415,57 @@ def render(report):
             duration_text = f"; {run_duration}" if run_duration else ""
             lines.append(f"- **{run.get('conclusion') or run.get('status')}** - "
                          f"{run.get('name')} ({run.get('html_url')}){duration_text}")
-            for job in run.get("jobs", []):
-                conclusion = job.get("conclusion") or job.get("status") or "unknown"
-                label = "policy/job skip" if conclusion.lower() == "skipped" else conclusion
-                job_duration = elapsed(job.get("started_at"), job.get("completed_at"))
-                job_time = f"; {job_duration}" if job_duration else ""
-                lines.append(f"  - {label} - {job.get('name')}{job_time}")
-        if report["mainRuns"]:
-            lines.append("Post-merge workflow/artifact links appear below with stage `main merge`.")
+            lines.extend(job_lines(run.get("jobs", []), indent="  "))
+        lines.append("Post-merge workflow/artifact links appear below with stage `main merge`.")
 
-    lines.extend(["", "## Evidence artifacts", ""])
-    if not report["artifacts"]:
-        pending = any((check.get("status") or "").lower() in ("queued", "in_progress", "pending")
-                      for check in report["checks"])
-        lines.append("No matching artifacts are available yet; checks are still running."
-                     if pending else "No matching, unexpired artifacts were found.")
-    for artifact in report["artifacts"]:
-        lines.append(f"### [{artifact['name']}]({artifact['runUrl']}) - {artifact['stage']}")
-        if artifact.get("downloadSkipped"):
-            lines.append("- Download skipped by `--no-download`.")
-        for app in artifact["evidence"]["apps"]:
-            lines.append(
-                f"- App: `{app.get('displayName') or 'unknown'}` - "
-                f"`{app.get('bundle') or 'unknown'}`; minimum OS "
-                f"`{app.get('minimumOS') or 'unknown'}`; device families "
-                f"`{app.get('deviceFamilies') or 'unknown'}`"
-            )
-        for test in artifact["evidence"]["tests"]:
-            counts = test["counts"]
-            if counts:
-                total, passed, failed, skipped = counts
-                lines.append(
-                    f"- Tests: **{passed}/{total} passed**, {failed} failed, "
-                    f"{skipped} skipped; runtime `{test['runtime'] or 'not recorded'}`; "
-                    f"report {'passed' if test['passed'] else 'failed/unknown'}"
-                )
-            else:
-                lines.append("- Test counts unavailable; inspect the linked run artifacts/logs.")
-        for symbol in artifact["evidence"]["symbols"]:
-            scope = "app/dSYM and exported IPA" if symbol["ipaCompared"] else "archive app/dSYM"
-            lines.append(
-                f"- Symbols: **{symbol.get('status', 'unknown')}** ({scope}); "
-                f"`{symbol.get('bundle') or 'unknown'}` {symbol.get('version') or ''} "
-                f"({symbol.get('build') or 'unknown'}); commit `{symbol.get('commit') or 'unknown'}`"
-            )
-            for image in symbol["images"]:
-                lines.append(f"  - `{image.get('uuid', 'unknown')}` ({image.get('architecture', 'unknown')})")
-        if (not artifact.get("downloadSkipped") and not artifact["evidence"]["apps"]
-                and not artifact["evidence"]["tests"] and not artifact["evidence"]["symbols"]):
-            lines.append("- No recognized sanitized summary was found in this artifact.")
-
-    lines.extend([
-        "",
-        "Skipped checks are displayed separately and do not count as passing. "
-        "A symbol match from TestFlight preflight covers the archive app/dSYM; "
-        "only a delivery artifact establishes the exported-IPA comparison.",
-        "",
-    ])
+    pending = any((check.get("status") or "").lower() in PENDING_STATUSES
+                  for check in report["checks"])
+    lines.append("")
+    lines.extend(artifact_lines(report["artifacts"], pending))
+    lines.extend(["", FOOTER, ""])
     return "\n".join(lines)
 
 
-def collect(pr_number, download=True):
-    repo_result = gh(["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"])
-    repo = repo_result.stdout.strip()
-    pr_result = gh(["pr", "view", str(pr_number), "--json",
-                    "headRefOid,headRefName,baseRefName,url,statusCheckRollup,mergeCommit"])
-    try:
-        pr = json.loads(pr_result.stdout)
-    except ValueError as error:
-        raise ReviewError("GitHub returned an unreadable pull request summary.") from error
+def render_run(report):
+    run = report["run"]
+    status = str(run.get("status") or "unknown")
+    duration = elapsed(run.get("run_started_at"), run.get("updated_at"))
+    lines = [f"# CI evidence for run {report['runId']}", ""]
+    if report.get("selection"):
+        lines.extend([report["selection"], ""])
+    lines.extend([
+        f"Run: {run.get('html_url') or 'unknown'}",
+        f"Workflow: {run.get('name') or 'unknown'}; event `{run.get('event') or 'unknown'}`; "
+        f"branch `{run.get('head_branch') or 'unknown'}`; attempt {run.get('run_attempt') or '?'}",
+        f"Head: `{run.get('head_sha') or 'unknown'}`",
+        f"Status: {status} / **{run.get('conclusion') or 'no conclusion yet'}**"
+        + (f"; {duration}" if duration and status == "completed" else ""),
+        f"Checkout: `{report['checkoutSha']}` on `{report['checkoutBranch'] or '(detached)'}` - "
+        f"**{'MATCH' if report['checkoutMatches'] else 'MISMATCH'}**",
+        "",
+        "## Jobs",
+        "",
+    ])
+    lines.extend(job_lines(run.get("jobs", [])) or ["- No jobs are reported yet."])
+    lines.append("")
+    lines.extend(artifact_lines(report["artifacts"], status.lower() in PENDING_STATUSES))
+    lines.extend(["", FOOTER, ""])
+    return "\n".join(lines)
 
-    checkout = git(["rev-parse", "HEAD"])
-    branch = git(["branch", "--show-current"], check=False).stdout.strip()
+
+def render(report):
+    return render_run(report) if report.get("mode") == "run" else render_pr(report)
+
+
+def collect(pr_number, download=True):
+    repo = repo_name()
+    pr = gh_json(["pr", "view", str(pr_number), "--json",
+                  "headRefOid,headRefName,baseRefName,url,statusCheckRollup,mergeCommit"],
+                 "pull request summary")
+    if not isinstance(pr, dict):
+        raise ReviewError("GitHub returned an unreadable pull request summary.")
+
+    checkout, branch = checkout_state()
     checks = pr.get("statusCheckRollup", [])
     if not isinstance(checks, list):
         checks = []
@@ -312,11 +480,9 @@ def collect(pr_number, download=True):
     merge_sha = (pr.get("mergeCommit") or {}).get("oid")
     main_runs = []
     if merge_sha:
-        result = gh(["api", f"repos/{repo}/actions/runs?head_sha={merge_sha}&per_page=100"])
-        try:
-            candidates = json.loads(result.stdout).get("workflow_runs", [])
-        except (ValueError, AttributeError) as error:
-            raise ReviewError("GitHub returned an unreadable merge-commit workflow list.") from error
+        body = gh_json(["api", f"repos/{repo}/actions/runs?head_sha={merge_sha}&per_page=100"],
+                       "merge-commit workflow list")
+        candidates = body.get("workflow_runs", []) if isinstance(body, dict) else []
         latest = {}
         for run in candidates:
             if (not isinstance(run, dict) or run.get("head_sha") != merge_sha
@@ -327,22 +493,19 @@ def collect(pr_number, download=True):
                     latest[key].get("run_attempt", 0), latest[key].get("run_number", 0)):
                 latest[key] = run
         for run in latest.values():
-            jobs_result = gh(["api", f"repos/{repo}/actions/runs/{run['id']}/jobs?per_page=100"])
-            try:
-                run["jobs"] = json.loads(jobs_result.stdout).get("jobs", [])
-            except (ValueError, AttributeError) as error:
-                raise ReviewError("GitHub returned an unreadable workflow job list.") from error
+            run["jobs"] = fetch_run_jobs(repo, run["id"])
             main_runs.append(run)
 
     report = {
+        "mode": "pr",
         "number": pr_number,
         "url": pr.get("url", ""),
         "headSha": pr.get("headRefOid", ""),
         "headBranch": pr.get("headRefName", ""),
         "baseBranch": pr.get("baseRefName", ""),
-        "checkoutSha": checkout.stdout.strip(),
+        "checkoutSha": checkout,
         "checkoutBranch": branch,
-        "checkoutMatches": checkout.stdout.strip().lower() == pr.get("headRefOid", "").lower(),
+        "checkoutMatches": checkout.lower() == pr.get("headRefOid", "").lower(),
         "checks": checks,
         "mergeSha": merge_sha,
         "mainRuns": sorted(main_runs, key=lambda run: run.get("name", "")),
@@ -360,18 +523,86 @@ def collect(pr_number, download=True):
         return report
 
 
+def collect_run(run_id, download=True, selection=None):
+    """Review one workflow run: metadata, jobs, and recognized artifacts."""
+    run_id = str(run_id)
+    repo = repo_name()
+    run = fetch_run(repo, run_id)
+    checkout, branch = checkout_state()
+    head_sha = str(run.get("head_sha") or "")
+    report = {
+        "mode": "run",
+        "runId": run_id,
+        "run": run,
+        "selection": selection,
+        "checkoutSha": checkout,
+        "checkoutBranch": branch,
+        "checkoutMatches": bool(head_sha) and checkout.lower() == head_sha.lower(),
+        "artifacts": [],
+    }
+    with tempfile.TemporaryDirectory(prefix=f"ios-ci-run-{run_id}-") as temp:
+        report["artifacts"] = run_artifacts(
+            repo, run_id, run.get("html_url", ""), "run", Path(temp), download)
+        return report
+
+
+def current_branch():
+    branch = git(["rev-parse", "--abbrev-ref", "HEAD"]).stdout.strip()
+    if not branch or branch == "HEAD":
+        raise ReviewError("This checkout is detached; pass --branch <name> to choose a branch.")
+    return branch
+
+
+def select_latest_run(branch, workflow=None, limit=LATEST_RUN_LIMIT):
+    """Choose the most recently created run for a branch, optionally one workflow only."""
+    args = ["run", "list", "--branch", branch, "--limit", str(limit), "--json", RUN_LIST_FIELDS]
+    if workflow:
+        args.extend(["--workflow", workflow])
+    runs = gh_json(args, "workflow run list")
+    runs = [run for run in runs if isinstance(run, dict) and isinstance(run.get("databaseId"), int)] \
+        if isinstance(runs, list) else []
+    scope = f"branch `{branch}`" + (f", workflow `{workflow}`" if workflow else "")
+    if not runs:
+        raise ReviewError(f"No workflow runs were found for {scope}.")
+    chosen = max(runs, key=lambda run: (str(run.get("createdAt") or ""), run["databaseId"]))
+    state = chosen.get("conclusion") or chosen.get("status") or "unknown"
+    reason = (f"Selected run {chosen['databaseId']} ({chosen.get('workflowName') or 'unknown workflow'}, "
+              f"`{chosen.get('event') or 'unknown'}`, {state}, created {chosen.get('createdAt') or 'unknown'}): "
+              f"newest of {len(runs)} run(s) listed for {scope} (limit {limit}).")
+    return str(chosen["databaseId"]), reason
+
+
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--pr", type=int, required=True, help="Pull request number to review")
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument("--pr", type=int, help="Pull request number to review")
+    target.add_argument("--run", metavar="RUN_ID", help="Workflow run ID to review")
+    target.add_argument("--latest", action="store_true",
+                        help="Review the most recent run for a branch (default: current checkout branch)")
+    parser.add_argument("--branch", help="With --latest: branch whose runs are listed")
+    parser.add_argument("--workflow", help="With --latest: only runs of this workflow name")
     parser.add_argument("--require-checkout-head", action="store_true",
-                        help="Exit nonzero when this checkout is not the PR head commit")
+                        help="Exit nonzero when this checkout is not the reviewed head commit")
     parser.add_argument("--no-download", action="store_true",
                         help="Show checks and artifact links without downloading artifacts")
     args = parser.parse_args()
-    if args.pr < 1:
+    if args.pr is not None and args.pr < 1:
         parser.error("--pr must be a positive integer")
+    if args.run is not None and not RUN_ID_ARG_RE.fullmatch(args.run):
+        parser.error("--run must be a numeric workflow run ID")
+    if (args.branch or args.workflow) and not args.latest:
+        parser.error("--branch and --workflow apply only with --latest")
+    download = not args.no_download
     try:
-        report = collect(args.pr, download=not args.no_download)
+        if args.pr is not None:
+            report = collect(args.pr, download=download)
+        elif args.run is not None:
+            report = collect_run(args.run, download=download)
+        else:
+            branch = args.branch or current_branch()
+            run_id, reason = select_latest_run(branch, args.workflow)
+            report = collect_run(run_id, download=download, selection=reason)
     except ReviewError as error:
         parser.exit(2, f"CI evidence review failed: {error}\n")
     print(render(report))

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "selection": "one-per-major",
+  "lanes": [
+    {
+      "lane": "ios-17-0-1",
+      "runner": "macos-14",
+      "runtime_name": "iOS 17.0",
+      "runtime_version": "17.0.1",
+      "device": "iPhone SE (3rd generation)",
+      "destination": "platform=iOS Simulator,name=iPhone SE (3rd generation),OS=17.0.1",
+      "xcode_path": "/Applications/Xcode_16.2.app/Contents/Developer",
+      "xcode_version": "16.2",
+      "xcode_build": "16C5032a",
+      "sdk": "18.2",
+      "pairing": "newer-toolchain",
+      "status": "passed",
+      "exit_status": 0,
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "built_app": {
+        "CFBundleDisplayName": "Starter App",
+        "CFBundleIdentifier": "com.example.StarterApp",
+        "MinimumOSVersion": "17.0",
+        "UIDeviceFamily": [1, 2]
+      }
+    },
+    {
+      "lane": "ios-27-0",
+      "runner": "xcode-27",
+      "runtime_name": "iOS 27.0",
+      "runtime_version": "27.0",
+      "device": "iPhone 17",
+      "destination": "platform=iOS Simulator,name=iPhone 17,OS=27.0",
+      "xcode_path": "/Applications/Xcode_27.0.app/Contents/Developer",
+      "xcode_version": "27.0",
+      "xcode_build": "27A000",
+      "sdk": "27.0",
+      "pairing": "matched",
+      "status": "missing",
+      "exit_status": null,
+      "total": null,
+      "passed": null,
+      "failed": null,
+      "skipped": null
+    }
+  ],
+  "verifiedRuntimes": ["17.0.1"],
+  "allPassed": false
+}
