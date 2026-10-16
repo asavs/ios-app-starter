@@ -39,6 +39,18 @@ if ! xcrun xcresulttool get test-results summary \
   printf 'Result summary unavailable; preserving build log.\n'
 fi
 
+# Per-test results (file:line failure messages) and test-produced attachments; both optional.
+if ! xcrun xcresulttool get test-results tests \
+  --path "$report_dir/Tests.xcresult" \
+  > "$report_dir/tests.json" 2>> "$report_dir/xcresulttool.log"; then
+  rm -f "$report_dir/tests.json"
+fi
+if ! xcrun xcresulttool export attachments \
+  --path "$report_dir/Tests.xcresult" \
+  --output-path "$report_dir/attachments" >> "$report_dir/xcresulttool.log" 2>&1; then
+  printf 'Attachment export unavailable; continuing.\n'
+fi
+
 report_status=0
 python3 "$repo_dir/scripts/report-tests.py" "$report_dir" "$test_status" "$destination" \
   || report_status=$?

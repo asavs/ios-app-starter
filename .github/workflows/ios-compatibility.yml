@@ -167,7 +167,11 @@ jobs:
             ${{ runner.temp }}/ios-test-results/configuration.json
             ${{ runner.temp }}/ios-test-results/built-app.json
             ${{ runner.temp }}/ios-test-results/run.*/summary.md
+            ${{ runner.temp }}/ios-test-results/run.*/failures.json
             ${{ runner.temp }}/ios-test-results/run.*/results.json
+            ${{ runner.temp }}/ios-test-results/run.*/tests.json
+            ${{ runner.temp }}/ios-test-results/run.*/attachments/manifest.json
+            ${{ runner.temp }}/ios-test-results/run.*/attachments/*.png
             ${{ runner.temp }}/ios-test-results/run.*/exit-status.txt
             ${{ runner.temp }}/ios-test-results/run.*/*.log
             ${{ runner.temp }}/ios-test-results/run.*/Tests.xcresult
