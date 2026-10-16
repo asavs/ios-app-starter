@@ -2,6 +2,15 @@
 
 This is the shared execution plan agreed on 2026-10-12. Read it with [the roadmap](../roadmap.md), [agent instructions](../AGENTS.md), and [setup evidence](setup-experience.md). Milestone 7 remains open. The milestone 2 reporting gate is complete, but improving reporting comes first because it makes every subsequent change cheaper to verify.
 
+## Board rules (2026-10-16)
+
+The [master plan](master-plan.md) puts a lighter board first. From now on:
+
+- The "Current handoff" table below is the board. One row per task; one bullet per side when a task is active: what was done, the run or artifact link, what remains.
+- Detailed evidence goes in the setup journal once, not here and there. Link it.
+- Windows acts as onboarding tester at milestone boundaries and for the second-app proof. Between those, the Mac side proceeds without cross-machine acceptance of documentation changes.
+- A handoff is complete when the other side can start without asking a question.
+
 ## Assignment rule
 
 For each task ask: can Xcode or this Mac produce useful tooling, artifacts or evidence that future template users can obtain through the repository? If so, implement that reusable work here. Delegate substantial Windows-specific work to the Windows agent; complete quick fixes where they are discovered. GitHub-hosted macOS remains the required native build environment. Local Mac evidence supplements hosted checks.
@@ -57,7 +66,7 @@ Updated 2026-10-16. Detailed per-order records follow below in chronological ord
 - **Next Mac action:** None until Windows dispatches the probe from `main` and returns evidence. If the probe fails, fix the exact failing step. If it passes, inventory `macos-14` for an iOS 17 route.
 - **Next Windows action:** Review and merge PR #28 after PR #27, dispatch `gh workflow run ios18-compatibility.yml --ref main --field configuration=starter`, inspect `ios-test-results-starter-ios18-5`, and record results under issue #29 and the probe handoff below.
 - **Owner decision pending:** Issue #25 (demo mark). Not a milestone 7 gate.
-- **Milestone 8 remains blocked** until the minimum-OS gate in issue #29 is resolved with evidence or an explicit documented decision.
+- **Milestone 7 closes** when the minimum-OS gate in issue #29 is resolved with evidence or an explicit documented decision. Milestone 8 (iteration loop) and 9 (first module round) follow per [the master plan](master-plan.md).
 
 ## Order 1 handoff record (verified 2026-10-13)
 
