@@ -121,7 +121,7 @@ jobs:
           from pathlib import Path
           path = Path('StarterApp/StarterAppUITests/StarterAppUITests.swift')
           source = path.read_text()
-          needle = 'XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 10))'
+          needle = 'XCTAssertTrue(visible, "Welcome text should be visible")'
           assert source.count(needle) == 1, 'Smoke-test assertion changed; update failure probe.'
           path.write_text(source.replace(needle, needle + '\n        XCTFail("Deliberate failure probe: verify report delivery")'))
           PY
@@ -154,7 +154,11 @@ jobs:
             ${{ runner.temp }}/ios-test-results/configuration.json
             ${{ runner.temp }}/ios-test-results/built-app.json
             ${{ runner.temp }}/ios-test-results/run.*/summary.md
+            ${{ runner.temp }}/ios-test-results/run.*/failures.json
             ${{ runner.temp }}/ios-test-results/run.*/results.json
+            ${{ runner.temp }}/ios-test-results/run.*/tests.json
+            ${{ runner.temp }}/ios-test-results/run.*/attachments/manifest.json
+            ${{ runner.temp }}/ios-test-results/run.*/attachments/*.png
             ${{ runner.temp }}/ios-test-results/run.*/exit-status.txt
             ${{ runner.temp }}/ios-test-results/run.*/*.log
             ${{ runner.temp }}/ios-test-results/run.*/Tests.xcresult

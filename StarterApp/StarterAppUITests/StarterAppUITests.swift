@@ -27,7 +27,15 @@ final class StarterAppUITests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 10))
+        let visible = app.staticTexts["Hello, world!"].waitForExistence(timeout: 10)
+
+        // Always keep one screenshot so CI reports show the screen, pass or fail.
+        let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        screenshot.name = "welcome-screen"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+
+        XCTAssertTrue(visible, "Welcome text should be visible")
     }
 
     @MainActor
