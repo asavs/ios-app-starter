@@ -2,12 +2,13 @@ name: iOS
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
   workflow_dispatch:
     inputs:
       configuration:
-        description: App to test manually; PR and main always test all three
+        description: App to test manually; pull requests test starter, main tests all three
         type: choice
         default: all
         options: [all, starter, pocket-notes, starter-app-demo]
@@ -27,11 +28,49 @@ permissions:
   contents: read
 
 jobs:
+  # Decide whether the simulator gate must run. Documentation-only pull requests and drafts skip it;
+  # the ios-gate job below still reports a result so a required check is never silently "skipped".
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+      reason: ${{ steps.decide.outputs.reason }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Classify the change
+        id: decide
+        env:
+          EVENT: ${{ github.event_name }}
+          DRAFT: ${{ github.event.pull_request.draft }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; echo "reason=$EVENT event always runs" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if [ "$DRAFT" = "true" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"; echo "reason=draft pull request; mark it ready for review to run the simulator gate" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+          printf 'Changed files:\n%s\n' "$changed"
+          code="$(printf '%s\n' "$changed" | grep -v -E '^(docs/|[^/]+\.md$|LICENSE$)' || true)"
+          if [ -z "$code" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"; echo "reason=documentation-only change; simulator gate not needed" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"; echo "reason=code, manifest, script or workflow files changed" >> "$GITHUB_OUTPUT"
+          fi
+
   test:
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     strategy:
       fail-fast: false
       matrix:
-        configuration: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.configuration != 'all' && format('["{0}"]', inputs.configuration) || '["starter","pocket-notes","starter-app-demo"]') }}
+        configuration: ${{ fromJSON(github.event_name == 'pull_request' && '["starter"]' || (github.event_name == 'workflow_dispatch' && inputs.configuration != 'all') && format('["{0}"]', inputs.configuration) || '["starter","pocket-notes","starter-app-demo"]') }}
     runs-on: xcode-27
     timeout-minutes: 30
     env:
@@ -121,3 +160,27 @@ jobs:
             ${{ runner.temp }}/ios-test-results/run.*/Tests.xcresult
           retention-days: 14
           if-no-files-found: warn
+
+  # The single required check for pull requests. Passes when the simulator lane passed, or when the
+  # change was documentation-only. Fails for drafts and for any failed, cancelled or missing lane.
+  ios-gate:
+    needs: [changes, test]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Evaluate gate
+        env:
+          RUN: ${{ needs.changes.outputs.run }}
+          REASON: ${{ needs.changes.outputs.reason }}
+          TEST_RESULT: ${{ needs.test.result }}
+        run: |
+          echo "Simulator gate requested: $RUN ($REASON); test job result: $TEST_RESULT"
+          if [ "$RUN" = "true" ] && [ "$TEST_RESULT" = "success" ]; then
+            echo "## iOS gate: passed" >> "$GITHUB_STEP_SUMMARY"; echo "Simulator smoke lane passed." >> "$GITHUB_STEP_SUMMARY"; exit 0
+          fi
+          if [ "$RUN" = "false" ] && [ "$TEST_RESULT" = "skipped" ] && [ "${REASON#documentation-only}" != "$REASON" ]; then
+            echo "## iOS gate: passed (documentation-only)" >> "$GITHUB_STEP_SUMMARY"; echo "$REASON" >> "$GITHUB_STEP_SUMMARY"; exit 0
+          fi
+          echo "## iOS gate: not passed" >> "$GITHUB_STEP_SUMMARY"; echo "$REASON; test job result: $TEST_RESULT" >> "$GITHUB_STEP_SUMMARY"
+          exit 1
