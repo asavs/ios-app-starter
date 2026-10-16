@@ -114,7 +114,7 @@ def verify_apps(app, delivery, archive, distribution_app=None):
         paths.append(Path(distribution_app))
     expected = {'CFBundleIdentifier': app['bundleIdentifier'], 'CFBundleDisplayName': app['displayName'],
                 'MinimumOSVersion': app['minimumIOS'], 'CFBundleShortVersionString': delivery['marketingVersion'],
-                'CFBundleVersion': delivery['buildNumber']}
+                'CFBundleVersion': delivery['buildNumber'], 'ITSAppUsesNonExemptEncryption': False}
     for path in paths:
         info = plistlib.loads((path / 'Info.plist').read_bytes())
         if any(info.get(key) != value for key, value in expected.items()):

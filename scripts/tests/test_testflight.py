@@ -101,6 +101,7 @@ class TestFlightTests(unittest.TestCase):
         info = {'CFBundleIdentifier': app['bundleIdentifier'], 'CFBundleDisplayName': app['displayName'],
                 'MinimumOSVersion': app['minimumIOS'], 'CFBundleShortVersionString': app['marketingVersion'],
                 'CFBundleVersion': delivery['buildNumber'],
+                'ITSAppUsesNonExemptEncryption': False,
                 'CFBundleIcons': {'CFBundlePrimaryIcon': {'CFBundleIconName': 'AppIcon'}}}
         (product / 'Info.plist').write_bytes(plistlib.dumps(info))
         (product / 'AppIcon60x60@2x.png').write_bytes(b'fixture icon')
@@ -146,6 +147,7 @@ class TestFlightTests(unittest.TestCase):
                 for product in (archive / 'Products/Applications/StarterApp.app', source):
                     path = product / 'Info.plist'; info = plistlib.loads(path.read_bytes())
                     info.update(CFBundleVersion=delivery['buildNumber'], CFBundleShortVersionString=delivery['marketingVersion'],
+                                ITSAppUsesNonExemptEncryption=False,
                                 CFBundleIcons={'CFBundlePrimaryIcon': {'CFBundleIconName': 'AppIcon'}})
                     (product / 'AppIcon60x60@2x.png').write_bytes(b'fixture icon')
                     path.write_bytes(plistlib.dumps(info))
