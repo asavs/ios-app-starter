@@ -53,6 +53,19 @@ After the implementation is reviewed, merged and its required checks pass:
 
 The demo's upload/processing/owner-reported installation and behavior loop completed milestone 6. Future app changes still need their own delivery and device acceptance. Keep App Store publication separate. The demo's distribution certificate expires February 8, 2027; the validator must continue rejecting expired assets rather than treating earlier signing evidence as current readiness.
 
+## Internal group with automatic distribution
+
+An internal TestFlight group created with access to all builds receives every processed build without manual assignment. The setting is fixed at creation, so the **TestFlight groups** workflow creates a new group rather than editing one. Plan first (read-only), then apply:
+
+```powershell
+gh workflow run testflight-groups.yml --ref main --field configuration=starter-app-demo --field group_name=dev-auto --field tester_role=ACCOUNT_HOLDER --field apply=false
+gh workflow run testflight-groups.yml --ref main --field configuration=starter-app-demo --field group_name=dev-auto --field tester_role=ACCOUNT_HOLDER --field apply=true
+```
+
+Both runs use the `apple-credentials` environment and its approval. The plan reports whether the group exists, whether it is internal with all-builds access, how many App Store Connect users hold the chosen role and how many are already members, and the actions it would take. Apply creates the group with `--internal --access-all-builds`, adds each missing user, and re-reads the group to verify. Nothing is deleted or modified; an existing group with the same name but without all-builds access stops the run for manual review. Retire a superseded group by hand in App Store Connect once the new one is verified. Reports and logs carry counts and statuses, never tester identities.
+
+The manifest declares `ITSAppUsesNonExemptEncryption = NO`, so Apple does not ask the export-compliance question per build for apps without non-exempt encryption; the compiled-app and archive checks require the key. Revisit it when an app adds networking or cryptography.
+
 ## Debug symbols
 
 Preflight verifies archive app/dSYM UUIDs; delivery additionally matches the exported IPA. See [symbol retention](device-diagnostics.md#implemented-symbol-check-and-retention). Optional `retain_symbols` keeps only dSYMs and their manifest for 90 days in private repositories. Public repositories reject this option; the default remains off. Older deliveries have no recoverable retained symbols in this repository.
