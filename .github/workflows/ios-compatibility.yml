@@ -1,0 +1,202 @@
+name: iOS compatibility matrix
+
+# Inventory each hosted image, pair every available iOS runtime with a Swift 6-capable
+# Xcode on that image, run the smoke test on each pairing, and publish one coverage report.
+# Compatibility is claimed only for runtimes whose lane passed. Credential-free; never required.
+on:
+  workflow_dispatch:
+    inputs:
+      configuration:
+        description: Single app to test across runtimes
+        type: choice
+        default: starter
+        options: [starter, pocket-notes, starter-app-demo]
+      selection:
+        description: Which available runtimes to test
+        type: choice
+        default: one-per-major
+        options: [one-per-major, all, minimum]
+  schedule:
+    - cron: '17 6 * * 1' # weekly, Monday 06:17 UTC; uses the defaults above
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-compatibility-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IOS_CONFIGURATION: ${{ inputs.configuration || 'starter' }}
+  IOS_SELECTION: ${{ inputs.selection || 'one-per-major' }}
+
+jobs:
+  inventory:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [xcode-27, macos-15, macos-14]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    continue-on-error: true # a retired image must not stop the other lanes
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Export native inventory for this image
+        env:
+          IOS_RUNNER_LABEL: ${{ matrix.runner }}
+        run: python3 scripts/inventory-ios-runtimes.py --output "$RUNNER_TEMP/inventory/ios-runtime-inventory.json" --runner-label "$IOS_RUNNER_LABEL"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: compat-inventory-${{ matrix.runner }}
+          path: ${{ runner.temp }}/inventory/ios-runtime-inventory.json
+          retention-days: 14
+          if-no-files-found: error
+
+  plan:
+    needs: inventory
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      count: ${{ steps.plan.outputs.count }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          pattern: compat-inventory-*
+          path: inventories
+      - name: Pair runtimes with toolchains
+        id: plan
+        run: python3 scripts/plan-compatibility-matrix.py --inventory-dir inventories --selection "$IOS_SELECTION" --output "$RUNNER_TEMP/plan/compatibility-plan.json"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: compatibility-plan
+          path: ${{ runner.temp }}/plan/compatibility-plan.json
+          retention-days: 30
+      - name: Verify suite
+        run: python3 -m unittest discover -s scripts/tests -p 'test_compatibility.py' -v
+
+  test:
+    needs: plan
+    if: needs.plan.outputs.count != '0'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    name: test (${{ matrix.lane }} on ${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    env:
+      IOS_TEST_DESTINATION: ${{ matrix.destination }}
+      IOS_TEST_ARTIFACT_NAME: ios-compat-${{ inputs.configuration || 'starter' }}-${{ matrix.lane }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Select planned Xcode and verify it
+        env:
+          PLANNED_DEVELOPER_DIR: ${{ matrix.xcode_path }}
+          PLANNED_XCODE: ${{ matrix.xcode_version }}
+          PLANNED_SDK: ${{ matrix.sdk }}
+        run: |
+          if [ -n "$PLANNED_DEVELOPER_DIR" ]; then
+            echo "DEVELOPER_DIR=$PLANNED_DEVELOPER_DIR" >> "$GITHUB_ENV"
+            export DEVELOPER_DIR="$PLANNED_DEVELOPER_DIR"
+          fi
+          xcodebuild -version
+          test "$(xcodebuild -version | head -n 1)" = "Xcode $PLANNED_XCODE"
+          test "$(xcrun --sdk iphoneos --show-sdk-version)" = "$PLANNED_SDK"
+
+      - name: Export the toolchain and runtimes actually used
+        env:
+          IOS_RUNNER_LABEL: ${{ matrix.runner }}
+        run: python3 scripts/inventory-ios-runtimes.py --output "$RUNNER_TEMP/ios-test-results/runtime-inventory.json" --runner-label "$IOS_RUNNER_LABEL"
+
+      - name: Cache verified XcodeGen archive
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/tool-downloads/xcodegen
+          key: xcodegen-v1-${{ runner.os }}-${{ runner.arch }}-2.46.0-${{ hashFiles('scripts/generate-project.sh', 'scripts/tool_download.py') }}
+
+      - name: Generate Xcode project
+        env:
+          IOS_PROJECT_SPEC: ${{ env.IOS_CONFIGURATION == 'starter' && 'project.yml' || env.IOS_CONFIGURATION == 'pocket-notes' && 'examples/pocket-notes.yml' || 'examples/starter-app-demo.yml' }}
+        run: bash scripts/generate-project.sh
+
+      - name: Check resolved app configuration
+        env:
+          IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
+        run: python3 scripts/check-configuration.py --output "$IOS_TEST_OUTPUT_DIR/configuration.json"
+
+      - name: Prepare simulator
+        timeout-minutes: 8
+        run: python3 scripts/prepare-simulator.py
+
+      - name: Build and test iOS app
+        id: ios_tests
+        timeout-minutes: 25
+        env:
+          IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
+        run: bash scripts/test-ios.sh
+
+      - name: Verify built app identity and minimum OS
+        if: ${{ !cancelled() && steps.ios_tests.outcome != 'skipped' }}
+        env:
+          IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
+        run: python3 scripts/check-built-app.py "$IOS_TEST_OUTPUT_DIR/configuration.json" "$IOS_TEST_OUTPUT_DIR"
+
+      - name: Record lane outcome
+        if: always()
+        env:
+          LANE_JSON: ${{ toJSON(matrix) }}
+          IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
+        run: python3 scripts/report-compatibility.py lane --lane-json "$LANE_JSON" --report-dir "$IOS_TEST_OUTPUT_DIR"
+
+      - name: Upload lane reports
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ios-compat-${{ inputs.configuration || 'starter' }}-${{ matrix.lane }}
+          path: |
+            ${{ runner.temp }}/ios-test-results/lane-result.json
+            ${{ runner.temp }}/ios-test-results/runtime-inventory.json
+            ${{ runner.temp }}/ios-test-results/configuration.json
+            ${{ runner.temp }}/ios-test-results/built-app.json
+            ${{ runner.temp }}/ios-test-results/run.*/summary.md
+            ${{ runner.temp }}/ios-test-results/run.*/results.json
+            ${{ runner.temp }}/ios-test-results/run.*/exit-status.txt
+            ${{ runner.temp }}/ios-test-results/run.*/*.log
+            ${{ runner.temp }}/ios-test-results/run.*/Tests.xcresult
+          retention-days: 14
+          if-no-files-found: warn
+
+  report:
+    needs: [plan, test]
+    if: always() && needs.plan.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: compatibility-plan
+          path: plan
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          pattern: ios-compat-*
+          path: results
+      - name: Aggregate verified runtimes
+        run: python3 scripts/report-compatibility.py aggregate --plan plan/compatibility-plan.json --results-dir results --output "$RUNNER_TEMP/report/compatibility-report.json"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: always()
+        with:
+          name: compatibility-report
+          path: ${{ runner.temp }}/report/
+          retention-days: 90
+          if-no-files-found: warn

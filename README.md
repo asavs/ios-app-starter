@@ -117,7 +117,13 @@ The scripts also reuse verified downloads within a job or local checkout. Projec
 
 Milestone 7 is in progress. See [the diagnostics plan](docs/device-diagnostics.md) for the design boundary and [the tester feedback guide](docs/tester-feedback.md) for the verified loop: a tester submits TestFlight feedback, Windows reads it with the fixed `scripts/read-testflight-feedback.py` command or the App Store Connect browser, and actionable items become sanitized GitHub issues. TestFlight preflight verifies archive app/dSYM UUIDs; private-repository symbol retention is optional and off for this public template. The manual **iOS runtime inventory** workflow reports a hosted image's actual Xcode, SDK and simulator runtimes without building anything.
 
-Simulator test coverage remains iOS 27.0 only. Hosted inventory found no iOS 17 runtime on the `xcode-27` or `macos-15` images; a separate manual Xcode 16.4 / iOS 18.5 probe is pending acceptance. The iOS 17.0 minimum is a configured deployment target, not verified runtime compatibility. [Issue #29](https://github.com/asavs/ios-app-starter/issues/29) tracks the remaining gate.
+Required pull-request checks test iOS 27.0 only. The manual and weekly **iOS compatibility matrix** workflow inventories each hosted macOS image, pairs every available iOS runtime with a Swift 6-capable Xcode on that image, runs the same smoke test on each pairing, and publishes one coverage report naming only the runtimes whose lane passed. Hosted inventory on 2026-10-16 found iOS 17.0.1 through 27.0 across the `macos-14`, `macos-15` and `xcode-27` images. Dispatch it with:
+
+```powershell
+gh workflow run ios-compatibility.yml --ref main --field configuration=starter --field selection=one-per-major
+```
+
+Use `selection=all` for every available runtime or `minimum` for the lowest one. Download **compatibility-report** for the table, or an individual **ios-compat-starter-ios-17-0-1** style artifact for that lane's logs. Until a lane has passed, the iOS 17.0 minimum is a configured deployment target, not verified runtime compatibility. [Issue #29](https://github.com/asavs/ios-app-starter/issues/29) tracks closing that gap.
 
 ## Faster manual iteration
 
