@@ -23,6 +23,20 @@ Device failure diagnostics, consolidated CI evidence, targeted iteration, tester
 - **Correction:** The roadmap previously said the owner had not supplied the physical iPhone OS. The owner report in PR #19 and the TestFlight feedback card both identify iPhone 14 Pro / iOS 26.3. That is owner-reported, not device-inspected, and it is not minimum-OS evidence.
 - **Boundaries:** Documentation only. No workflow, script, manifest, signing, upload or account change.
 
+## 2026-10-16 — Probe workflow rejected by GitHub before its first dispatch
+
+- **Symptom:** The push of `67f4eaf` produced a failed run ([38502031072](https://github.com/asavs/ios-app-starter/actions/runs/38502031072)) named after the workflow file, with no jobs and GitHub's "workflow file issue" notice, even though the workflow is `workflow_dispatch`-only. GitHub validates every workflow file on push and records an invalid file this way.
+- **Cause (confirmed by comparison with the working `ios.yml`):** `ios18-compatibility.yml` referenced `${{ runner.temp }}` in the job-level `env`. The `runner` context is not available there; GitHub allows it only in step-level `env`, `run`, `with` and similar step fields. `ios.yml` sets `IOS_TEST_OUTPUT_DIR` per step for this reason. The file parsed as valid YAML locally, so a YAML check alone does not catch this.
+- **Fix:** Removed `IOS_TEST_OUTPUT_DIR` from the job-level `env` and gave the inventory-export step its own step-level value. All other steps already set it. The remaining job-level values use only the `inputs` context.
+- **Verification:** Pending. A valid file no longer produces a push-time failure run, and the manual dispatch described in the coordination handoff can then be made. No Xcode 16.4 execution evidence exists yet.
+- **Improvement:** Before pushing a new workflow, check job-level `env`, `runs-on` and `if` for `runner.*` or `steps.*` references; an invalid file blocks dispatch silently from the Actions tab. A hosted `actionlint` step would catch this class of error without a Mac.
+
+## 2026-10-13 — Separate older-toolchain compatibility probe
+
+- **Input evidence:** Read Windows record `1815f63`: actual macos-15 default Xcode 16.4/SDK 18.5 and iOS 18.5 runtime availability. Existing required Xcode 27 merge checks passed; neither inventory established execution on an older runtime.
+- **Implementation:** Added manual single-app Xcode 16.4/iPhone 16/iOS 18.5 probe with fresh inventory/settings, compiled identity and existing smoke reports. Reuses pinned generation/report commands; no manifest change or new always-on job. Does not replace required CI or claim iOS 17 coverage.
+- **Verification/next:** Source reviewed; no local tests run and no Xcode 16.4 installed locally was claimed. Windows dispatches and inspects hosted artifact evidence. Swift/project/xcresulttool compatibility is established only if that probe passes. Minimum-OS route remains unresolved.
+
 ## 2026-10-13 — Windows acceptance of hosted OS runtime inventory
 
 - **Tools/host:** Windows PowerShell, GitHub CLI 2.95.0 and Git 2.54.0.windows.1; GitHub Actions runs on arm64 macOS hosted images. Both inventory artifacts identify merge commit `9d81843cd2d828a33cdb67e12acdbad5c136fc86`.

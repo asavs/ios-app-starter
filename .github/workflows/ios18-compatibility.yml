@@ -1,0 +1,94 @@
+name: iOS 18 compatibility probe
+on:
+  workflow_dispatch:
+    inputs:
+      configuration:
+        description: Single app for the separate older-toolchain probe
+        type: choice
+        default: starter
+        options: [starter, pocket-notes, starter-app-demo]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      # The runner context is not available in job-level env; steps set IOS_TEST_OUTPUT_DIR themselves.
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+      IOS_TEST_DESTINATION: platform=iOS Simulator,name=iPhone 16,OS=18.5
+      IOS_TEST_ARTIFACT_NAME: ios-test-results-${{ inputs.configuration }}-ios18-5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Select Xcode
+        env:
+          DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+        run: |
+          xcodebuild -version
+          test "$(xcodebuild -version | head -n 1)" = 'Xcode 16.4'
+          test "$(xcrun --sdk iphoneos --show-sdk-version)" = '18.5'
+          echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
+
+      - name: Export actual probe toolchain and runtimes
+        env:
+          IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
+        run: python3 scripts/inventory-ios-runtimes.py --output "$IOS_TEST_OUTPUT_DIR/runtime-inventory.json"
+
+      - name: Cache verified XcodeGen archive
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/tool-downloads/xcodegen
+          key: xcodegen-v1-${{ runner.os }}-${{ runner.arch }}-2.46.0-${{ hashFiles('scripts/generate-project.sh', 'scripts/tool_download.py') }}
+
+      - name: Generate Xcode project
+        env:
+          IOS_PROJECT_SPEC: ${{ inputs.configuration == 'starter' && 'project.yml' || inputs.configuration == 'pocket-notes' && 'examples/pocket-notes.yml' || 'examples/starter-app-demo.yml' }}
+        run: bash scripts/generate-project.sh
+
+      - name: Check resolved app configuration
+        env:
+          IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
+        run: python3 scripts/check-configuration.py --output "$IOS_TEST_OUTPUT_DIR/configuration.json"
+
+      - name: Prepare simulator
+        timeout-minutes: 5
+        run: python3 scripts/prepare-simulator.py
+
+      - name: Build and test iOS app
+        id: ios_tests
+        timeout-minutes: 20
+        env:
+          IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
+          IOS_TEST_ARTIFACT_NAME: ios-test-results-${{ inputs.configuration }}-ios18-5
+        run: bash scripts/test-ios.sh
+
+      - name: Verify built app identity and minimum OS
+        if: ${{ !cancelled() && steps.ios_tests.outcome != 'skipped' }}
+        env:
+          IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
+          IOS_TEST_ARTIFACT_NAME: ios-test-results-${{ inputs.configuration }}-ios18-5
+        run: python3 scripts/check-built-app.py "$IOS_TEST_OUTPUT_DIR/configuration.json" "$IOS_TEST_OUTPUT_DIR"
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ios-test-results-${{ inputs.configuration }}-ios18-5
+          path: |
+            ${{ runner.temp }}/ios-test-results/runtime-inventory.json
+            ${{ runner.temp }}/ios-test-results/configuration.json
+            ${{ runner.temp }}/ios-test-results/built-app.json
+            ${{ runner.temp }}/ios-test-results/run.*/summary.md
+            ${{ runner.temp }}/ios-test-results/run.*/results.json
+            ${{ runner.temp }}/ios-test-results/run.*/exit-status.txt
+            ${{ runner.temp }}/ios-test-results/run.*/*.log
+            ${{ runner.temp }}/ios-test-results/run.*/Tests.xcresult
+          retention-days: 14
+          if-no-files-found: warn
