@@ -2,6 +2,13 @@
 
 Entries for the pull-request gate, path filters, repository settings, device iteration tiers and reporting improvements. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-16 — Human-step ledger and consent model
+
+- **Context:** The owner's target onboarding is: clone, grant permissions once, sign in where required, walk away, come back to a template app on the phone. Today's work surfaced another "only you can click this" step (automatic distribution on the TestFlight `dev` group). Such steps were being mentioned in chat and lost.
+- **Change:** Added `docs/human-steps.md`: every human step so far with its automation path (API/CLI, browser agent in the user's signed-in browser, configuration, or genuinely human) and six permission categories to be granted once at setup. The master plan's runbook step now starts from that consent checklist, and the standing rules require a ledger row the same day a step is called human. `AGENTS.md` instructs agents to add the row before handing a step to the user. The cloud-computer question is pinned to the live iMessage bridge milestone with decision criteria.
+- **Findings worth acting on:** the TestFlight automatic-distribution switch is an API attribute (`hasAccessToAllBuilds` on beta group creation), so no browser is needed; the export-compliance question disappears for non-encrypting apps by shipping `ITSAppUsesNonExemptEncryption = NO` in the manifest; the `apple-credentials` environment can be created and protected through the GitHub API, so `configure-github-repo.py` can grow to cover it. App record creation remains the one step the public API does not offer (to verify), hence the browser-agent path.
+- **Verification/limits:** Documentation only. API capabilities are stated from Apple's and GitHub's documented endpoints and must be confirmed when each row is implemented; none was exercised today.
+
 ## 2026-10-16 — Structured failure output and a deterministic screenshot (PR #38)
 
 - **Context:** Master plan step 4. Reports named a failed test and quoted its message but not where it failed, compiler errors were only visible in the raw log excerpt, and runs kept no image on success. Fixtures: the deliberately failed run 38435651378 and the latest green `main` run, both downloaded and re-read with local Xcode 26.6 `xcresulttool`.
