@@ -2,6 +2,14 @@
 
 Device failure diagnostics, consolidated CI evidence, targeted iteration, tester feedback, the OS runtime inventory and the status reconciliation and master plan records, 2026-10-12 onward. Newest entries first; the index is [docs/setup-experience.md](../setup-experience.md).
 
+## 2026-10-16 — Replace the single-runtime probe with an inventory-driven compatibility matrix
+
+- **Input evidence:** Dispatched the existing credential-free inventory on `macos-14` ([run 38967185327](https://github.com/asavs/ios-app-starter/actions/runs/38967185327)). It reports default Xcode 15.4 (15F31d), SDK 17.5, installed Xcode 15.0–15.4 and 16.1/16.2, and available iOS 17.0.1, 17.2, 17.4, 17.5, 18.1 and 18.2 runtimes with iPhone 15 and iPhone SE (3rd generation) devices. Combined with the earlier `macos-15` (18.5, 18.6, 26.0.1–26.2) and `xcode-27` (27.0) inventories, hosted images cover iOS 17.0.1 through 27.0 without downloading runtimes.
+- **Decision:** The owner wants iOS 17 offered and verified, not dropped. A one-off Xcode 16.4 / iOS 18.5 workflow would need a copy per runtime and image, so it was replaced on the same branch by `ios-compatibility.yml`: inventory per image, planner, one lane per runtime/toolchain pairing, aggregated report. Lanes are generated from inventory at run time because images retire.
+- **Implementation:** `inventory-ios-runtimes.py` schema 2 records each installed Xcode's version, build and iPhone SDK (deduplicating symlinked bundles). `plan-compatibility-matrix.py` applies a Swift 6 floor (Xcode 16+), pairs each runtime with the newest same-major-SDK toolchain or else the newest toolchain in the nearest newer major, prefers iPhone SE (3rd generation), deduplicates runtimes across images, and offers `all`, `one-per-major` and `minimum` selections. `report-compatibility.py` records each lane from `exit-status.txt`/`results.json` and aggregates lanes into a report whose verified list contains only passed runtimes; a planned lane with no result is `missing`. Fixture plan from the three real inventories: 12 lanes for `all`, 4 for `one-per-major`.
+- **Verification:** Portable suite passes with the new `test_compatibility.py` (planner selection, pairing labels, schema 1 fallback, device preference, skip reasons, report statuses, CLI outputs). YAML parsed and checked for job-level `runner.*` references after the earlier rejection. Hosted execution is pending Windows dispatch; no lane has run yet, so no new compatibility claim is made.
+- **Limits/unknowns:** Xcode 16.2 driving an iOS 17.0.1 simulator and Xcode 26.x driving iOS 26.0.1 are untested pairings on the hosted image. iOS 18.6 with Xcode 16.4 is flagged `runtime-newer-than-sdk`. Required pull-request CI remains Xcode 27.0 / iOS 27.0 only.
+
 ## 2026-10-16 — Split the setup journal by milestone
 
 - **Context:** Master plan step 1, the board diet, asks for the setup journal to be split into `docs/journal/` by milestone with newest entries first. The single `docs/setup-experience.md` had grown to 44 entries across milestones 1–7, with the maintenance section stranded between milestone 3 and milestone 4 records.
@@ -22,6 +30,20 @@ Device failure diagnostics, consolidated CI evidence, targeted iteration, tester
 - **Action:** Re-landed PR #19's three journal records verbatim at their chronological positions. Rewrote the coordination document's "Current handoff" to reflect the real state and preserved the order 1 record under its own heading. Updated the README diagnostics section, the roadmap milestone 7 status, the issue-drafts status, and the diagnostics page status line. Filed [issue #29](https://github.com/asavs/ios-app-starter/issues/29) for the remaining minimum-OS gate. PRs #19 and #21 are to be closed with a pointer to this record once this change merges.
 - **Correction:** The roadmap previously said the owner had not supplied the physical iPhone OS. The owner report in PR #19 and the TestFlight feedback card both identify iPhone 14 Pro / iOS 26.3. That is owner-reported, not device-inspected, and it is not minimum-OS evidence.
 - **Boundaries:** Documentation only. No workflow, script, manifest, signing, upload or account change.
+
+## 2026-10-16 — Probe workflow rejected by GitHub before its first dispatch
+
+- **Symptom:** The push of `67f4eaf` produced a failed run ([38502031072](https://github.com/asavs/ios-app-starter/actions/runs/38502031072)) named after the workflow file, with no jobs and GitHub's "workflow file issue" notice, even though the workflow is `workflow_dispatch`-only. GitHub validates every workflow file on push and records an invalid file this way.
+- **Cause (confirmed by comparison with the working `ios.yml`):** `ios18-compatibility.yml` referenced `${{ runner.temp }}` in the job-level `env`. The `runner` context is not available there; GitHub allows it only in step-level `env`, `run`, `with` and similar step fields. `ios.yml` sets `IOS_TEST_OUTPUT_DIR` per step for this reason. The file parsed as valid YAML locally, so a YAML check alone does not catch this.
+- **Fix:** Removed `IOS_TEST_OUTPUT_DIR` from the job-level `env` and gave the inventory-export step its own step-level value. All other steps already set it. The remaining job-level values use only the `inputs` context.
+- **Verification:** Pending. A valid file no longer produces a push-time failure run, and the manual dispatch described in the coordination handoff can then be made. No Xcode 16.4 execution evidence exists yet.
+- **Improvement:** Before pushing a new workflow, check job-level `env`, `runs-on` and `if` for `runner.*` or `steps.*` references; an invalid file blocks dispatch silently from the Actions tab. A hosted `actionlint` step would catch this class of error without a Mac.
+
+## 2026-10-13 — Separate older-toolchain compatibility probe
+
+- **Input evidence:** Read Windows record `1815f63`: actual macos-15 default Xcode 16.4/SDK 18.5 and iOS 18.5 runtime availability. Existing required Xcode 27 merge checks passed; neither inventory established execution on an older runtime.
+- **Implementation:** Added manual single-app Xcode 16.4/iPhone 16/iOS 18.5 probe with fresh inventory/settings, compiled identity and existing smoke reports. Reuses pinned generation/report commands; no manifest change or new always-on job. Does not replace required CI or claim iOS 17 coverage.
+- **Verification/next:** Source reviewed; no local tests run and no Xcode 16.4 installed locally was claimed. Windows dispatches and inspects hosted artifact evidence. Swift/project/xcresulttool compatibility is established only if that probe passes. Minimum-OS route remains unresolved.
 
 ## 2026-10-13 — Windows acceptance of hosted OS runtime inventory
 
