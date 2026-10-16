@@ -24,7 +24,7 @@ The coordination records had become a tax: multi-paragraph acceptance entries du
 
 - Merge #27 (Windows inventory record) and #30 (status reconciliation). Close #19 and #21 as superseded.
 - Merge #28, dispatch the Xcode 16.4 / iOS 18.5 probe once from `main`, record the result under issue #29.
-- Decide the minimum OS in one roadmap line. Recommended: raise the configured minimum to iOS 18 so the claim matches the only runtime hosted runners can execute. Alternative: keep 17 as an explicitly unverified configuration. Either way, close #29 and declare milestone 7 done.
+- Decide the minimum OS in one roadmap line. **Done 2026-10-16:** iOS 17.0 kept; the `macos-14` image provides iOS 17.0.1–18.2 runtimes and the compatibility matrix verified 17.0.1, 18.1, 26.0.1 and 27.0 on its first dispatch. Issue #29 closed; milestone 7 complete.
 - Triage the open issues into this plan: #1 and #7 to the runbook (step 6), #2, #3, #4 and #17 to the guided setup command (step 6), #25 to the first module round (step 5), #6 closed as observed and explained.
 - Repository settings, all free for public repositories: a ruleset on `main` requiring a pull request and passing checks; secret scanning and push protection on; allowed actions restricted to GitHub-owned and verified creators; fork workflow approval for all outside collaborators.
 

@@ -2,6 +2,14 @@
 
 Device failure diagnostics, consolidated CI evidence, targeted iteration, tester feedback, the OS runtime inventory and the status reconciliation and master plan records, 2026-10-12 onward. Newest entries first; the index is [docs/setup-experience.md](../setup-experience.md).
 
+## 2026-10-16 — Compatibility matrix passes on iOS 17.0.1 through 27.0; milestone 7 complete
+
+- **Run:** First `main` dispatch of `ios-compatibility.yml` after PR #28 merged, [run 38974328806](https://github.com/asavs/ios-app-starter/actions/runs/38974328806), `configuration=starter`, `selection=one-per-major`. Inventories on `xcode-27` (18s), `macos-15` (1m22s) and `macos-14` (51s); plan 6s; lanes iOS 17.0.1 (7m24s) and 18.1 (4m50s) on `macos-14`, 26.0.1 (6m43s) on `macos-15`, 27.0 (9m02s) on `xcode-27`; report 9s. Wall clock 21m01s, most of it runner queueing between stages.
+- **Result:** All four lanes passed with 1 total / 1 passed / 0 failed / 0 skipped, exit 0. The `compatibility-report` artifact lists verified runtimes 17.0.1, 18.1, 26.0.1, 27.0. Toolchains actually used: Xcode 16.2 / SDK 18.2 for both `macos-14` lanes (nearest Swift 6-capable toolchain above iOS 17), Xcode 26.2 / SDK 26.2, Xcode 27.2 / SDK 27.2. The planner picked the highest same-major SDK present rather than the 27.0 release pin; this is recorded per lane and does not affect required CI.
+- **Interpretation:** The iOS 17.0 deployment target is now backed by a passing welcome-screen smoke test on an iOS 17.0.1 simulator. This is simulator evidence for the current single UI assertion, built with a different toolchain from the release archive; it is not physical-device evidence and does not cover the remaining 17.2–18.6 and 26.1–26.2 runtimes until `selection=all` runs. Issue #29 is closed; milestone 7's required checks are satisfied.
+- **Loop observation:** Plan to passing report took one dispatch and no fixes. The planned pairings flagged as unknown (Xcode 16.2 driving iOS 17.0.1; Xcode 26.x driving iOS 26.0.1) both worked. The `runtime-newer-than-sdk` pairing (iOS 18.6 on Xcode 16.4) was not in this selection.
+- **Next:** Windows runs `selection=all` once and records wall time; milestone 8 continues.
+
 ## 2026-10-16 — Replace the single-runtime probe with an inventory-driven compatibility matrix
 
 - **Input evidence:** Dispatched the existing credential-free inventory on `macos-14` ([run 38967185327](https://github.com/asavs/ios-app-starter/actions/runs/38967185327)). It reports default Xcode 15.4 (15F31d), SDK 17.5, installed Xcode 15.0–15.4 and 16.1/16.2, and available iOS 17.0.1, 17.2, 17.4, 17.5, 18.1 and 18.2 runtimes with iPhone 15 and iPhone SE (3rd generation) devices. Combined with the earlier `macos-15` (18.5, 18.6, 26.0.1–26.2) and `xcode-27` (27.0) inventories, hosted images cover iOS 17.0.1 through 27.0 without downloading runtimes.

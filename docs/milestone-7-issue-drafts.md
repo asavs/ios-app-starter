@@ -8,7 +8,7 @@
 | --- | --- |
 | Release symbols and hosted symbolication | Archive/dSYM UUID checks and optional private retention shipped in [PR #22](https://github.com/asavs/ios-app-starter/pull/22). Exported-IPA matching, private storage for the public demo and hosted symbolication are conditional backlog; no issue filed. |
 | TestFlight feedback and performance assessment | Feedback loop verified 2026-10-13 (browser and fixed CLI reader); [issue #25](https://github.com/asavs/ios-app-starter/issues/25) is the first triaged item. Performance assessment remains conditional; no issue filed. |
-| Minimum-OS runtime coverage | Open and required. Tracked in [issue #29](https://github.com/asavs/ios-app-starter/issues/29); inventory in [PR #26](https://github.com/asavs/ios-app-starter/pull/26), probe in [PR #28](https://github.com/asavs/ios-app-starter/pull/28). |
+| Minimum-OS runtime coverage | Verified 2026-10-16 by the inventory-driven compatibility matrix ([PR #28](https://github.com/asavs/ios-app-starter/pull/28), [run 38974328806](https://github.com/asavs/ios-app-starter/actions/runs/38974328806)): iOS 17.0.1, 18.1, 26.0.1 and 27.0 passed. [Issue #29](https://github.com/asavs/ios-app-starter/issues/29) closed. |
 | CI review and iteration backlog | Complete through [PR #23](https://github.com/asavs/ios-app-starter/pull/23) and [PR #24](https://github.com/asavs/ios-app-starter/pull/24); [issue #20](https://github.com/asavs/ios-app-starter/issues/20) closed. End-to-end round time is tracked in the setup journal. |
 
 The draft text below is retained as the acceptance reference for the conditional items.
