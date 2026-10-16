@@ -15,4 +15,5 @@ The journal is split by milestone under `docs/journal/`. New entries go in the c
 | [milestone-1-4-foundation.md](journal/milestone-1-4-foundation.md) | Milestones 1–4: foundation | 2026-10-08 | 15 |
 | [milestone-5-signing.md](journal/milestone-5-signing.md) | Milestone 5: protected credentials and signing | 2026-10-09 to 2026-10-10 | 7 |
 | [milestone-6-testflight.md](journal/milestone-6-testflight.md) | Milestone 6: TestFlight delivery | 2026-10-10 to 2026-10-12 | 7 |
-| [milestone-7-diagnostics.md](journal/milestone-7-diagnostics.md) | Milestone 7: diagnostics and OS coverage | 2026-10-12 onward | 16 |
+| [milestone-7-diagnostics.md](journal/milestone-7-diagnostics.md) | Milestone 7: diagnostics and OS coverage | 2026-10-12 onward | 17 |
+| [milestone-8-iteration-loop.md](journal/milestone-8-iteration-loop.md) | Milestone 8: agent-comfortable iteration loop | 2026-10-16 onward | 1 |

@@ -9,7 +9,7 @@ The starter has a generated iPhone/iPad app and a passing remote build gate. Con
 1. On GitHub, choose **Use this template → Create a new repository**. Enable Actions in your new repository if needed. This is a public GitHub template.
 2. Edit Swift files under `StarterApp/StarterApp` using your preferred Windows editor or GitHub's browser editor.
 3. Edit `project.yml` for project settings. It is the source of truth for the generated Xcode project.
-4. Push to `main` or open a pull request. The **iOS** workflow generates the project, builds the app, and tests the welcome screen on an iPhone simulator.
+4. Open a pull request. The **iOS** workflow generates the project, builds the app, and tests the welcome screen on an iPhone simulator; its `ios-gate` check and the three portable `portable (...)` checks are required before merging to `main`. Documentation-only pull requests pass the gate without a simulator run, and draft pull requests wait until marked ready for review. Enable auto-merge (`gh pr merge <number> --auto --merge`) and move on; GitHub merges when the checks pass. Pushes to `main` then run all three configurations and the unsigned signing/TestFlight preflights.
 5. Open the workflow run in GitHub's **Actions** tab. Read its test summary and download the **ios-test-results-starter** artifact (or **ios-test-results-pocket-notes** / **ios-test-results-starter-app-demo** for the examples) for full logs, JSON counts, and the `.xcresult` bundle. Artifacts are retained for 14 days. You can also select **iOS → Run workflow** to run it manually.
 
 This first workflow is unsigned and needs no Apple credentials. It produces no installable build. The separately approved [TestFlight delivery workflow](docs/testflight-delivery.md) is milestone 6; the demo upload and user-reported iPhone acceptance are complete.
@@ -125,9 +125,20 @@ gh workflow run ios-compatibility.yml --ref main --field configuration=starter -
 
 Use `selection=all` for every available runtime or `minimum` for the lowest one. Download **compatibility-report** for the table, or an individual **ios-compat-starter-ios-17-0-1** style artifact for that lane's logs. Until a lane has passed, the iOS 17.0 minimum is a configured deployment target, not verified runtime compatibility. [Issue #29](https://github.com/asavs/ios-app-starter/issues/29) tracks closing that gap.
 
+## Recommended repository settings
+
+After creating a repository from this template, preview and apply the settings the pull-request loop relies on:
+
+```powershell
+python scripts/configure-github-repo.py --repo <owner>/<repository>
+python scripts/configure-github-repo.py --repo <owner>/<repository> --apply
+```
+
+The dry run lists current and intended values. `--apply` turns on auto-merge and head-branch deletion, enables secret scanning with push protection, restricts actions to GitHub-owned and verified creators, requires approval for every fork contributor's workflows, and adds a default-branch ruleset that requires a pull request with passing `ios-gate` and `portable (...)` checks. The ruleset blocks direct pushes to `main` for everyone, including the owner.
+
 ## Faster manual iteration
 
-The **iOS** manual workflow offers `configuration=starter`, `pocket-notes`, or `starter-app-demo` for one app, with `all` as the default. PR and main runs always keep all three configurations. For example, from PowerShell:
+The **iOS** manual workflow offers `configuration=starter`, `pocket-notes`, or `starter-app-demo` for one app, with `all` as the default. Pull requests test `starter` only; pushes to `main` test all three configurations, since the examples are overlays of the same code. For example, from PowerShell:
 
 ```powershell
 gh workflow run ios.yml --ref main --field configuration=starter-app-demo --field verify_failure_reporting=false
