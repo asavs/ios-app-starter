@@ -43,6 +43,25 @@ The owner already has an app on a phone. What slows the next build is reading wh
 - Delivery convenience: a single command that proposes the next build, dispatches delivery, waits for the environment approval, and reports "Ready to Test" or the exact failing stage.
 - Acceptance: an agent can go from a red run to a named failure in one command, and from a fix on `main` to a build on the phone in one approved dispatch, with every step readable without opening the Actions UI.
 
+Seeing a change on a phone should not require TestFlight. Added 2026-10-16:
+
+- **`run-on-device` for Macs.** Xcode 15+ ships `devicectl`; a script builds a debug app, installs it on a USB or Wi-Fi iPhone, launches it and tails the device log. No commit, no upload, about a minute after the build. Scriptable, so agents use it too. When a Mac is present this is the inner loop; the Windows path is never forced on someone who has one.
+- **Screenshots in the pull-request summary.** The smoke UI test already runs; attach its screenshots to the run summary and artifact so a change is visible about eight minutes after a push with no Apple involvement. Keep attachments controlled (test-generated, sample data only).
+- **Ad hoc dev-build channel.** A development-signed build with registered device IDs installs by tapping an `itms-services` link in Safari, skipping App Store Connect processing: on the phone roughly ten minutes after a push. Needs one-time device registration, a reviewed HTTPS hosting decision (GitHub Releases for a public repo; a private location otherwise), profile expiry handling, and the same credential boundaries as delivery. No TestFlight crash symbolication; retained dSYMs cover that. Evaluate before building; record the decision.
+- **Automatic distribution on the TestFlight `dev` group.** The group was created with automatic distribution off, so every build needs a manual assignment. Turn it on for the owner-only internal group (or recreate the group, since the setting is fixed at creation) so an approved upload reaches the phone with no extra click. TestFlight remains the distribution tier, about twenty to thirty minutes including Apple processing, for when someone else should try a build.
+
+The development loop this produces, and what is required where:
+
+1. **Push to a branch, open a pull request, enable auto-merge.** Required checks, all under about ten minutes: portable script tests and manifest validation; one simulator smoke lane on the release toolchain (Xcode 27 / iOS 27) for the `starter` configuration; the unsigned signing and TestFlight preflights only when workflows, the manifest or export options change. Draft pull requests skip the simulator; documentation-only changes skip it through a path filter that still reports the required check as passed. Superseded runs are cancelled, so per-push simulator runs are not overkill.
+2. **On `main`:** the full three-app matrix and preflights, the exact-merge evidence Windows reviews. The example configurations move here from pull requests; they are overlays of the same code.
+3. **Nightly and weekly, never required:** the compatibility matrix across every hosted runtime, the examples, the deliberate-failure report probe, and later a broad UI suite. The pull-request UI suite stays a small smoke set so the gate stays under ten minutes as modules grow.
+4. **On the phone when wanted:** a Mac uses `run-on-device`; Windows uses screenshots, then the ad hoc channel, then one approved TestFlight dispatch from `main` when a human or tester should step through it. Simulator and automated UI tests have passed by construction before any device step.
+5. **Back from the phone:** TestFlight feedback through the fixed reader becomes a sanitized issue draft.
+
+A scratch branch that is amended and force-pushed, then squash-merged, leaves no trace in history; the push is the unit GitHub understands, and the commit costs nothing.
+
+Nobody waits on CI, not even a small model. Auto-merge lets GitHub merge when required checks pass; `gh pr checks <n> --watch` or a background shell loop blocks for free when a result is needed in-session; the review command reads outcomes afterwards. The `main` ruleset with required checks is what makes auto-merge possible, so it is the first setting to add.
+
 ### 5. Module boundaries and app essentials, round one
 
 Templates copy once. An app created with "Use this template" never receives later template changes, so backpropagation needs versioned packages that generated apps depend on.

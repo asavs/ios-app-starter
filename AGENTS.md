@@ -25,6 +25,10 @@ Read `roadmap.md`, `README.md`, and `docs/setup-experience.md` (the journal inde
 - At the signing/release milestones, scope credential access to the release job and intended environment. Keep pull-request builds unsigned and secretless. Preview account changes; do not silently revoke existing signing assets.
 - Repository visibility is a user decision. Private source is not a substitute for secure credential handling; do not change visibility without user authorization.
 
+## Do not wait on CI
+
+Never poll GitHub Actions from a model loop or spawn an agent to watch a run. Open the pull request, enable auto-merge once required checks exist (`gh pr merge <n> --auto --merge`), and move on. When a result is needed in this session, block in a shell for free (`gh pr checks <n> --watch`, `gh run watch <id>`, or a background `until` loop) and read the outcome with `python scripts/review_ci.py` afterwards. Keep required checks under about ten minutes; anything slower is scheduled or manual.
+
 ## Leave a breadcrumb trail
 
 Update the setup journal whenever setup, implementation, or verification reveals a non-obvious failure, limitation, workaround, or important decision. `docs/setup-experience.md` is the index; add the entry to the current milestone's file in `docs/journal/<milestone>.md`, newest first. Record:
