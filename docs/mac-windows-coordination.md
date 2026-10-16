@@ -45,13 +45,29 @@ Use this compact format for each task; update status from implementation to awai
 
 ## Current handoff
 
+Updated 2026-10-16. Detailed per-order records follow below in chronological order; this section is the summary to read first.
+
+| Order | Task | Status | Evidence |
+| --- | --- | --- | --- |
+| 1 | Consolidated CI evidence | Verified | [PR #23](https://github.com/asavs/ios-app-starter/pull/23), merge `dd583f0`; record below |
+| 2 | Faster iteration | Verified | [PR #24](https://github.com/asavs/ios-app-starter/pull/24), merge `d9dbdfc`; single-app, expected-red and cancellation runs recorded below |
+| 3 | Tester feedback loop | Verified | Real feedback for build 1.0 (1.9.1) reviewed in the browser and through the fixed CLI reader; [issue #25](https://github.com/asavs/ios-app-starter/issues/25) awaits an owner decision |
+| 4 | OS runtime coverage | In progress | Inventory merged in [PR #26](https://github.com/asavs/ios-app-starter/pull/26); Windows acceptance record in [PR #27](https://github.com/asavs/ios-app-starter/pull/27); Xcode 16.4 / iOS 18.5 probe in [PR #28](https://github.com/asavs/ios-app-starter/pull/28); tracking [issue #29](https://github.com/asavs/ios-app-starter/issues/29) |
+
+- **Next Mac action:** None until Windows dispatches the probe from `main` and returns evidence. If the probe fails, fix the exact failing step. If it passes, inventory `macos-14` for an iOS 17 route.
+- **Next Windows action:** Review and merge PR #28 after PR #27, dispatch `gh workflow run ios18-compatibility.yml --ref main --field configuration=starter`, inspect `ios-test-results-starter-ios18-5`, and record results under issue #29 and the probe handoff below.
+- **Owner decision pending:** Issue #25 (demo mark). Not a milestone 7 gate.
+- **Milestone 8 remains blocked** until the minimum-OS gate in issue #29 is resolved with evidence or an explicit documented decision.
+
+## Order 1 handoff record (verified 2026-10-13)
+
 - **Current task:** Order 1, consolidated CI evidence. Implementation is on `codex/ci-evidence-review`, based on merged main `09ad9d5`; shared handoff documentation commits were carried forward as `bb2d3d0` and `02f0cca`.
 - **Implemented:** `scripts/review_ci.py` combines PR checks, elapsed times, skip states, test/app/symbol evidence, artifact run links, checkout/head comparison, and workflows/artifacts for the exact merge commit. The iOS and TestFlight summaries now show compiled identity and archive/dSYM UUID evidence with run links. `README.md` documents the Windows command.
 - **Windows verification command:** `python scripts/review_ci.py --pr <number>`; use `--no-download` to review check states/links only and `--require-checkout-head` to fail when local `HEAD` differs from the PR head. It reads only selected sanitized fields from recognized artifacts and downloads them to a temporary directory.
 - **PR acceptance (Windows, 2026-10-13):** [PR #23](https://github.com/asavs/ios-app-starter/pull/23), latest reviewed head `0420ac37ed721df6608aa4951146272fb1dc699c` (`0420ac3`). `python scripts/review_ci.py --pr 23` reported checkout/head `MATCH`. All required checks passed: [portable Windows/Linux/macOS](https://github.com/asavs/ios-app-starter/actions/runs/38345234212), [signing preflight](https://github.com/asavs/ios-app-starter/actions/runs/38345234328), [TestFlight preflight](https://github.com/asavs/ios-app-starter/actions/runs/38345234235), and [three iOS 27 simulator lanes](https://github.com/asavs/ios-app-starter/actions/runs/38345234226). The simulator checks took 7m52s (Pocket Notes), 8m23s (Starter App demo), and 10m (Starter); each artifact reports 1/1 passed, 0 failed, 0 skipped on iPhone 17 / iOS 27.0, with app identity and report links. Bundle IDs are `org.example.pocketnotes`, `com.asaschaeffer.starterappdemo`, and `com.example.StarterApp`; all report iOS 17.0 minimum and device families 1,2. TestFlight preflight reports a matching archive app/dSYM UUID `B3197B45-3C86-36B4-91A4-6EC891966551` (`arm64`). Configuration, account, archive, and delivery jobs were skipped by policy and are not counted as passes. No signing or upload was dispatched; no exported-IPA comparison was run. The rendered iOS and TestFlight job summaries were visually inspected on GitHub Actions and show counts, runtime, compiled app identity, UUID and run/artifact links.
 - **Existing-PR exercise:** The same command reviewed [PR #22](https://github.com/asavs/ios-app-starter/pull/22) plus exact merge `09ad9d5` and correctly flagged checkout mismatch. It showed all three PR and main simulator reports as 1/1 passed and archive UUID/policy skips. The full portable suite passes locally on Windows: 54 tests, 3 platform/dependency skips.
 - **Known boundary:** TestFlight preflight's symbol report verifies archive app/dSYM matching. It does not verify an exported IPA. Do not dispatch signing or upload for reporting acceptance; `retain_symbols` remains off for this public repository.
-- **Current status:** Windows acceptance for PR head `0420ac3` is complete; documentation revision checks and merge are pending. After merge, run `python scripts/review_ci.py --pr 23` again to inspect exact merge-commit workflows/artifacts, record the merge SHA and results here, then mark order 1 verified. Keep exported-IPA UUID verification pending the next authorized delivery. Do not begin order 2 before order 1 is verified.
+- **Current status:** Verified. PR #23 merged as [`dd583f0`](https://github.com/asavs/ios-app-starter/commit/dd583f0); Windows reviewed the exact merge-commit workflows and artifacts (see the setup journal, 2026-10-12 order 1 entry). The pre-merge instructions were: Windows acceptance for PR head `0420ac3` is complete; documentation revision checks and merge are pending. After merge, run `python scripts/review_ci.py --pr 23` again to inspect exact merge-commit workflows/artifacts, record the merge SHA and results here, then mark order 1 verified. Keep exported-IPA UUID verification pending the next authorized delivery. Do not begin order 2 before order 1 is verified.
 
 ## Approval boundaries
 

@@ -1,6 +1,6 @@
 # Device diagnostics and OS coverage
 
-**Status (2026-10-12): milestone 7 is in progress.** Milestone 6 TestFlight delivery is complete for the acceptance app, but this repository does not yet provide a Windows workflow for collecting/triaging device reports or a simulator lane for iOS 17. Treat this page as the design boundary and implementation checklist, not as a claim that diagnostics are already available.
+**Status (2026-10-16): milestone 7 is in progress.** The tester feedback loop is verified (see [tester feedback](tester-feedback.md)): TestFlight feedback can be read from Windows with the fixed CLI reader or the App Store Connect browser and triaged into sanitized issues. Archive app/dSYM UUID checks run in TestFlight preflight. This repository still provides no hosted symbolication, no crash-report reader and no simulator lane below iOS 27.0; see [issue #29](https://github.com/asavs/ios-app-starter/issues/29). Treat this page as the design boundary and conditional backlog, not as a claim that every diagnostic is available.
 
 ## What can be used now
 
