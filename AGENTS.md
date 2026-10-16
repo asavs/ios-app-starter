@@ -1,6 +1,6 @@
 # Working on this starter
 
-Read `roadmap.md`, `README.md`, and `docs/setup-experience.md` before changing the template. The roadmap records agreed decisions and milestone gates; the experience journal records observed failures, fixes, and verification evidence.
+Read `roadmap.md`, `README.md`, and `docs/setup-experience.md` (the journal index; entries live in `docs/journal/<milestone>.md`) before changing the template. The roadmap records agreed decisions and milestone gates; the experience journal records observed failures, fixes, and verification evidence.
 
 ## Product constraints
 
@@ -27,7 +27,7 @@ Read `roadmap.md`, `README.md`, and `docs/setup-experience.md` before changing t
 
 ## Leave a breadcrumb trail
 
-Update `docs/setup-experience.md` whenever setup, implementation, or verification reveals a non-obvious failure, limitation, workaround, or important decision. Record:
+Update the setup journal whenever setup, implementation, or verification reveals a non-obvious failure, limitation, workaround, or important decision. `docs/setup-experience.md` is the index; add the entry to the current milestone's file in `docs/journal/<milestone>.md`, newest first. Record:
 
 1. The date, task/milestone, and relevant tool versions.
 2. The symptom and whether the cause is confirmed or suspected.
