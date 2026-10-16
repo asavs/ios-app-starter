@@ -19,6 +19,8 @@ checks = {
     'CFBundleIdentifier': expected['bundleIdentifier'],
     'MinimumOSVersion': expected['minimumIOS'],
     'UIDeviceFamily': sorted(int(part.strip()) for part in expected['deviceFamilies'].split(',')),
+    # Declared in project.yml so Apple never asks the per-build export-compliance question.
+    'ITSAppUsesNonExemptEncryption': False,
 }
 for key, value in checks.items():
     if actual.get(key) != value:

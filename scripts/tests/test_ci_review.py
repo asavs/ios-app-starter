@@ -317,7 +317,7 @@ class CIReviewTests(unittest.TestCase):
                 plistlib.dump({
                     "CFBundleDisplayName": "Starter App",
                     "CFBundleIdentifier": "com.example.StarterApp",
-                    "MinimumOSVersion": "17.0", "UIDeviceFamily": [1, 2],
+                    "MinimumOSVersion": "17.0", "UIDeviceFamily": [1, 2], "ITSAppUsesNonExemptEncryption": False,
                 }, output)
             summary = root / "step-summary.md"
             env = os.environ.copy()
