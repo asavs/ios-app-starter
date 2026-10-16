@@ -149,7 +149,9 @@ class BundleIdentifierTests(unittest.TestCase):
                 bundle_identifier(app)
 
 
-@unittest.skipUnless(shutil.which("bash"), "bash required")
+# Windows resolves `bash` to the WSL launcher stub, which exits 1 without output when no
+# distribution is installed; the script itself is macOS-only (devicectl), so skip there.
+@unittest.skipUnless(shutil.which("bash") and sys.platform != "win32", "a POSIX bash is required")
 class DryRunScriptTests(unittest.TestCase):
     """Drive the shell script against a saved device list without xcrun, a device, or a team account."""
 
