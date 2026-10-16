@@ -39,7 +39,7 @@ Update the setup journal whenever setup, implementation, or verification reveals
 4. The verification result, with commit/run links where useful.
 5. Remaining uncertainty and any onboarding/tooling improvement needed.
 
-Distinguish observed behavior from assumptions. Report material trouble to the user as it occurs, explain the resolution, and mention any remaining limitation. Turn recurring workarounds into documented commands or onboarding improvements. Avoid duplicating raw logs; preserve the useful diagnosis and evidence.
+When a step needs a person, add or update its row in `docs/human-steps.md` with the automation path before telling the user it is theirs to do. Distinguish observed behavior from assumptions. Report material trouble to the user as it occurs, explain the resolution, and mention any remaining limitation. Turn recurring workarounds into documented commands or onboarding improvements. Avoid duplicating raw logs; preserve the useful diagnosis and evidence.
 
 ## Apple setup diagnostics
 

@@ -78,6 +78,8 @@ Templates copy once. An app created with "Use this template" never receives late
 - Human-only prerequisites the agent asks for by name: Apple Developer Program enrollment and payment; agreement acceptance; App Store Connect API key creation and the one-time `.p8` download; App Store Connect app record creation (verify whether the API permits this; it is believed not to); `gh auth login`; environment required-reviewer setup; export compliance answers; accepting the TestFlight install on the phone.
 - Agent-runnable steps with the exact existing commands: credential-free doctor, credential bootstrap over stdin, diagnostics, signing and delivery dispatch, CI review, feedback read.
 - The permission script: what the agent says before each account-affecting action, what approval looks like, and what it never does (revoke, broaden keys, create duplicate records, change visibility).
+- Consent once, not per step: the runbook starts with a checklist of permission categories from [the human-step ledger](human-steps.md) (`github-settings`, `apple-read`, `apple-provisioning`, `apple-testflight`, `apple-browser`, `device-install`). Granted categories are never asked about again; ungranted ones stop with a clear request. The guided setup command reads the same consent.
+- Automate the ledger: every row whose path is API/CLI or Config becomes a scripted step; rows marked Browser agent become computer-use tasks run in the user's signed-in browser, asking only for second-factor codes. Rows marked Human are the only prompts left: enrollment and payment, agreements, `gh auth login`, Developer Mode and trusting the computer, and the first TestFlight invitation.
 - A failure table mined from the journal: Windows sandbox blocking the key path, App Store Connect login redirect, simulator timeouts, build number gaps, tester group default, queued runs misread as passes.
 - `scripts/setup.py`: a resumable state machine over the existing scripts. Each stage stops before anything account-affecting, prints the exact next human action, and records where it stopped. Subsumes #2, #3, #4 and #17. Works identically from PowerShell and Terminal, with portable tests on all three OS runners.
 - Resolves #1 by recording the stored key's role (not secret) and #7 by documenting the existing no-echo bootstrap.
@@ -106,6 +108,7 @@ Templates copy once. An app created with "Use this template" never receives late
 - Channel contract package: identity mapping, authentication, message IDs, deduplication, retries, delivery state, outbound-echo handling.
 - Simulated bridge tested entirely on GitHub Actions.
 - Live bridge last, the one feature needing a persistent Mac; CI validates the artifact and a separately enabled live check passes.
+- Cloud computer decision happens here, not earlier: nothing before the live bridge needs a machine beyond hosted runners and the user's devices, and the browser agent runs where the user's signed-in browser is. Criteria and candidates are in [the ledger](human-steps.md).
 
 ### 11. Optional Apple platforms
 
@@ -120,6 +123,7 @@ Templates copy once. An app created with "Use this template" never receives late
 
 - Nothing enters the template that has not been needed by at least one real app.
 - Any step a human had to repeat twice becomes a script or a runbook entry the same week.
+- Any step described as "only you can do this" gets a row in [the human-step ledger](human-steps.md) the same day, with its automation path.
 - Any failure that cost more than an hour gets a journal entry with the fix, same day.
 - Required CI stays under fifteen minutes, or the slow part moves to a manual lane.
 - Compatibility claims name the OS versions actually executed. Configuration is not evidence.
