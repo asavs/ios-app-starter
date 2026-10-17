@@ -40,7 +40,7 @@ The owner already has an app on a phone. What slows the next build is reading wh
 - **Done 2026-10-16 (PR #36).** One command that answers "what happened on my last run": extend `scripts/review_ci.py` to take a run ID or "latest on this branch", not only a PR number.
 - Feedback to issue draft: the fixed TestFlight feedback reader produces a sanitized issue body in the documented format for the agent to review before filing.
 - Build caching, measured before changed: record cold versus warm times for the current lanes; add Swift package dependency caching when packages arrive in step 5; keep signed outputs and credentials out of caches.
-- Delivery convenience: a single command that proposes the next build, dispatches delivery, waits for the environment approval, and reports "Ready to Test" or the exact failing stage.
+- **Done 2026-10-17 (`scripts/deliver_testflight.py`).** Delivery convenience: a single command that proposes the next build, dispatches delivery, waits for (or performs, with `--approve`) the environment approval, and reports Apple's processing state or the exact failing job and step. "Ready to Test" itself is not claimed; `VALID` plus the automatic-distribution group is what puts the build on the phone.
 - Acceptance: an agent can go from a red run to a named failure in one command, and from a fix on `main` to a build on the phone in one approved dispatch, with every step readable without opening the Actions UI.
 
 Seeing a change on a phone should not require TestFlight. Added 2026-10-16:

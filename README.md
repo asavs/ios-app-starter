@@ -106,6 +106,17 @@ python scripts/review_ci.py --latest --workflow iOS --no-download
 
 `--run` shows the workflow, event, head, each job's conclusion and elapsed time, and the recognized artifacts; for the compatibility matrix it prints the verified runtimes and every lane's status, device, toolchain and counts. `--latest` picks the newest run for the checkout branch (`--branch` to override, `--workflow` to filter) and says which run it chose. Replace `123` with the pull request number. The command shows check conclusions and elapsed time, clearly labels skipped jobs, downloads recognized test and preflight artifacts to a temporary directory, and reports test counts, simulator runtime, compiled app identity, symbol UUIDs, and artifact links. For merged pull requests it also finds workflows for the exact merge commit. It compares the current checkout commit with the PR head and prints `MATCH` or `MISMATCH`; use `--require-checkout-head` to fail when they differ, or `--no-download` to list checks and links only. A TestFlight preflight symbol match verifies the unsigned archive app/dSYM. Exported-IPA matching is reported only when a delivery artifact contains that check. The command reads only selected sanitized fields and never prints raw logs or account diagnostic contents.
 
+## Deliver to TestFlight in one command
+
+Once a change is on `main` with a green smoke run, one command proposes the build, dispatches **TestFlight delivery** with `perform_upload`, waits for the `apple-credentials` gate, and reports each stage:
+
+```powershell
+python scripts/deliver_testflight.py --configuration starter-app-demo --dry-run
+python scripts/deliver_testflight.py --configuration starter-app-demo --approve
+```
+
+The proposal names the `main` head, the newest iOS push run for it and any delivery already in flight (a second dispatch is refused while one is running). `--approve` approves the environment gate under your own GitHub login once preflight passes; without it the command prints the exact `gh api` approval command and keeps waiting. The final report lists release-plan, delivery-validation, upload-report and processing-report statuses from the sanitized artifact and ends with one line: processed by Apple (`VALID`), upload accepted but still processing, or the exact failing job and step, with a warning when the upload was accepted before a later step failed. `--run <id>` resumes a run after a timeout (exit code 3). See [docs/testflight-delivery.md](docs/testflight-delivery.md).
+
 ## Reference tools
 
 For setup troubleshooting and agent handoff, see [the experience journal](docs/setup-experience.md) and [agent instructions](AGENTS.md). The journal records observed problems, fixes, test evidence, and remaining gaps; update it as development proceeds.
