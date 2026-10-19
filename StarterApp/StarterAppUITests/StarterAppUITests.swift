@@ -25,7 +25,25 @@ final class StarterAppUITests: XCTestCase {
     func testWelcomeScreen() throws {
         // UI tests must launch the application that they test.
         let app = XCUIApplication()
+        // Force the onboarding flow when the Onboarding module is enabled: UserDefaults reads this
+        // launch argument ahead of the stored completion, so the smoke test covers a first launch.
+        app.launchArguments += ["-onboarding.completedVersion", "0"]
         app.launch()
+
+        // Step through onboarding when it appears; with the module disabled the welcome screen is first.
+        let next = app.buttons["onboarding.next"]
+        if next.waitForExistence(timeout: 5) {
+            let onboarding = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            onboarding.name = "onboarding-first-page"
+            onboarding.lifetime = .keepAlways
+            add(onboarding)
+            var taps = 0
+            while next.exists, taps < 10 {
+                next.tap()
+                taps += 1
+            }
+            XCTAssertFalse(next.waitForExistence(timeout: 2), "Onboarding should finish after its last page")
+        }
 
         let visible = app.staticTexts["Hello, world!"].waitForExistence(timeout: 10)
 
@@ -42,7 +60,9 @@ final class StarterAppUITests: XCTestCase {
     func testLaunchPerformance() throws {
         // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
+            let app = XCUIApplication()
+            app.launchArguments += ["-onboarding.completedVersion", "1"] // Measure the app, not onboarding.
+            app.launch()
         }
     }
 }

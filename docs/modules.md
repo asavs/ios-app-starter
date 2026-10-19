@@ -21,6 +21,7 @@ The template is copied once ("Use this template"), so later improvements reach e
 | --- | --- | --- |
 | `TemplateVersion` | The library version an app was built against; equals the git tag. | `TemplateVersion.modules`; the welcome screen shows it. |
 | `Theme` | Design tokens and shared UX elements, system-following by default. | Read `@Environment(\.appTheme)`; customize once at the root with `.appTheme(_:)`. |
+| `Onboarding` | First-launch page flow, remembered per version. Requires `Theme`. | `ContentView().onboardingGate(pages:version:)`; pages are `OnboardingPage` values. |
 
 ### Theme
 
@@ -40,6 +41,27 @@ The template is copied once ("Use this template"), so later improvements reach e
 ```
 
 The template's welcome screen puts its build details on a `ThemedCard` under `#if canImport(Theme)`. The module's tests are host-portable (`swift test`) because the tokens and the appearance mapping hold no UIKit; the views compile for macOS too.
+
+### Onboarding
+
+`OnboardingView(pages:onFinish:)` is a swipeable `TabView` page flow with a Skip button, a Continue button and a final call to action (`Get started`); the labels are parameters, and `skipTitle: nil` removes Skip. Each `OnboardingPage` is an SF Symbol, a title and a message, laid out by `OnboardingPageView` with the theme's tokens, so the module depends on `Theme`. `OnboardingPager` holds the position rules (advance, clamp, finish) as a plain value with its own tests.
+
+`.onboardingGate(pages:version:record:)` shows the flow in place of its content until the user finishes it once. `OnboardingRecord` stores the completed version in `UserDefaults` under `onboarding.completedVersion`; raise `version` when the flow changes enough to show again, and call `reset()` from a settings screen to show it on the next launch. Nothing here is secret, so `UserDefaults` is the right store; Keychain values are the Settings module's job. Accessibility identifiers for UI tests: `onboarding.next`, `onboarding.skip`, `onboarding.page.<id>`.
+
+```swift
+@main struct MyApp: App {
+    var body: some Scene {
+        WindowGroup {
+            ContentView().onboardingGate(pages: [
+                OnboardingPage(systemImage: "sparkles", title: "Welcome", message: "What the app does."),
+                OnboardingPage(systemImage: "bell", title: "Stay informed", message: "Why notifications help."),
+            ], version: 1)
+        }
+    }
+}
+```
+
+The template app gates `ContentView` behind `OnboardingPage.templateDefaults` under `#if canImport(Onboarding)`. A UI test forces the flow with the launch argument `-onboarding.completedVersion 0` (`UserDefaults` reads arguments ahead of stored values) and skips it with `-onboarding.completedVersion 1`; the welcome-screen smoke test taps through the pages when they appear and asserts the welcome text either way, so it also passes with the module disabled. The page style exists on iOS only; under `#if os(iOS)` the view uses it, elsewhere a plain page switch, so `swift test` still runs host-side.
 
 ## Add a module
 
