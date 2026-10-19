@@ -2,6 +2,13 @@
 
 Entries for the pull-request gate, path filters, repository settings, device iteration tiers and reporting improvements. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-19 — Decide whether to pursue the ad hoc dev-build channel
+
+- **Context and tools:** `ios-adhoc-eval`, master plan step 4. Reviewed the roadmap, README, setup journal index, master plan, TestFlight guide and human-step ledger. Git 2.54.0.windows.1; Apple Developer documentation checked on 2026-10-19. No Xcode command was needed.
+- **Finding:** Apple supports Ad Hoc distribution for registered devices and Xcode's export flow can include an over-the-air installation manifest. Apple documents a limit of 100 devices per product family per membership year; disabling a device does not restore that year's slot. This channel therefore avoids App Store Connect processing but carries device-list, profile, hosting and install requirements. This is documentation research; no OTA install was run on a device.
+- **Decision:** Proceed with an optional Windows-to-owner-device fast lane, while keeping TestFlight for other testers and its feedback flow. The binary's host must be chosen according to the generated app's visibility and sensitivity. A public template repository is not permission to publish a user's app binary publicly. The follow-up hosting task must settle the artifact location/access policy before implementation; signed builds must use the existing restricted credential and approval boundary.
+- **Verification and next step:** Updated the ad hoc decision in `docs/master-plan.md`, added the explicit public-binary approval step to `docs/human-steps.md`, and reviewed the documentation-only diff. Apple sources: [registered-device distribution](https://developer.apple.com/documentation/xcode/distributing-your-app-to-registered-devices), [device limits](https://developer.apple.com/help/account/devices/devices-overview), and [distribution methods](https://developer.apple.com/documentation/xcode/distributing-your-app-for-beta-testing-and-releases). Actual HTTPS install, profile renewal, artifact access control and phone acceptance remain unverified. Resolve `ios-adhoc-host` before designing the workflow.
+
 ## 2026-10-19 — Cold and warm CI cache measurements
 
 - **Context:** Master plan step 4 called for measuring before changing build caches. The pinned public tool downloads (XcodeGen and App Store Connect CLI) already use verified Actions caches; simulator DerivedData is intentionally fresh per run. Tools: GitHub Actions runner step timestamps and logs; current `main` run `39323984923` at `ba593d4`.
