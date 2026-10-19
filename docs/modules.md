@@ -15,6 +15,32 @@ The template is copied once ("Use this template"), so later improvements reach e
 
 `scripts/check-modules.py` validates all of this from `swift package dump-package` and the generated project, and writes `modules.json` (modules, enabled, disabled, platforms) that CI uploads with the test results. The `iOS` workflow runs it on every lane.
 
+## Available modules
+
+| Module | Purpose | Use |
+| --- | --- | --- |
+| `TemplateVersion` | The library version an app was built against; equals the git tag. | `TemplateVersion.modules`; the welcome screen shows it. |
+| `Theme` | Design tokens and shared UX elements, system-following by default. | Read `@Environment(\.appTheme)`; customize once at the root with `.appTheme(_:)`. |
+
+### Theme
+
+`AppTheme` carries semantic colors (`accent`, `onAccent`, `background`, `surface`, `textPrimary`, `textSecondary`, `success`, `warning`, `danger`), a spacing scale (4/8/16/24/32), corner radii (8/12/20) and text roles (`title`, `headline`, `body`, `caption`). `AppTheme.standard` uses dynamic system colors, the asset-catalog accent and Dynamic Type styles, so it adapts to dark mode and text size without configuration. Elements: `PrimaryButtonStyle` and `SecondaryButtonStyle` (`.buttonStyle(.primary)` / `.secondary`, full width, disabled and pressed states), `ThemedCard { }` (grouped content on `surface`), and `EmptyStateView(systemImage:title:message:actionTitle:action:)`. `AppearancePreference` (`system`/`light`/`dark`, stable raw values for storage) maps to `preferredColorScheme`; the Settings module is meant to persist it.
+
+```swift
+@main struct MyApp: App {
+    var theme: AppTheme {
+        var theme = AppTheme.standard
+        theme.colors.accent = Color("Brand")  // asset catalog color
+        return theme
+    }
+    var body: some Scene {
+        WindowGroup { ContentView().appTheme(theme) }
+    }
+}
+```
+
+The template's welcome screen puts its build details on a `ThemedCard` under `#if canImport(Theme)`. The module's tests are host-portable (`swift test`) because the tokens and the appearance mapping hold no UIKit; the views compile for macOS too.
+
 ## Add a module
 
 1. Create `Modules/<Name>/Sources/<Name>.swift` and `Modules/<Name>/Tests/<Name>Tests.swift` (Swift Testing).
@@ -32,7 +58,7 @@ IOS_TEST_DESTINATION='platform=iOS Simulator,name=iPhone 17,OS=26.5' bash script
 swift test                                             # host-side, all host-portable modules
 ```
 
-Xcode derives a single scheme, `StarterModules`, from the manifest; the script selects one module with `-only-testing:<Name>Tests` and writes the same `summary.md`, `results.json` and log layout as `test-ios.sh`. A per-module CI lane and the required every-module-disabled lane are the next step on the board.
+Xcode derives schemes from the manifest: one scheme per product plus `StarterModules-Package` (with a single product, just `StarterModules`). Only the package-wide scheme has a test action, so the script runs it with `-only-testing:<Name>Tests` and writes the same `summary.md`, `results.json` and log layout as `test-ios.sh`. A per-module CI lane and the required every-module-disabled lane are the next step on the board.
 
 ## Release a version
 

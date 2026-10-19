@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		1D07C887DB8743D47EFEF00C /* StarterAppUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8D93B988D8534CAF4748EAB /* StarterAppUITests.swift */; };
+		264FE5A08BFF4B78E4DBAC2F /* Theme in Frameworks */ = {isa = PBXBuildFile; productRef = 144F0453F5E7CB7218BACDCE /* Theme */; };
 		5EB40DD72AB95E7B7C111EF0 /* StarterAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD60802B2CF34042A128A2F5 /* StarterAppApp.swift */; };
 		64907FF9954BF68C58B1AB11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 81985762715118C68FC81834 /* Assets.xcassets */; };
 		9107E9765A60C6B4A906D978 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C993C2D64191E0D24B90D89 /* ContentView.swift */; };
@@ -52,6 +53,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AC1E853E30DD139D9A2B642E /* TemplateVersion in Frameworks */,
+				264FE5A08BFF4B78E4DBAC2F /* Theme in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -132,6 +134,7 @@
 			name = StarterApp;
 			packageProductDependencies = (
 				26545B50428408ABA4C4100D /* TemplateVersion */,
+				144F0453F5E7CB7218BACDCE /* Theme */,
 			);
 			productName = StarterApp;
 			productReference = FBF5C48B8DEE60F1BE83C0C8 /* StarterApp.app */;
@@ -564,6 +567,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		144F0453F5E7CB7218BACDCE /* Theme */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Theme;
+		};
 		26545B50428408ABA4C4100D /* TemplateVersion */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TemplateVersion;

@@ -31,6 +31,8 @@ targets:
     dependencies:
       - package: StarterModules
         product: TemplateVersion
+      - package: StarterModules
+        product: Theme
     settings:
       base:
         # User-facing name. Spaces are fine; this does not rename Swift modules.
