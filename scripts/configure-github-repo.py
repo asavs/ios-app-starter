@@ -12,6 +12,7 @@ import sys
 
 REPO_NAME = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\Z")
 RULESET_NAME = "main: pull requests with passing gate"
+APPLE_ENVIRONMENT = "apple-credentials"
 REQUIRED_CHECKS = ["ios-gate", "portable (ubuntu-latest)", "portable (windows-latest)", "portable (macos-latest)"]
 
 
@@ -54,6 +55,70 @@ def ruleset_body():
     }
 
 
+def apple_environment_plan(repo):
+    """Return a preview and apply function for the protected Apple credential environment."""
+    base = f"repos/{repo}"
+    metadata = gh_api(base)
+    caller = gh_api("user")
+    owner = metadata.get("owner") or {}
+    login = str(caller.get("login", ""))
+    reviewer_id = caller.get("id")
+    if not login or not isinstance(reviewer_id, int):
+        raise ConfigError("GitHub did not return the authenticated user's reviewer identity.")
+
+    # A personal repository owner may approve their own deployment. In every other
+    # case, prevent the workflow initiator from also approving the environment.
+    solo_owner = (owner.get("type") == "User"
+                  and str(owner.get("login", "")).casefold() == login.casefold())
+    prevent_self_review = not solo_owner
+    environments = gh_api(f"{base}/environments").get("environments", [])
+    current = next((item for item in environments if item.get("name") == APPLE_ENVIRONMENT), None)
+    if current:
+        policies = gh_api(f"{base}/environments/{APPLE_ENVIRONMENT}/deployment-branch-policies")
+        protection = next((rule for rule in current.get("protection_rules", [])
+                           if rule.get("type") == "required_reviewers"), {})
+        reviewers = []
+        for reviewer in protection.get("reviewers", []):
+            identity = reviewer.get("reviewer", {})
+            reviewers.append({"type": reviewer.get("type"), "login": identity.get("login"),
+                              "id": identity.get("id")})
+        current_value = {
+            "exists": True,
+            "reviewers": reviewers,
+            "prevent_self_review": protection.get("prevent_self_review"),
+            "deployment_branch_policy": current.get("deployment_branch_policy"),
+            "branches": [{"name": item.get("name"), "type": item.get("type")}
+                         for item in policies.get("branch_policies", [])],
+        }
+    else:
+        current_value = {"exists": False}
+
+    intended = {
+        "exists": True,
+        "reviewers": [{"type": "User", "login": login, "id": reviewer_id}],
+        "prevent_self_review": prevent_self_review,
+        "deployment_branch_policy": {"protected_branches": False, "custom_branch_policies": True},
+        "branches": [{"name": "main", "type": "branch"}],
+    }
+
+    def apply():
+        gh_api(f"{base}/environments/{APPLE_ENVIRONMENT}", "PUT", {
+            "reviewers": [{"type": "User", "id": reviewer_id}],
+            "prevent_self_review": prevent_self_review,
+            "deployment_branch_policy": {"protected_branches": False, "custom_branch_policies": True},
+        })
+        path = f"{base}/environments/{APPLE_ENVIRONMENT}/deployment-branch-policies"
+        policies = gh_api(path).get("branch_policies", [])
+        for policy in policies:
+            if policy.get("name") != "main" or policy.get("type") != "branch":
+                gh_api(f"{path}/{policy['id']}", "DELETE")
+        if not any(policy.get("name") == "main" and policy.get("type") == "branch"
+                   for policy in policies):
+            gh_api(path, "POST", {"name": "main"})
+
+    return current_value, intended, apply
+
+
 def plan(repo):
     """Return (label, current, intended, apply_callable) for every managed setting."""
     base = f"repos/{repo}"
@@ -64,6 +129,7 @@ def plan(repo):
     fork = gh_api(f"{base}/actions/permissions/fork-pr-contributor-approval")
     rulesets = gh_api(f"{base}/rulesets")
     existing = next((item for item in rulesets if item.get("name") == RULESET_NAME), None)
+    environment_current, environment_intended, apply_environment = apple_environment_plan(repo)
 
     items = [
         ("Auto-merge allowed", meta.get("allow_auto_merge"), True,
@@ -86,6 +152,8 @@ def plan(repo):
         (f"Ruleset '{RULESET_NAME}' on the default branch",
          "present" if existing else "absent", "present (pull request + required checks: " + ", ".join(REQUIRED_CHECKS) + ")",
          lambda: gh_api(f"{base}/rulesets", "POST", ruleset_body())),
+        (f"Environment '{APPLE_ENVIRONMENT}' (required reviewer + main only)",
+         environment_current, environment_intended, apply_environment),
     ]
     return items
 

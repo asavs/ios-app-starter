@@ -18,4 +18,4 @@ The journal is split by milestone under `docs/journal/`. New entries go in the c
 | [milestone-7-diagnostics.md](journal/milestone-7-diagnostics.md) | Milestone 7: diagnostics and OS coverage | 2026-10-12 to 2026-10-16 | 18 |
 | [milestone-8-iteration-loop.md](journal/milestone-8-iteration-loop.md) | Milestone 8: agent-comfortable iteration loop | 2026-10-16 onward | 8 |
 | [milestone-9-modules.md](journal/milestone-9-modules.md) | Milestone 9: module boundaries and app essentials | 2026-10-19 onward | 1 |
-| [milestone-10-onboarding.md](journal/milestone-10-onboarding.md) | Milestone 10: agent onboarding and guided setup | 2026-10-19 onward | 3 |
+| [milestone-10-onboarding.md](journal/milestone-10-onboarding.md) | Milestone 10: agent onboarding and guided setup | 2026-10-19 onward | 4 |

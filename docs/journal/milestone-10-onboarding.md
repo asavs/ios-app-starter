@@ -1,6 +1,13 @@
 # Milestone 10 journal: agent onboarding and guided setup
 
-Entries for the onboarding runbook, consent model, and resumable setup command. Newest first. Index: [setup-experience.md](../setup-experience.md).
+Entries for the fresh-repository onboarding path, consent model, and resumable setup command. Newest first. Index: [setup-experience.md](../setup-experience.md).
+
+## 2026-10-19 — Script the Apple credentials environment policy
+
+- **Context:** The onboarding guide and human-step ledger still described `apple-credentials` creation as a manual GitHub UI step, although GitHub's REST API supports environment reviewers and deployment branch policies. Relevant command versions were not queried in this local implementation session.
+- **Change:** `configure-github-repo.py` now previews and applies a required reviewer, a `main`-only deployment policy, and a self-review setting. It uses the authenticated user as reviewer; the personal repository owner may approve their own deployment, while other configurations prevent self-review. The bootstrap runbook, README, and human-step ledger now describe this path.
+- **Verification:** Reviewed the code and documentation changes locally. No GitHub API call or test suite was run, so live permissions and endpoint behavior remain unverified.
+- **Remaining uncertainty:** GitHub may reject environment protection changes for a repository plan or permission level that cannot manage deployment environments. Run the script's dry run and apply only after reviewing the exact reviewer and policy; retain the current UI path as a fallback if API access is unavailable.
 
 ## 2026-10-19 — No-echo credential bootstrap guidance
 
