@@ -1,5 +1,10 @@
 # Working on this starter
 
+## Start here
+
+- **Setting up an app from this template** (fresh repository to the app on the owner's iPhone): follow [`docs/agent-onboarding.md`](docs/agent-onboarding.md) in order. It lists what to ask the owner for, the commands to run, what to say before each account-affecting action, and the known failures.
+- **Changing the template itself:** read the rest of this file first.
+
 Read `roadmap.md`, `README.md`, and `docs/setup-experience.md` (the journal index; entries live in `docs/journal/<milestone>.md`) before changing the template. The roadmap records agreed decisions and milestone gates; the experience journal records observed failures, fixes, and verification evidence.
 
 ## Product constraints
