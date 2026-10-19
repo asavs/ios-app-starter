@@ -3,8 +3,10 @@ set -euo pipefail
 
 # Builds the module library and runs one module's tests on an iOS simulator, with the same
 # report layout as scripts/test-ios.sh. Usage: bash scripts/test-module.sh <Module>
-# Xcode derives a single scheme (StarterModules) from Package.swift; per-module selection is
-# -only-testing on that scheme's <Module>Tests target.
+# Xcode derives schemes from Package.swift: with one product, a single scheme named after the
+# package; with several, one scheme per product plus "<Package>-Package". Only the package-wide
+# scheme has a test action (per-product schemes report "not currently configured for the test
+# action"), so the module is selected with -only-testing on that scheme's <Module>Tests target.
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 module="${1:-}"
 if [[ -z "$module" || ! -d "$repo_dir/Modules/$module" ]]; then
@@ -19,9 +21,20 @@ report_dir="$(mktemp -d "$report_root/module-$module.XXXXXX")"
 printf 'Test reports: %s\n' "$report_dir"
 
 cd "$repo_dir" # xcodebuild reads Package.swift from the working directory; there is no project here.
+scheme="$(xcodebuild -list -json 2>/dev/null | python3 -c '
+import json, sys
+schemes = json.load(sys.stdin).get("workspace", {}).get("schemes", [])
+for candidate in ("StarterModules-Package", "StarterModules"):
+    if candidate in schemes:
+        print(candidate)
+        break
+else:
+    sys.exit("no package-wide scheme among " + ", ".join(schemes))
+')"
+printf 'Scheme: %s\n' "$scheme"
 set +e
 xcodebuild \
-  -scheme StarterModules \
+  -scheme "$scheme" \
   -destination "$destination" \
   -derivedDataPath "$report_dir/DerivedData" \
   -resultBundlePath "$report_dir/Tests.xcresult" \
