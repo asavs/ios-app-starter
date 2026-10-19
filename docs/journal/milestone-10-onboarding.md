@@ -2,6 +2,13 @@
 
 Entries for the onboarding runbook, consent model, and resumable setup command. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-19 — No-echo credential bootstrap guidance
+
+- **Context:** Stage C showed the existing transfer command but still labeled its safety write-up a placeholder. The implementation sends the private key through `gh` standard input, validates the environment before transfer, and confirms secret names without reading values.
+- **Change:** Documented the environment checks, outside-checkout key path, stdin-only transfer, captured CLI errors, secret-name-only confirmation, non-secret key-type variable, and the sequential-write/partial-failure recovery path. Removed issue #7 from the onboarding gaps; issue #1 remains because the stored key's role is not learned from secret metadata.
+- **Tools and verification:** Windows PowerShell 5.1.26100.9711, Python 3.13.14, Git 2.54.0.windows.1. Documentation-only review against `scripts/bootstrap-apple-credentials.py`, its existing tests, and Stage C's approval rules; tests were not run.
+- **Remaining uncertainty:** The bootstrap confirms secret names, not the contents, key validity at App Store Connect, or key role. Role must be confirmed and recorded separately without exposing the key.
+
 ## 2026-10-19 — Resumable setup checkpoints
 
 - **Context:** The onboarding runbook had human-readable stages but no saved progress. A fresh agent or interrupted setup had to infer which stages and permission categories had already been handled.
