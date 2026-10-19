@@ -15,12 +15,15 @@ let package = Package(
     products: [
         .library(name: "TemplateVersion", targets: ["TemplateVersion"]),
         .library(name: "Theme", targets: ["Theme"]),
+        .library(name: "Onboarding", targets: ["Onboarding"]),
     ],
     targets: [
         .target(name: "TemplateVersion", path: "Modules/TemplateVersion/Sources"),
         .testTarget(name: "TemplateVersionTests", dependencies: ["TemplateVersion"], path: "Modules/TemplateVersion/Tests"),
         .target(name: "Theme", path: "Modules/Theme/Sources"),
         .testTarget(name: "ThemeTests", dependencies: ["Theme"], path: "Modules/Theme/Tests"),
+        .target(name: "Onboarding", dependencies: ["Theme"], path: "Modules/Onboarding/Sources"),
+        .testTarget(name: "OnboardingTests", dependencies: ["Onboarding"], path: "Modules/Onboarding/Tests"),
     ],
     swiftLanguageModes: [.v6]
 )
