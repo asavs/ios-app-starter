@@ -81,16 +81,22 @@ Needs `github-settings`. The owner must be enrolled (section 1) before an API ke
 2. Present the concrete plan: team, key type, the chosen role, environment policy ([section 3](#3-permission-script)). Only then ask for the key (section 1).
 3. The `apple-credentials` environment must exist with exactly one deployment-branch rule for `main` and a required reviewer. Creating it is a human step today (table above).
 4. Add `DEVELOPMENT_TEAM: <10-character team ID>` under `settings.base` in `project.yml`, the way [examples/starter-app-demo.yml](../examples/starter-app-demo.yml) does. Signing reads the team from the exported configuration and fails without it ([scripts/signing_configuration.py](../scripts/signing_configuration.py)).
-5. Transfer the key over stdin. The script checks the environment policy and existing secret names, never reads values back, and refuses to replace unless `--replace-existing` is given ([scripts/bootstrap-apple-credentials.py](../scripts/bootstrap-apple-credentials.py)):
+5. After the owner approves the concrete transfer plan in section 3, transfer the existing key with the narrow bootstrap command ([scripts/bootstrap-apple-credentials.py](../scripts/bootstrap-apple-credentials.py)):
 
    ```powershell
    python scripts/bootstrap-apple-credentials.py --repo <owner>/<repo> --key-type team --approval-policy solo-owner --key-id <KEY_ID> --issuer-id <ISSUER_ID> --private-key-file <path outside the checkout>\AuthKey_<KEY_ID>.p8
    ```
 
-   Use `--approval-policy independent` when a second person reviews; organization repositories always do. The path is the only reference to the key. Do not open, print or copy the file.
-6. Set the environment variable `ASC_KEY_TYPE=team` (non-secret) under the same environment ([apple-setup.md](apple-setup.md#optional-authenticated-reads)).
+   Use `--approval-policy independent` when a second person reviews; organization repositories always do. `solo-owner` is limited to a personal repository where the authenticated owner is the sole required reviewer and self-review is enabled. The script verifies that policy and the exact `main` deployment rule; it does not create or change environment protection. It checks for existing credential secret **names** and stops if any are present unless `--replace-existing` is explicitly supplied.
 
-> **Placeholder.** A full write-up of the no-echo bootstrap (issue #7) and the record of which role the stored key holds (issue #1, role only, never the secret) are planned under master plan step 6.
+   Keep the `.p8` in its existing secure location outside this checkout. The path is the only key-file reference passed to the command. Do not put key contents in arguments, shell variables, chat or files in the repository, and do not open, print, copy or upload the file. The script validates the PEM markers and size, reads the file locally, then sends it to `gh secret set` through standard input. The key contents are not included in process arguments, stdout, stderr, logs or artifacts. GitHub CLI output is captured; failures are reduced to a generic operation and exit code rather than forwarding upstream text.
+
+   For a team key, the script stores `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_PRIVATE_KEY`; for an individual key it stores `ASC_KEY_ID` and `ASC_PRIVATE_KEY`. It confirms only that the expected secret names exist, never reads secret values back, and writes the non-secret `ASC_KEY_TYPE` environment variable matching `--key-type`. A successful message confirms names only; it does not prove that the key authenticates or has sufficient role access.
+
+   Secret writes happen sequentially. If the command stops partway through, do not rerun with `--replace-existing` blindly: inspect only the environment's secret names, determine which writes completed, then get approval for the specific repair. The script does not roll back a partial write. Never revoke or replace an existing Apple key or signing asset as recovery.
+   Do not set `ASC_KEY_TYPE` to a different value manually; authenticated reads use this variable ([apple-setup.md](apple-setup.md#optional-authenticated-reads)).
+
+> **Role record.** The no-echo bootstrap does not verify or record the key's role; it confirms secret names only. Complete issue #1 by confirming the role separately and recording the role alone. Never record the private key.
 
 ### Stage D: authenticated read-only diagnostics
 
@@ -236,7 +242,7 @@ Mined from [the journal](setup-experience.md). Check here before diagnosing from
 | Consent choices and stage progress survive interruptions | `python scripts/setup.py` stores consent booleans and completed stages in ignored `build/setup-state.json`; individual tools still require their own action approval | Implemented for guided setup checkpoints; broader consent integration is not built |
 | Guided resumable setup | `python scripts/setup.py`; stage actions remain in this runbook | Master plan step 6, `scripts/setup.py`; issues #2, #3, #4, #17 |
 | `apple-credentials` environment created by script | GitHub UI | Master plan step 6, `configure-github-repo.py` |
-| No-echo bootstrap write-up; stored key role record | Stage C notes | Issues #7 and #1 |
+| Stored key role record | Stage C notes; role must be confirmed separately from secret-name checks | Issue #1 |
 | Feedback to sanitized issue draft | Manual triage with the issue template | Master plan step 4 |
 | Ad hoc install without TestFlight | TestFlight only (Windows), `run-on-device` (Mac) | Master plan step 4, evaluation pending |
 | App record creation through the API | Human or browser agent | Issue #4 (verify whether the API permits it) |
