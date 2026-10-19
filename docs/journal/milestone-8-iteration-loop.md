@@ -2,6 +2,13 @@
 
 Entries for the pull-request gate, path filters, repository settings, device iteration tiers and reporting improvements. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-19 — Sanitized TestFlight issue drafts
+
+- **Context:** The fixed TestFlight feedback reader could retrieve feedback and optionally save a private report, but actionable comments still had to be copied manually into the documented issue-body format.
+- **Change:** Added opt-in `--issue-draft <path>` output. It writes one draft per feedback item outside the checkout, refuses overwrites and GitHub Actions, excludes identity fields, redacts common email/link/credential/UUID/phone-like patterns, and marks build identity as unverified. The tester guide documents the output and requires private review for sensitive content the pattern-based redactor cannot identify.
+- **Tools and verification:** Python 3.13.14 on Windows. No authenticated Apple read or GitHub issue creation was performed. Automated checks have not yet been run; the PR's portable checks are the next verification.
+- **Remaining uncertainty:** Pattern redaction cannot reliably detect every name, address or other personal detail in free text. Drafts must be reviewed locally before filing. The reader does not resolve Apple's related build resource ID to a displayed version/build.
+
 ## 2026-10-19 — Decide whether to pursue the ad hoc dev-build channel
 
 - **Context and tools:** `ios-adhoc-eval`, master plan step 4. Reviewed the roadmap, README, setup journal index, master plan, TestFlight guide and human-step ledger. Git 2.54.0.windows.1; Apple Developer documentation checked on 2026-10-19. No Xcode command was needed.
