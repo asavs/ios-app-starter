@@ -149,12 +149,17 @@ gh run view $run --json headSha --jq .headSha
 git rev-parse origin/main
 gh run download $run --name apple-project-diagnostics --dir build/review/$run/project
 gh run download $run --name apple-configuration --dir build/review/$run/configuration
-gh run download $run --name apple-credentials-diagnostics --dir build/review/$run/account
 Get-Content build/review/$run/project/report.md
+```
+
+For a Stage D run (`account=true`, gate approved), also read the account report. This artifact does not exist for a Stage B run, so skip these lines there:
+
+```powershell
+gh run download $run --name apple-credentials-diagnostics --dir build/review/$run/account
 Get-Content build/review/$run/account/report.md
 ```
 
-The two SHAs must match before you trust the configuration findings. Otherwise the export describes a different `project.yml`; dispatch again. `apple-credentials-diagnostics` exists only when `account=true` and the gate was approved. `build/` is gitignored. Each artifact holds `report.md` and `report.json`, and `apple-configuration` holds `configuration.json` ([.github/workflows/apple-diagnostics.yml](../.github/workflows/apple-diagnostics.yml)).
+The two SHAs must match before you trust the configuration findings. Otherwise the export describes a different `project.yml`; dispatch again. `build/` is gitignored. Each artifact holds `report.md` and `report.json`, and `apple-configuration` holds `configuration.json` ([.github/workflows/apple-diagnostics.yml](../.github/workflows/apple-diagnostics.yml)).
 
 ### Approving an environment gate
 
