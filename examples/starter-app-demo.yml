@@ -2,6 +2,12 @@
 # Keep the reusable template defaults in ../project.yml unchanged.
 include: ../project.yml
 
+# State the module library path here as well: XcodeGen rebases an included spec's package path
+# relative to this file, which would point one directory too high. docs/modules.md explains.
+packages:
+  StarterModules:
+    path: ..
+
 settings:
   base:
     DEVELOPMENT_TEAM: 9L6Y9T3PPW

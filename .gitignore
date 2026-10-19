@@ -4,6 +4,7 @@
 *.xcuserstate
 DerivedData/
 .build/
+.swiftpm/
 build/
 __pycache__/
 

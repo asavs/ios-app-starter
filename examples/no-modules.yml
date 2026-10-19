@@ -1,0 +1,9 @@
+# The basic app with every module disabled: no package reference, no product dependency.
+# The app sources import modules only under `#if canImport(...)`, so this must keep building.
+include: ../project.yml
+
+packages:REPLACE: {}
+
+targets:
+  StarterApp:
+    dependencies:REPLACE: []

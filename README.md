@@ -43,6 +43,8 @@ Edit the marked settings in `project.yml`, commit, and push. Actions regenerates
 | Minimum iOS/iPadOS | `options.deploymentTarget.iOS` | `"17.0"` |
 | Supported devices | `targets.StarterApp.settings.base.TARGETED_DEVICE_FAMILY` | `"1,2"` for both, `"1"` for iPhone, `"2"` for iPad |
 
+Modules (versioned Swift packages in this repository) are enabled per app with one product line under `targets.StarterApp.dependencies`; see [docs/modules.md](docs/modules.md) for the layout, tests, tagging and how an app created from the template depends on a tagged version.
+
 Choose distinct reverse-DNS bundle identifiers containing letters, numbers, hyphens, and periods. The `com.example` identifiers are usable for unsigned template checks; choose your own before signing/distribution. Keep project name, target names, Swift module/product names, and the `StarterApp` scheme stable. The displayed app name is independent of those internal names.
 
 The initial supported deployment minimum is 17.0 or newer, up to the selected SDK version. Raising it does not install a newer test runtime: choose a compatible `IOS_TEST_DESTINATION` in the workflow if you raise it beyond the current simulator OS. For iPad-only apps, select an installed iPad simulator in `IOS_TEST_DESTINATION`. App and test targets must share the minimum; use the project-level setting instead of target overrides. A build against a newer SDK does not establish runtime coverage on the declared minimum.

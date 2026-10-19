@@ -15,12 +15,22 @@ settings:
     CURRENT_PROJECT_VERSION: 1
     MARKETING_VERSION: "1.0"
 
+# The module library in this repository (Package.swift, Modules/<Name>/). The template depends on it
+# by path; an app created from the template switches to `url:` + `from:` and a tag. docs/modules.md.
+packages:
+  StarterModules:
+    path: .. # Relative to the generated project directory (StarterApp/), not to this file.
+
 targets:
   StarterApp:
     type: application
     platform: iOS
     sources:
       - StarterApp/StarterApp
+    # Enabled modules: one product line each. Remove a line to disable that module.
+    dependencies:
+      - package: StarterModules
+        product: TemplateVersion
     settings:
       base:
         # User-facing name. Spaces are fine; this does not rename Swift modules.
