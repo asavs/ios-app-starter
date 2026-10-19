@@ -2,6 +2,14 @@
 
 Entries for the pull-request gate, path filters, repository settings, device iteration tiers and reporting improvements. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-19 — Cold and warm CI cache measurements
+
+- **Context:** Master plan step 4 called for measuring before changing build caches. The pinned public tool downloads (XcodeGen and App Store Connect CLI) already use verified Actions caches; simulator DerivedData is intentionally fresh per run. Tools: GitHub Actions runner step timestamps and logs; current `main` run `39323984923` at `ba593d4`.
+- **Cold evidence:** In the cache-seeding run [37875269100](https://github.com/asavs/ios-app-starter/actions/runs/37875269100), XcodeGen's macOS cache missed and its verified archive download completed about 4.5 seconds after the miss. The Ubuntu `asc` cache missed and the verified binary download completed about 0.6 seconds after the miss. Windows and macOS `asc` were already cache hits in that run, so this was not a fully cold matrix.
+- **Warm evidence:** The next run [37875337210](https://github.com/asavs/ios-app-starter/actions/runs/37875337210) reported hits for XcodeGen and `asc` on macOS, Windows and Linux. Cache restore steps took about 0.3–2 seconds; the cache action steps round to 0–3 seconds in GitHub's step timestamps. Cached payloads were checksum-verified before use.
+- **Current lane baseline:** The latest three-app `main` run [39323984923](https://github.com/asavs/ios-app-starter/actions/runs/39323984923) passed all configurations. XcodeGen cache steps took 1–2 seconds per app. Simulator preparation took 62–100 seconds, and build/test took 247–564 seconds per app; the workflow ran from 21:00:14Z to 21:15:58Z (15m44s). Queueing and concurrent-runner variation are included in the workflow wall time, not attributable to caching.
+- **Decision and limits:** These observations confirm cache reuse and quantify its small step cost, but they do not establish a repeatable end-to-end speedup; cold misses were already short and the matrix was partly warm. Keep the verified public-download caches. Do not add DerivedData/compiler-output caching based on this evidence. The new root `Package.swift` has only local targets and no external package dependencies, so a Swift dependency cache has nothing to reuse yet. Measure again when external dependencies are introduced.
+
 ## 2026-10-17 — One-command approved delivery
 
 - **Context:** Master plan step 4 asked for a single command from a fix on `main` to a build on the phone. The pieces existed (delivery workflow with `perform_upload`, environment gate, sanitized artifact, `review_ci.py --run`) but stringing them together meant four `gh` commands and the Actions UI, and `gh workflow run` does not return the run it created.
