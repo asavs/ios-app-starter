@@ -1,6 +1,15 @@
 # Milestone 5: protected credentials and signing
 
-Windows acceptance handoff, credential transfer, authenticated diagnostics and the first signed archive validation, 2026-10-09 to 2026-10-10. Newest entries first; the index is [docs/setup-experience.md](../setup-experience.md).
+Windows acceptance handoff, credential transfer, authenticated diagnostics and the first signed archive validation, 2026-10-09 to 2026-10-19. Newest entries first; the index is [docs/setup-experience.md](../setup-experience.md).
+
+## 2026-10-19 — Record the stored API key role and signing access plan
+
+- **Task and tools:** Issue #1, least-privilege App Store Connect key role; Windows PowerShell, Git 2.54.0.windows.1, GitHub CLI 2.95.0, and Apple Developer role, certificate and provisioning-profile documentation reviewed on 2026-10-19.
+- **Confirmed evidence:** The milestone 5 account observation recorded the existing stored key as a team API key with **Admin** role. The protected signed-archive workflow reused it and passed archive-derived signature validation; read-only diagnostics also completed with the same key. No key identifier or private-key value was read or recorded in this task.
+- **Documentation issue and resolution:** The earlier guide treated App Manager as a possible automatic-signing role because the general role matrix mentions Certificates, Identifiers & Profiles access. The operation-specific [certificate overview](https://developer.apple.com/help/account/certificates/certificates-overview/) and [App Store profile guide](https://developer.apple.com/help/account/provisioning-profiles/create-an-app-store-provisioning-profile) specify Account Holder or Admin for creating distribution assets. The hosted workflow permits Xcode provisioning updates, so Admin is the least-privileged documented team-key role when those writes may occur. The [API key guide](https://developer.apple.com/documentation/appstoreconnectapi/creating-api-keys-for-app-store-connect-api) confirms individual keys cannot use provisioning endpoints.
+- **Change:** `docs/apple-setup.md` now recommends an individual Developer key for app-only reads, a team key for complete provisioning inventory reads (with endpoint minimums left unclaimed), and a team Admin key for Xcode distribution-asset creation or refresh. It records only the acceptance repository's existing role. `docs/agent-onboarding.md` now gives the same decision before key creation/transfer and records the role without identifiers or secret material. Existing secret scoping and secretless pull-request guidance remains in force.
+- **Verification:** Compared each recommendation against the current Apple references above and the repository's signing workflow (`-authenticationKeyPath` plus `-allowProvisioningUpdates`) and prior sanitized signing evidence. Reviewed the complete documentation diff; `git diff --check` passed. No account reads or mutations were run.
+- **Remaining uncertainty:** Apple does not publish a minimum team-key role for every pinned read-only inventory endpoint; the guide treats denial as unknown and requires use of existing access. Xcode may reuse prepared assets, so setups that can avoid provisioning writes should use that narrower path.
 
 ## 2026-10-10 — Windows milestone 5 signed archive acceptance
 
