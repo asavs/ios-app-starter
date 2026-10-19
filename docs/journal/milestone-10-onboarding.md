@@ -1,0 +1,17 @@
+# Milestone 10 journal: agent onboarding and guided setup
+
+Entries for the onboarding runbook, consent model, and resumable setup command. Newest first. Index: [setup-experience.md](../setup-experience.md).
+
+## 2026-10-19 — Resumable setup checkpoints
+
+- **Context:** The onboarding runbook had human-readable stages but no saved progress. A fresh agent or interrupted setup had to infer which stages and permission categories had already been handled.
+- **Change:** Added `scripts/setup.py` to persist explicit consent decisions and sequential A–H completion checkpoints under ignored `build/setup-state.json`. The interactive flow shows the current runbook stage, pauses when consent is declined, and saves after each answer. It rejects skipped stages and requires the stage's mapped consent before completion. State contains only consent booleans and stage letters; no secrets, team identifiers or account output are read or saved. `--status`, `--grant`, `--decline`, `--complete` and `--reset` support non-interactive continuation.
+- **Tools and verification:** Python 3.13.14; `python -m py_compile scripts/setup.py scripts/tests/test_setup.py` passed; `python scripts/tests/test_setup.py` passed all five tests. The tests cover initial status, consent gating and stage order, the state schema, invalid-state handling, and pausing after a declined consent.
+- **Remaining uncertainty:** This first version records progress around the runbook; it does not dispatch GitHub/Apple actions or verify their results itself. The operator must run each stage's commands and checks before recording completion. Future automation can replace individual manual checkpoints while keeping the same state file contract and consent stops.
+
+## 2026-10-19 — Consent-once permission checklist
+
+- **Context:** The onboarding runbook's consent section was a placeholder. It named the six categories from the human-step ledger, but did not present a checklist or spell out how to handle a denied category. The categories also needed to be distinguished from the per-action change previews, environment gates, and human-only decisions elsewhere in the runbook.
+- **Change:** Replaced the placeholder with a six-category grant table scoped to the repository and, where relevant, the named Apple team. The runbook records answers in the setup conversation, stops before a step that needs an ungranted category, and does not repeat a category grant already given for that setup. It states that the conversation record is temporary until the guided setup command can read a persistent record.
+- **Tools and verification:** Windows PowerShell and Git. Documentation-only inspection against `docs/human-steps.md` and master plan step 6; automated tests were not run.
+- **Remaining uncertainty:** The future setup command's consent-record format and persistence behavior are not implemented. Keep its behavior aligned with the categories and grant rule in the ledger.

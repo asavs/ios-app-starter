@@ -22,6 +22,8 @@ Add a row the same day any agent or document says "only you can do this". Update
 | `apple-browser` | Computer-use agent acts in the user's signed-in App Store Connect and developer-portal tabs for steps the API cannot do | app record creation, key creation |
 | `device-install` | Install and launch development builds on the user's registered devices | `run-on-device`, ad hoc channel |
 
+| Setup permission choices | Human choice | `python scripts/setup.py` records the six yes/no choices and completed stages in ignored `build/setup-state.json`; granting a category does not replace action-specific approval |
+
 ## Ledger
 
 | Step | Today | Path | Status / next action |
