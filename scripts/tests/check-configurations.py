@@ -44,7 +44,9 @@ with tempfile.TemporaryDirectory(prefix="ios-config-probes-") as directory:
     root = Path(directory)
     for name, override, diagnostic in cases:
         spec = root / f"{name}.json"
-        spec.write_text(json.dumps({"include": str(ROOT / "project.yml"), **override}))
+        # The module library path must stay valid from a project generated outside the repository.
+        packages = {} if "packages:REPLACE" in override else {"packages": {"StarterModules": {"path": str(ROOT)}}}
+        spec.write_text(json.dumps({"include": str(ROOT / "project.yml"), **packages, **override}))
         env = dict(os.environ, IOS_PROJECT_SPEC=str(spec), IOS_PROJECT_DIR=str(root / name))
         generation = subprocess.run(["bash", str(ROOT / "scripts/generate-project.sh")],
                                     env=env, text=True, capture_output=True)

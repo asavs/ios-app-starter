@@ -57,7 +57,8 @@ def check(project):
     listing = command_json("xcodebuild", "-project", str(project), "-list", "-json")["project"]
     if set(listing["targets"]) != TARGETS:
         raise ValueError("only StarterApp, StarterAppTests, and StarterAppUITests targets are supported; "
-                         "Watch, Mac, TV, and Vision Pro modules are pending milestone 9")
+                         "modules are Swift package products (docs/modules.md), and optional platforms "
+                         "are pending milestone 14")
     if "StarterApp" not in listing["schemes"]:
         raise ValueError("StarterApp scheme missing; keep the template scheme name and its test targets")
     scheme = project / "xcshareddata/xcschemes/StarterApp.xcscheme"

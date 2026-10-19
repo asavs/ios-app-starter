@@ -12,6 +12,7 @@ Read `roadmap.md`, `README.md`, and `docs/setup-experience.md` (the journal inde
 ## Implementation and verification
 
 - Work through the roadmap in order; finish required checks before starting the next milestone. Keep changes and commits reviewable.
+- Modules are products of the root `Package.swift`, one `Modules/<Name>/` folder each with their own tests; the template depends on them by path and generated apps by tag. Enable a module with a product line in `project.yml`; template sources reference modules only under `#if canImport`. Read `docs/modules.md` before adding or releasing one.
 - `project.yml` is the source of truth for the Xcode project. Change the manifest, then run `bash scripts/generate-project.sh` on a Mac or the GitHub runner. Commit the regenerated project alongside manifest changes.
 - CI explicitly selects Xcode 27.0 on the `xcode-27` runner. Upgrade deliberately and verify the actual version, bundled SDK, and simulator availability. The runner image is not immutable.
 - Inspect the actual test results, not just a green job. The milestone 1 workflow runs one welcome-screen UI assertion; placeholder unit tests do not establish feature coverage.
