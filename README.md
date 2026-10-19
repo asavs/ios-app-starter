@@ -164,7 +164,7 @@ python scripts/configure-github-repo.py --repo <owner>/<repository>
 python scripts/configure-github-repo.py --repo <owner>/<repository> --apply
 ```
 
-The dry run lists current and intended values. `--apply` turns on auto-merge and head-branch deletion, enables secret scanning with push protection, restricts actions to GitHub-owned and verified creators, requires approval for every fork contributor's workflows, and adds a default-branch ruleset that requires a pull request with passing `ios-gate` and `portable (...)` checks. The ruleset blocks direct pushes to `main` for everyone, including the owner.
+The dry run lists current and intended values, including the authenticated GitHub user who will review the `apple-credentials` environment. `--apply` turns on auto-merge and head-branch deletion, enables secret scanning with push protection, restricts actions to GitHub-owned and verified creators, requires approval for every fork contributor's workflows, adds a default-branch ruleset that requires a pull request with passing `ios-gate` and `portable (...)` checks, and configures `apple-credentials` for exactly `main`. On a personal repository owned by the authenticated user, that owner is the required reviewer and may approve their own deployment; otherwise self-review is prevented. The ruleset blocks direct pushes to `main` for everyone, including the owner.
 
 ## Faster manual iteration
 
