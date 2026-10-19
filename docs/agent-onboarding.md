@@ -20,10 +20,10 @@ These are the steps Apple and GitHub reserve for a person. Ask for each one by t
 | --- | --- | --- | --- |
 | "Sign the GitHub CLI in with `gh auth login`." | Stage A | Device-code login belongs to the account owner. | `gh auth status` |
 | "Grant this agent harness permission to run `gh pr merge` and `gh pr close`." | Stage A | Local harness permission, set once. | The first `gh pr merge --auto` succeeds. |
-| "Enroll in the Apple Developer Program (individual or organization) and complete payment." | Stage B | Identity verification and payment. | Stage D account diagnostics read the team. A failed read is *unknown*, not proof of no membership. Never suggest a second enrollment. |
+| "Enroll in the Apple Developer Program (individual or organization) and complete payment." | Stage C (Stages A and B need no Apple account) | Identity verification and payment. | Stage D account diagnostics read the team. A failed read is *unknown*, not proof of no membership. Never suggest a second enrollment. |
 | "Accept any outstanding agreements in App Store Connect as Account Holder." | Stage D | Legal acceptance. | An agreement error from a later read or upload names it. Diagnostics do not prove that agreements are complete ([apple-setup.md](apple-setup.md#human-prerequisites)). |
-| "Request App Store Connect API access, then create a **team** API key with the role we agreed and download the `.p8` once to a folder outside this checkout." | Stage C | A portal form and a single file download. A browser agent can drive the form with `apple-browser` consent; the download stays in the owner's custody. | The key ID and issuer ID shown on the page (both non-secret), then Stage C's metadata check. |
-| "Create the App Store Connect app record: name, bundle ID, SKU and primary language as listed here." | Stage E | The public API is believed not to create apps (unverified, see issue #4). Browser-agent path with `apple-browser` consent. | `apple-doctor` account reads report the app `present` (Stage D). |
+| "Request App Store Connect API access, then create a **team** API key with role \<the role you chose in Stage C step 1\> and download the `.p8` once to a folder outside this checkout." | Stage C, after the role decision | A portal form and a single file download. A browser agent can drive the form with `apple-browser` consent; the download stays in the owner's custody. | The key ID and issuer ID shown on the page (both non-secret), then Stage C's metadata check. |
+| "Create the App Store Connect app record with these values: team \<team\>, platform iOS, bundle ID \<from `project.yml`\>, name \<record name\>, primary language \<language\>, SKU \<SKU\>. The SKU cannot be changed later." | Stage E, when Stage D reports the app record `missing` | The public API is believed not to create apps (unverified, see issue #4). Browser-agent path with `apple-browser` consent. | Stage D account reads report the app `present`. |
 | "Add the `apple-credentials` environment with yourself as required reviewer and only `main` allowed to deploy." | Stage C | Today this is done in the GitHub UI. Planned as a scripted step in `configure-github-repo.py` (master plan step 6). | `bootstrap-apple-credentials.py` refuses to run unless the environment matches the declared policy. |
 | "Turn on Developer Mode on the phone and trust this computer." | Mac inner loop only | Physical device prompts. | `run-on-device.sh` lists the device. |
 | "Open TestFlight on the iPhone, sign in with the Apple ID that is an App Store Connect user, and install build *X (Y)*." | Stage H | Physical device action. | The owner reports the version and build they see. Ask for the device OS too. |
@@ -33,7 +33,7 @@ Never ask for, or accept, passwords, two-factor codes typed into chat, private-k
 
 ## 2. Agent-runnable stages
 
-Each stage ends at a check you can read without opening the Actions UI. For any workflow run, `python scripts/review_ci.py --run <id>` (or `--latest`, `--pr <n>`) reports jobs, the named failure and the artifacts ([scripts/review_ci.py](../scripts/review_ci.py)). Do not poll CI from a model loop. Block in the shell with `gh run watch <id>` or `gh pr checks <n> --watch` (see AGENTS.md, "Do not wait on CI").
+Each stage ends at a check you can read without opening the Actions UI. For any workflow run, `python scripts/review_ci.py --run <id>` (or `--latest`, `--pr <n>`) reports jobs and the named failure ([scripts/review_ci.py](../scripts/review_ci.py)). It downloads only the iOS test, compatibility and delivery artifacts. For the Apple diagnostics artifacts, use [Reading Apple diagnostics artifacts](#reading-apple-diagnostics-artifacts). Do not poll CI from a model loop. Block in the shell with `gh run watch <id>` or `gh pr checks <n> --watch` (see AGENTS.md, "Do not wait on CI").
 
 > **Placeholder.** `scripts/setup.py` will wrap Stages A–G as a resumable state machine that stops before each account-affecting step and prints the next human action (master plan step 6; subsumes issues #2, #3, #4 and #17). Until then, run the stages by hand.
 
@@ -61,23 +61,25 @@ Each stage ends at a check you can read without opening the Actions UI. For any 
    gh workflow run apple-diagnostics.yml --ref main --field configuration=starter --field account=false
    ```
 
-   Download `apple-project-diagnostics` and `apple-configuration` ([.github/workflows/apple-diagnostics.yml](../.github/workflows/apple-diagnostics.yml)). Only use an export from the same commit as the `project.yml` you are reasoning about.
+   Read `apple-project-diagnostics` and `apple-configuration` as shown in [Reading Apple diagnostics artifacts](#reading-apple-diagnostics-artifacts) ([.github/workflows/apple-diagnostics.yml](../.github/workflows/apple-diagnostics.yml)). Only use an export from the same commit as the `project.yml` you are reasoning about.
 3. Read the `placeholder` finding: it remains until step A3 is done.
 
 ### Stage C: credentials into GitHub
 
-Present the concrete plan first (team, key type `team`, role, environment policy; see [section 3](#3-permission-script)). Needs `github-settings`.
+Needs `github-settings`. The owner must be enrolled (section 1) before an API key can exist.
 
-1. The `apple-credentials` environment must exist with exactly one deployment-branch rule for `main` and a required reviewer. Creating it is a human step today (table above).
-2. Add `DEVELOPMENT_TEAM: <10-character team ID>` under `settings.base` in `project.yml`, the way [examples/starter-app-demo.yml](../examples/starter-app-demo.yml) does. Signing reads the team from the exported configuration and fails without it ([scripts/signing_configuration.py](../scripts/signing_configuration.py)).
-3. Transfer the key over stdin. The script checks the environment policy and existing secret names, never reads values back, and refuses to replace unless `--replace-existing` is given ([scripts/bootstrap-apple-credentials.py](../scripts/bootstrap-apple-credentials.py)):
+1. **Stop for the role decision.** Present [Choose access for the operation](apple-setup.md#choose-access-for-the-operation) and get an explicit choice of key type and role before the key is created or transferred. In short: use a **team** key, because individual keys cannot reach the provisioning endpoints that signing needs. **Developer** is the proposed role for read-only diagnostics. **App Manager** (with Certificates, Identifiers & Profiles access) is the candidate for automatic signing, but Apple's documents disagree: the certificate and profile guides name Account Holder or Admin. That discrepancy has not been settled by a live run. Do not default to Admin, and do not broaden an existing key. Reuse an existing key when it already fits. If a later stage is denied access, stop and present a revised plan.
+2. Present the concrete plan: team, key type, the chosen role, environment policy ([section 3](#3-permission-script)). Only then ask for the key (section 1).
+3. The `apple-credentials` environment must exist with exactly one deployment-branch rule for `main` and a required reviewer. Creating it is a human step today (table above).
+4. Add `DEVELOPMENT_TEAM: <10-character team ID>` under `settings.base` in `project.yml`, the way [examples/starter-app-demo.yml](../examples/starter-app-demo.yml) does. Signing reads the team from the exported configuration and fails without it ([scripts/signing_configuration.py](../scripts/signing_configuration.py)).
+5. Transfer the key over stdin. The script checks the environment policy and existing secret names, never reads values back, and refuses to replace unless `--replace-existing` is given ([scripts/bootstrap-apple-credentials.py](../scripts/bootstrap-apple-credentials.py)):
 
    ```powershell
    python scripts/bootstrap-apple-credentials.py --repo <owner>/<repo> --key-type team --approval-policy solo-owner --key-id <KEY_ID> --issuer-id <ISSUER_ID> --private-key-file <path outside the checkout>\AuthKey_<KEY_ID>.p8
    ```
 
    Use `--approval-policy independent` when a second person reviews; organization repositories always do. The path is the only reference to the key. Do not open, print or copy the file.
-4. Set the environment variable `ASC_KEY_TYPE=team` (non-secret) under the same environment ([apple-setup.md](apple-setup.md#optional-authenticated-reads)).
+6. Set the environment variable `ASC_KEY_TYPE=team` (non-secret) under the same environment ([apple-setup.md](apple-setup.md#optional-authenticated-reads)).
 
 > **Placeholder.** A full write-up of the no-echo bootstrap (issue #7) and the record of which role the stored key holds (issue #1, role only, never the secret) are planned under master plan step 6.
 
@@ -89,7 +91,9 @@ Needs `apple-read`. Dispatch from `main`, then approve the environment gate (see
 gh workflow run apple-diagnostics.yml --ref main --field configuration=starter --field account=true
 ```
 
-Statuses are defined in [apple-setup.md](apple-setup.md#interpret-the-report). `inaccessible` and `not_verified` are unknown and must not lead to creating anything. `missing` on the app record means you need the human app-record step from section 1. On Windows, the same reads can run locally with `python scripts/install-asc.py` and then `python scripts/apple-doctor.py --account --asc build\tools\asc.exe --configuration <export>\configuration.json` ([scripts/install-asc.py](../scripts/install-asc.py)). Prefer the hosted run so the key never touches the workstation.
+Read `apple-credentials-diagnostics` as shown in [Reading Apple diagnostics artifacts](#reading-apple-diagnostics-artifacts). Statuses are defined in [apple-setup.md](apple-setup.md#interpret-the-report). `inaccessible` and `not_verified` are unknown and must not lead to creating anything.
+
+If the app record is `missing`, create it before Stage E. Collect and confirm every value with the owner first, following [App identity and Apple's defaults](apple-setup.md#app-identity-and-apples-defaults): team, platform, bundle ID, record name, primary language and SKU. Check for an existing matching record and reuse it. The SKU cannot be changed after creation. A rejected name means proposing another name for approval, not changing the bundle ID. Then ask for the app-record step in section 1, and rerun Stage D until it reports `present`. On Windows, the same reads can run locally with `python scripts/install-asc.py` and then `python scripts/apple-doctor.py --account --asc build\tools\asc.exe --configuration <export>\configuration.json` ([scripts/install-asc.py](../scripts/install-asc.py)). Prefer the hosted run so the key never touches the workstation.
 
 ### Stage E: signed archive validation
 
@@ -133,6 +137,24 @@ Ask the owner to install that exact version and build from TestFlight and descri
 - **Mac with a phone attached:** `IOS_CONFIGURATION=starter IOS_DEVELOPMENT_TEAM=<team> bash scripts/run-on-device.sh`. Preview it first with `IOS_RUN_ON_DEVICE_DRY_RUN=1`. Needs `device-install` and `apple-provisioning` ([scripts/run-on-device.sh](../scripts/run-on-device.sh)).
 - **Next build to the phone from any OS:** Stage G again from `main`.
 - **Tester feedback:** with `apple-read` consent, `python scripts/install-asc.py`, then `python scripts/read-testflight-feedback.py --account --asc build/tools/asc.exe --app-id <app-id> --private-report <path outside checkout>` ([scripts/read-testflight-feedback.py](../scripts/read-testflight-feedback.py)). Comments go only to the private report. Triage them with [tester-feedback.md](tester-feedback.md), and sanitize before filing an issue with that guide's issue template. Automatic generation of a sanitized issue draft is planned (master plan step 4). An ad hoc install channel that skips TestFlight is under evaluation in the same step.
+
+### Reading Apple diagnostics artifacts
+
+`review_ci.py` does not download these artifacts. From PowerShell, right after dispatching **Apple diagnostics**:
+
+```powershell
+$run = gh run list --workflow apple-diagnostics.yml --branch main --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId'
+gh run watch $run --exit-status
+gh run view $run --json headSha --jq .headSha
+git rev-parse origin/main
+gh run download $run --name apple-project-diagnostics --dir build/review/$run/project
+gh run download $run --name apple-configuration --dir build/review/$run/configuration
+gh run download $run --name apple-credentials-diagnostics --dir build/review/$run/account
+Get-Content build/review/$run/project/report.md
+Get-Content build/review/$run/account/report.md
+```
+
+The two SHAs must match before you trust the configuration findings. Otherwise the export describes a different `project.yml`; dispatch again. `apple-credentials-diagnostics` exists only when `account=true` and the gate was approved. `build/` is gitignored. Each artifact holds `report.md` and `report.json`, and `apple-configuration` holds `configuration.json` ([.github/workflows/apple-diagnostics.yml](../.github/workflows/apple-diagnostics.yml)).
 
 ### Approving an environment gate
 
