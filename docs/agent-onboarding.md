@@ -8,9 +8,18 @@ Related references, read when a step points at them: [Apple setup](apple-setup.m
 
 ## 0. Consent before anything else
 
-> **Placeholder.** A consent-once checklist is planned (master plan step 6, "Consent once, not per step"). It will list the permission categories from the [human-step ledger](human-steps.md#permission-categories-consent-granted-once-at-setup) so the owner grants them once at the start, and the guided setup command will read the same record.
+Before running setup steps, ask which categories the owner grants for this repository and, where relevant, the named Apple team. Read the definitions in the [human-step ledger](human-steps.md#permission-categories-consent-granted-once-at-setup); this checklist summarizes their scope:
 
-Until it exists, open the session by presenting the six categories in that table (`github-settings`, `apple-read`, `apple-provisioning`, `apple-testflight`, `apple-browser`, `device-install`). Ask which ones the owner grants for this repository and this Apple team. Record the answer in the conversation and do not ask about a granted category again. When a step needs an ungranted category, stop and use the request wording in [section 3](#3-permission-script).
+| Category | Grant? | Scope |
+| --- | --- | --- |
+| `github-settings` | Yes / No | Read or change repository settings, rulesets, environments and secret metadata, including the reviewed credential transfer in Stage C. |
+| `apple-read` | Yes / No | Read App Store Connect records and reports for the named team; this does not authorize writes. |
+| `apple-provisioning` | Yes / No | Let Xcode create or refresh signing certificates and profiles for the named team during signing or delivery. |
+| `apple-testflight` | Yes / No | Create or modify beta groups, assign builds, or set build attributes for the named app. |
+| `apple-browser` | Yes / No | Let the agent use the owner's already signed-in browser for the named App Store Connect or developer-portal task. The owner enters any second-factor code. |
+| `device-install` | Yes / No | Install and launch a development build on the owner's registered device. |
+
+Record each answer in the conversation for this setup. A `No` or unanswered category is not granted. If a later step needs one, stop before acting and ask: “May I use `<category>` for `<specific task and target>`?” Continue only after the owner grants it. Do not ask again about a category already granted for this setup. Category consent does not replace the concrete change preview and action approval in [section 3](#3-permission-script), a GitHub environment gate, or a human-only decision. This conversation record is temporary; the guided setup command planned in master plan step 6 will read a persistent consent record.
 
 ## 1. Human-only prerequisites
 
