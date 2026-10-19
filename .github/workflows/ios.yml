@@ -36,6 +36,7 @@ jobs:
     outputs:
       run: ${{ steps.decide.outputs.run }}
       reason: ${{ steps.decide.outputs.reason }}
+      modules: ${{ steps.decide.outputs.modules }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -49,6 +50,8 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
+          modules="$(python3 -c 'import json,pathlib; p=pathlib.Path("Modules"); print(json.dumps(sorted(d.name for d in p.iterdir() if d.is_dir()) if p.is_dir() else []))')"
+          echo "modules=$modules" >> "$GITHUB_OUTPUT"
           if [ "$EVENT" != "pull_request" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"; echo "reason=$EVENT event always runs" >> "$GITHUB_OUTPUT"; exit 0
           fi
@@ -171,10 +174,83 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
 
+  # Run each package test target as its own required matrix lane. The list comes from Modules/ so
+  # adding a module does not require maintaining a second inventory in this workflow.
+  module-tests:
+    needs: changes
+    if: needs.changes.outputs.run == 'true' && needs.changes.outputs.modules != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJSON(needs.changes.outputs.modules) }}
+    runs-on: xcode-27
+    timeout-minutes: 30
+    env:
+      IOS_TEST_DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=27.0
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Select Xcode
+        env:
+          DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
+        run: |
+          xcodebuild -version
+          test "$(xcodebuild -version | head -n 1)" = 'Xcode 27.0'
+          test "$(xcrun --sdk iphoneos --show-sdk-version)" = '27.0'
+          echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
+      - name: Prepare simulator
+        timeout-minutes: 5
+        run: python3 scripts/prepare-simulator.py
+      - name: Test module ${{ matrix.module }}
+        id: module_tests
+        timeout-minutes: 20
+        env:
+          IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/module-test-results
+        run: bash scripts/test-module.sh "${{ matrix.module }}"
+      - name: Upload module test report
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: module-test-results-${{ matrix.module }}
+          path: ${{ runner.temp }}/module-test-results
+          retention-days: 14
+          if-no-files-found: warn
+
+  no-modules:
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
+    runs-on: xcode-27
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Select Xcode
+        env:
+          DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
+        run: |
+          xcodebuild -version
+          test "$(xcodebuild -version | head -n 1)" = 'Xcode 27.0'
+          test "$(xcrun --sdk iphoneos --show-sdk-version)" = '27.0'
+          echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
+      - name: Generate app with all modules disabled
+        env:
+          IOS_PROJECT_SPEC: examples/no-modules.yml
+        run: bash scripts/generate-project.sh
+      - name: Verify no module products are enabled
+        run: |
+          python3 scripts/check-modules.py --output "$RUNNER_TEMP/modules.json"
+          python3 -c 'import json,sys; data=json.load(open(sys.argv[1])); assert data["enabled"] == [], "Expected no module products enabled"' "$RUNNER_TEMP/modules.json"
+      - name: Build app without modules
+        run: xcodebuild -project StarterApp/StarterApp.xcodeproj -scheme StarterApp -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+
   # The single required check for pull requests. Passes when the simulator lane passed, or when the
   # change was documentation-only. Fails for drafts and for any failed, cancelled or missing lane.
   ios-gate:
-    needs: [changes, test]
+    needs: [changes, test, module-tests, no-modules]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
@@ -184,12 +260,14 @@ jobs:
           RUN: ${{ needs.changes.outputs.run }}
           REASON: ${{ needs.changes.outputs.reason }}
           TEST_RESULT: ${{ needs.test.result }}
+          MODULE_RESULT: ${{ needs.module-tests.result }}
+          NO_MODULES_RESULT: ${{ needs.no-modules.result }}
         run: |
-          echo "Simulator gate requested: $RUN ($REASON); test job result: $TEST_RESULT"
-          if [ "$RUN" = "true" ] && [ "$TEST_RESULT" = "success" ]; then
-            echo "## iOS gate: passed" >> "$GITHUB_STEP_SUMMARY"; echo "Simulator smoke lane passed." >> "$GITHUB_STEP_SUMMARY"; exit 0
+          echo "Simulator gate requested: $RUN ($REASON); app tests: $TEST_RESULT; module tests: $MODULE_RESULT; no-modules build: $NO_MODULES_RESULT"
+          if [ "$RUN" = "true" ] && [ "$TEST_RESULT" = "success" ] && [ "$MODULE_RESULT" = "success" ] && [ "$NO_MODULES_RESULT" = "success" ]; then
+            echo "## iOS gate: passed" >> "$GITHUB_STEP_SUMMARY"; echo "App smoke tests, per-module tests and the no-modules build passed." >> "$GITHUB_STEP_SUMMARY"; exit 0
           fi
-          if [ "$RUN" = "false" ] && [ "$TEST_RESULT" = "skipped" ] && [ "${REASON#documentation-only}" != "$REASON" ]; then
+          if [ "$RUN" = "false" ] && [ "$TEST_RESULT" = "skipped" ] && [ "$MODULE_RESULT" = "skipped" ] && [ "$NO_MODULES_RESULT" = "skipped" ] && [ "${REASON#documentation-only}" != "$REASON" ]; then
             echo "## iOS gate: passed (documentation-only)" >> "$GITHUB_STEP_SUMMARY"; echo "$REASON" >> "$GITHUB_STEP_SUMMARY"; exit 0
           fi
           echo "## iOS gate: not passed" >> "$GITHUB_STEP_SUMMARY"; echo "$REASON; test job result: $TEST_RESULT" >> "$GITHUB_STEP_SUMMARY"

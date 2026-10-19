@@ -80,7 +80,7 @@ IOS_TEST_DESTINATION='platform=iOS Simulator,name=iPhone 17,OS=26.5' bash script
 swift test                                             # host-side, all host-portable modules
 ```
 
-Xcode derives schemes from the manifest: one scheme per product plus `StarterModules-Package` (with a single product, just `StarterModules`). Only the package-wide scheme has a test action, so the script runs it with `-only-testing:<Name>Tests` and writes the same `summary.md`, `results.json` and log layout as `test-ios.sh`. A per-module CI lane and the required every-module-disabled lane are the next step on the board.
+Xcode derives schemes from the manifest: one scheme per product plus `StarterModules-Package` (with a single product, just `StarterModules`). Only the package-wide scheme has a test action, so the script runs it with `-only-testing:<Name>Tests` and writes the same `summary.md`, `results.json` and log layout as `test-ios.sh`. The required iOS workflow discovers each module under `Modules/` and runs one simulator test lane per module. It also generates the `examples/no-modules.yml` app, verifies that it enables no module products, and builds it for the iOS Simulator.
 
 ## Release a version
 
