@@ -46,6 +46,33 @@ class FakeGitHub:
 
 
 class DeliverTestFlightTests(unittest.TestCase):
+    def test_no_wait_dispatches_and_prints_run_and_resume_command(self):
+        fake = FakeGitHub(api={"repos/o/r/branches/main": {"commit": {"sha": "abcdef"}}})
+        output_runs = []
+
+        def fake_gh(args, **kwargs):
+            if args[:2] == ["workflow", "run"]:
+                output_runs.append({"databaseId": 31, "event": "workflow_dispatch",
+                                    "createdAt": datetime.now(timezone.utc).isoformat(),
+                                    "status": "queued", "url": "https://github.com/o/r/actions/runs/31"})
+                return SimpleNamespace(stdout="")
+            if args[:2] == ["run", "list"] and args[args.index("--workflow") + 1] == "testflight-delivery.yml":
+                return SimpleNamespace(stdout=json.dumps(output_runs))
+            return fake(args, **kwargs)
+
+        args = SimpleNamespace(configuration="starter", approve=False, dry_run=False, no_wait=True,
+                               run=None, wait_minutes=45, poll_seconds=30)
+        with ExitStack() as stack:
+            patch_gh(stack, fake_gh)
+            output = stack.enter_context(patch("sys.stdout", new_callable=io.StringIO))
+            code = deliver.deliver(args)
+        text = output.getvalue()
+        self.assertEqual(code, 0)
+        self.assertIn("Dispatched run 31: https://github.com/o/r/actions/runs/31", text)
+        self.assertIn("--configuration starter --run 31", text)
+        self.assertEqual(len(output_runs), 1)
+        self.assertFalse(any(call[0] == "api" and "pending_deployments" in " ".join(call) for call in fake.calls))
+
     def test_proposal_reports_head_smoke_evidence_and_in_flight_runs(self):
         fake = FakeGitHub(
             runs={"iOS": [
@@ -259,6 +286,8 @@ class DeliverTestFlightTests(unittest.TestCase):
     def test_cli_validates_arguments(self):
         for argv in (["--configuration", "nope"], ["--run", "x", "--configuration", "starter"],
                      ["--run", "1", "--dry-run", "--configuration", "starter"],
+                     ["--configuration", "starter", "--no-wait", "--approve"],
+                     ["--configuration", "starter", "--no-wait", "--run", "1"],
                      ["--configuration", "starter", "--poll-seconds", "1"], []):
             with self.subTest(argv=argv), patch.object(sys, "argv", ["deliver_testflight.py", *argv]), \
                     patch("sys.stderr", new_callable=io.StringIO):

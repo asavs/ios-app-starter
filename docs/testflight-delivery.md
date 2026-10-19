@@ -2,6 +2,17 @@
 
 Milestone 6 is complete for the `starter-app-demo` acceptance app (2026-10-12). The approved [GitHub-hosted delivery run](https://github.com/asavs/ios-app-starter/actions/runs/38117486727) accepted build **1.0 (1.9.1)**, and the owner reported opening that TestFlight build on their iPhone and seeing the `Built on GitHub Actions.` caption. This is owner-reported acceptance; no agent device inspection, screenshot or automated device report was collected, and the phone's OS version is unknown. No local Xcode or separately managed Mac was required.
 
+## When to test where
+
+| When | What runs | Device delivery |
+| --- | --- | --- |
+| Every pull request | Portable tests and one simulator smoke lane; these are required checks. | None. |
+| Every merge to `main` | All configured simulator lanes plus unsigned signing and TestFlight preflights. | None. |
+| Owner's iPhone, internal TestFlight | When merged changes alter what a user sees or does in the app. Batch changes, with at most one delivery per hour, dispatched from `main`; upload only after the `apple-credentials` approval. | The approved delivery workflow uploads to internal TestFlight. |
+| Other testers, external TestFlight | At the end of a milestone, at the owner's decision. | External testing is a separate owner decision and workflow; this guide's internal-only upload does not enable it. |
+
+Changes with nothing visible to the user, including scripts, documentation and CI, never trigger a device build.
+
 ## Before the first upload
 
 Read [Apple setup](apple-setup.md), inspect the intended app/team and current GitHub environment protections, and reuse existing approved credentials. Signing authorization alone does not authorize a TestFlight upload. Present one concrete approval plan covering the selected manifest/app, existing team key and role, app/build inventory reads, possible automatic signing effects, and upload. GitHub `apple-credentials` stays restricted to main with the chosen reviewer policy. Pull requests never receive these secrets.
@@ -52,6 +63,8 @@ After the implementation is reviewed, merged and its required checks pass:
 7. Install/open TestFlight on the iPhone, install that exact build and confirm the visible behavior change. Record the version/build, commit/run link, device OS and observed result without exposing account credentials or unrelated personal data. A physical iPhone checks that device's OS; it does not establish iOS 17 runtime compatibility unless the phone actually runs iOS 17.
 
 Steps 2 to 5 collapse into one command from any machine with `gh`: `python scripts/deliver_testflight.py --configuration <name> --approve` proposes the build (`main` head, its newest iOS push run, deliveries in flight), dispatches with `perform_upload`, waits for preflight, approves the `apple-credentials` gate as you (omit `--approve` to be shown the exact approval command instead), waits for completion and prints the four stage statuses plus one verdict line. Exit codes: 0 processed or accepted, 1 failed at a named step, 2 setup problem, 3 still running after `--wait-minutes` (resume with `--run <id>`). It downloads only the sanitized `testflight-delivery-<configuration>` artifact and reads fixed status fields.
+
+To dispatch from an automated caller and return immediately, use `python scripts/deliver_testflight.py --configuration <name> --no-wait`. It prints the workflow run ID and URL plus a `--run <id>` resume command, then exits 0 without waiting for environment approval or completion. `--approve` cannot be combined with `--no-wait`; approve the run through the normal environment review, then resume it when you want its final report.
 
 The demo's upload/processing/owner-reported installation and behavior loop completed milestone 6. Future app changes still need their own delivery and device acceptance. Keep App Store publication separate. The demo's distribution certificate expires February 8, 2027; the validator must continue rejecting expired assets rather than treating earlier signing evidence as current readiness.
 
