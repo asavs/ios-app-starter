@@ -2,6 +2,16 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-20 — Template icon: Apple's Icon Composer demo icon, unchanged
+
+- **Context:** Task `ios-wta`, the owner's decision after reading Apple's app icon guidance (HIG "App icons", updated 2026-06-08 for Liquid Glass) and "Creating your app icon using Icon Composer". Xcode 26.6 locally (Icon Composer 1.6); CI uses Xcode 27.0.
+- **Decision:** The placeholder `AppIcon.icon` is Apple's *Icon Composer Demo Project* from the iOS 27 Icon Templates download, byte for byte: Apple's own reference for a correctly built document, so it is not redrawn. It replaces the blueprint sheet from PR #69. Apple's Design Resources license (which allows use for mock-ups and asks that recipients be told its restrictions) is kept in `third_party/apple-icon-composer-demo/`. The owner accepted that license and chose to commit the file to this public template.
+- **Discovery (confirmed):** Apple's file uses keys the hand-written document did not: a single `"fill": "system-light"` background that adapts by itself, `"features": ["refractivity"]` with per-group `refractivity` (iOS 27), per-appearance `shadow-`, `translucency-`, `opacity-` and layer `fill-specializations` (grey fills for tinted), and `"lighting": "individual"`. Layers omit `glass`; Liquid Glass is on by default.
+- **Discovery (confirmed):** Xcode 26.6 cannot use the document. `ictool` 1.6 answers "Could not open “Demo.icon”", and `actool` throws "attempt to insert nil object". Removing only `features` and `refractivity` makes it render, so refraction is the iOS 27-only part. Devices are installed from Xcode 27 or through TestFlight from CI.
+- **Change:** `scripts/check-app-icon.py` accepts a single `fill` as the background for every appearance (the dark-fill requirement stays for `fill-specializations`), accepts string fill values, and treats a layer without `glass` as glass. `docs/app-icon.md` and the README describe the demo, its license, the Xcode 27 requirement and Apple's guidance for layers (opaque, numbered back to front, at most four groups, effects set in Icon Composer).
+- **Verification:** `diff -r` against Apple's `Demo Project.icon` shows no difference. `python3 scripts/check-app-icon.py` passes; `test_app_icon.py` passes (10 tests).
+- **Remaining:** CI renders and the phone check (TestFlight from CI) confirm the Xcode 27 build. A per-app placeholder for generated apps is still `ios-7yd`.
+
 ## 2026-10-20 — Onboarding choice step and TipKit contextual tips; toolbar popovers do not show on iOS 26
 
 - **Context:** Task `ios-s5.5`, the follow-up to the step model (PR #64). Tools: Xcode 26.6 and the iOS 26.5 simulator on the Mac; CI on Xcode 27.0. The choice step is included on the owner's decision even though the research favours it only when the answer changes the product, which the template's copy says.

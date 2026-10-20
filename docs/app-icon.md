@@ -1,6 +1,8 @@
 # App icon
 
-The app icon is one Icon Composer document, `StarterApp/StarterApp/AppIcon.icon`. It is the only icon source: there is no asset catalog icon, no PNG and no generator. You can edit it on a Mac in Icon Composer, or by hand on any platform, and review it from Windows through the previews that CI renders on each run.
+The app icon is one Icon Composer document, `StarterApp/StarterApp/AppIcon.icon`. It is the only icon source: there is no asset catalog icon, no PNG and no generator.
+
+The template's placeholder is Apple's own Icon Composer demo icon (three overlapping circles), copied unchanged from the *Icon Composer Demo Project* in the iOS 27 Icon Templates on [Apple Design Resources](https://developer.apple.com/design/resources/). It is Apple's reference for a correctly built document, so it is kept byte for byte rather than redrawn. It is covered by the Apple Design Resources license, kept in [`third_party/apple-icon-composer-demo/`](../third_party/apple-icon-composer-demo/): use it for mock-ups while you build, and replace it with your own icon before you ship. It uses iOS 27 refraction, so it needs Xcode 27 (or Icon Composer 27) to build or render; Xcode 26 fails with "Could not open “AppIcon.icon”". CI builds with Xcode 27. You can edit it on a Mac in Icon Composer, or by hand on any platform, and review it from Windows through the previews that CI renders on each run.
 
 ## What is in the document
 
@@ -10,17 +12,16 @@ An `.icon` document is a folder:
 AppIcon.icon/
   icon.json          fills, groups, layers and their effects
   Assets/
-    grid.svg         one flat SVG (or PNG) per layer
-    construction.svg
-    sweep.svg
-    radius.svg
+    1.circle.svg     one flat SVG (or PNG) per layer, numbered back to front
+    2.circle.svg
+    3.circle.svg
 ```
 
-- **Layers** are flat artwork: white shapes on a transparent 1024 × 1024 canvas. They carry no shading, shadow or colour beyond what you want tinted. Icon Composer adds depth from `icon.json`.
-- **Groups** in `icon.json` stack the layers, front first. Each group sets the material that the system draws: `specular`, `shadow` (`neutral` or `layer-color`, with `opacity`), `translucency`, `blur-material` and `lighting`.
-- **Layer settings** within a group: `image-name` (a file under `Assets/`), `name`, `glass` (Liquid Glass on or off), `opacity`, `blend-mode` (for example `plus-lighter`) and an optional `fill` that recolours the layer, such as a `linear-gradient` with alpha stops and an `orientation`.
-- **`fill-specializations`** set the background: one entry without `appearance` for light mode and one with `"appearance": "dark"`. The template uses `automatic-gradient` colours.
-- **`supported-platforms`** is `{"squares": "shared"}` for iPhone and iPad.
+- **Layers** are flat, opaque artwork on a transparent square canvas (1024 × 1024 for iPhone, iPad and Mac; Apple's demo layers are 512 × 512 and scale). They carry no shading, shadow, blur or transparency: Apple's guide says to set those in Icon Composer. Name them with numbers that increase from back to front.
+- **Groups** in `icon.json` stack the layers, front first; use at most four. Each group sets the material that the system draws: `specular`, `shadow` (`neutral` or `layer-color`, with `opacity`), `translucency`, `blur-material`, `lighting` (`individual` or `combined`) and, from iOS 27, `refractivity` (`enabled`, `depth`, `strength`, with `"features": ["refractivity"]` at the top level). Any of these can vary by appearance with a `-specializations` list, as the demo does for shadows and translucency in dark mode.
+- **Layer settings** within a group: `image-name` (a file under `Assets/`), `name`, `glass` (Liquid Glass; on unless set to `false`), `opacity`, `blend-mode` and an optional `fill` that recolours the layer: `automatic` (the SVG's own colour), `none`, a `solid` colour or a `linear-gradient`. The demo uses `fill-specializations` to give each layer grey fills in the tinted appearance.
+- **The background** is either one `fill` for every appearance (the demo uses Icon Composer's `system-light` preset, which adapts to dark mode) or `fill-specializations`: one entry without `appearance` for light mode and one with `"appearance": "dark"`, for example `automatic-gradient` colours.
+- **`supported-platforms`** is `{"squares": "shared"}` for iPhone, iPad and Mac; the demo adds `"circles": ["watchOS"]`.
 
 XcodeGen picks the document up from the target's sources as an icon resource, so `project.yml` needs no entry beyond `ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon`. `actool` compiles the document into the iOS 26 layered icon and into the `AppIcon60x60@2x.png` and `AppIcon76x76@2x~ipad.png` fallbacks for the iOS 17 minimum. The TestFlight release checks that those fallbacks exist in the built app.
 
@@ -28,11 +29,11 @@ XcodeGen picks the document up from the target's sources as an icon resource, so
 
 ### In Icon Composer (Mac)
 
-Icon Composer is bundled with Xcode 26 and later at `Xcode.app/Contents/Applications/Icon Composer.app`, and is also available as a separate download. Open `AppIcon.icon`, edit it, save, and commit `icon.json` together with any changed `Assets/`. We have not yet checked that Icon Composer saves this hand-written file unchanged. If saving it rewrites more than you edited, read the diff before committing.
+Icon Composer is bundled with Xcode 26 and later at `Xcode.app/Contents/Applications/Icon Composer.app`, and is also available as a separate download. Open `AppIcon.icon`, edit it, save, and commit `icon.json` together with any changed `Assets/`. The demo was saved by Icon Composer, so a save produces a diff of only what you changed. Apple's templates for Figma, Sketch, Photoshop and Illustrator on [Apple Design Resources](https://developer.apple.com/design/resources/) have the current grid and canvas for drawing layers; Icon Composer can also overlay that grid while you edit.
 
 ### By hand (any platform)
 
-1. Draw or edit the layer as an SVG on a 1024 × 1024 `viewBox`, in white, and put it in `Assets/`. Keep the important shapes away from the edges, because the system rounds the corners.
+1. Draw or edit the layer as an SVG on a square `viewBox` (1024 × 1024), opaque, and put it in `Assets/`. Keep the main shape centred, because the system rounds the corners. Convert text to outlines.
 2. Add a layer to a group in `icon.json` whose `image-name` is the file name. Every file in `Assets/` must belong to a layer.
 3. Keep the keys sorted and written with `" : "` between key and value, as Icon Composer writes them, so that a later save from Icon Composer produces a small diff.
 4. Run the check:
@@ -41,11 +42,11 @@ Icon Composer is bundled with Xcode 26 and later at `Xcode.app/Contents/Applicat
    python3 scripts/check-app-icon.py
    ```
 
-   It reports a missing or unreferenced asset, invalid JSON, an empty group or a missing light or dark fill, and names the fix for each problem. It runs on Windows, Linux and macOS, and the portable CI job runs it on every pull request.
+   It reports a missing or unreferenced asset, invalid JSON, an empty group or a missing background (a `fill`, or both a light and a dark fill specialization), and names the fix for each problem. It runs on Windows, Linux and macOS, and the portable CI job runs it on every pull request.
 
 ## Seeing the result
 
-**On a Mac with Xcode 26 or later**, render the previews:
+**On a Mac with Xcode 27**, render the previews:
 
 ```bash
 python3 scripts/check-app-icon.py --output build/icon
@@ -67,17 +68,18 @@ Icon Composer 1.6 accepts the renditions `Default`, `Dark`, `TintedLight`, `Tint
 gh run download <run-id> -n ios-test-results-starter -D build/ci-results
 ```
 
-**On the phone**, `scripts/run-on-device.sh` installs a build in about a minute from a Mac (see [agent onboarding](agent-onboarding.md)). Check the home screen in light, dark and tinted modes, because a preview at 1024 px hides problems that show at 60 pt.
+**On the phone**, `scripts/run-on-device.sh` installs a build in about a minute from a Mac with Xcode 27 (see [agent onboarding](agent-onboarding.md)); without a Mac, or with Xcode 26, use a TestFlight build from CI. Check the home screen in light, dark and tinted modes, because a preview at 1024 px hides problems that show at 60 pt.
 
 ## Pitfalls we hit
 
 - **A malformed document gives no detail.** `ictool` reports only "The data couldn't be read because it isn't in the correct format" and exit with status 255. Run `check-app-icon.py` first, because it names the problem.
 - **No dark fill means a black icon.** Without a `"appearance": "dark"` fill specialization, the Dark rendition paints the background black and fills enclosed shapes (such as the inside of a dashed circle) with the light colour. The check requires a dark fill for this reason.
-- **Glass gives an edge a hard rim.** A layer with `glass: true` gets a lit rim on all its edges, which ruins a shape meant to fade out. Leave faded shapes out of glass, as the template does with `sweep`.
-- **There is no angular gradient.** The format offers `linear-gradient` layer fills and `automatic-gradient` backgrounds, not conic gradients. Fake a sweep with a linear fade that has alpha stops and `plus-lighter` blending.
-- **macOS previews show the SVGs wrong.** Finder, Quick Look and NSImage render these white-on-transparent layers as solid black. Judge the icon by the `ictool` renders, not by file previews.
+- **Glass gives an edge a hard rim.** A layer with Liquid Glass gets a lit rim on all its edges, which ruins a shape meant to fade out. Apple's guide says the same from the other side: prefer clearly defined edges, and avoid soft or feathered ones.
+- **There is no angular gradient.** The format offers `linear-gradient` layer fills and `automatic-gradient` backgrounds, not conic gradients.
+- **Refraction needs Xcode 27.** `refractivity` is an iOS 27 setting. Icon Composer 1.6 and `actool` from Xcode 26 refuse the whole document (`actool` crashes with "attempt to insert nil object").
+- **macOS previews can show SVG layers wrong.** Finder, Quick Look and NSImage rendered white-on-transparent layers as solid black. Judge the icon by the `ictool` renders, not by file previews.
 - **Keep one icon source.** Don't add an `AppIcon.appiconset` next to the document. The fallback PNGs for iOS 17 already come from the `.icon`.
 
 ## For an app created from the template
 
-A new app keeps the blueprint sheet until it has its own mark. Replace the layers in `Assets/` and their entries in `icon.json`, keep a light and a dark fill, run the check, and look at the previews. Whether new apps get a per-app placeholder (such as their initial on the sheet) is still being decided. This page will be updated once that is settled.
+A new app starts with Apple's demo icon. Replace it before the first App Store submission: draw your layers (Apple's templates have the grid), import them into Icon Composer or replace the files in `Assets/` and their entries in `icon.json`, run the check, and look at the previews in every appearance. Delete `third_party/apple-icon-composer-demo/` once the demo is gone. Whether new apps get a generated per-app placeholder is still being decided; this page will be updated once that is settled.
