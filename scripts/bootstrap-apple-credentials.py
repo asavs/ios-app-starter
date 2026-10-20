@@ -44,9 +44,9 @@ def environment_path(repo):
     return f"repos/{repo}/environments/{ENVIRONMENT}"
 
 
-def verify_protections(repo, approval_policy="independent"):
-    if approval_policy not in ("independent", "solo-owner"):
-        raise BootstrapError("Choose an explicit supported approval policy.")
+def verify_protections(repo, approval_policy="none"):
+    if approval_policy not in ("none", "independent", "solo-owner"):
+        raise BootstrapError("Choose a supported approval policy.")
     environment = gh_json(["api", environment_path(repo)])
     policy = environment.get("deployment_branch_policy") or {}
     if policy != {"protected_branches": False, "custom_branch_policies": True}:
@@ -59,8 +59,10 @@ def verify_protections(repo, approval_policy="independent"):
 
     rules = environment.get("protection_rules", [])
     review = next((rule for rule in rules if rule.get("type") == "required_reviewers"), None)
-    if not review or not review.get("reviewers"):
-        raise BootstrapError("apple-credentials needs required reviewers before credentials can be stored.")
+    if approval_policy == "none" and review and review.get("reviewers"):
+        raise BootstrapError("apple-credentials has required reviewers; choose an explicit reviewer policy.")
+    if approval_policy != "none" and (not review or not review.get("reviewers")):
+        raise BootstrapError("apple-credentials needs required reviewers for the selected approval policy.")
     if approval_policy == "independent" and review.get("prevent_self_review") is not True:
         raise BootstrapError("apple-credentials needs required reviewers with self-review prevented before credentials can be stored.")
     if approval_policy == "solo-owner":
@@ -149,8 +151,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", required=True, help="GitHub destination in owner/repository form")
     parser.add_argument("--key-type", choices=("team", "individual"), required=True)
-    parser.add_argument("--approval-policy", choices=("independent", "solo-owner"), required=True,
-                        help="Explicit review policy to verify; this command does not change environment protections")
+    parser.add_argument("--approval-policy", choices=("none", "independent", "solo-owner"), default="none",
+                        help="Environment review policy to verify (default: none; the main-only deployment rule is still required)")
     parser.add_argument("--key-id", required=True, help="Non-secret App Store Connect key ID")
     parser.add_argument("--issuer-id", help="Required for a team key; omit for an individual key")
     parser.add_argument("--private-key-file", required=True, type=Path,

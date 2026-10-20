@@ -12,7 +12,7 @@ The starter has a generated iPhone/iPad app and a passing remote build gate. Con
 4. Open a pull request. The **iOS** workflow generates the project, builds the app, and tests the welcome screen on an iPhone simulator; its `ios-gate` check and the three portable `portable (...)` checks are required before merging to `main`. Documentation-only pull requests pass the gate without a simulator run, and draft pull requests wait until marked ready for review. Enable auto-merge (`gh pr merge <number> --auto --merge`) and move on; GitHub merges when the checks pass. Pushes to `main` run all three configurations; newer main pushes cancel superseded iOS runs. Signing and TestFlight preflights run on pull requests or by manual dispatch, not again on push.
 5. Open the workflow run in GitHub's **Actions** tab. Read its test summary and download the **ios-test-results-starter** artifact (or **ios-test-results-pocket-notes** / **ios-test-results-starter-app-demo** for the examples) for full logs, JSON counts, and the `.xcresult` bundle. Artifacts are retained for 14 days. You can also select **iOS → Run workflow** to run it manually.
 
-This first workflow is unsigned and needs no Apple credentials. It produces no installable build. The separately approved [TestFlight delivery workflow](docs/testflight-delivery.md) is milestone 6; the demo upload and user-reported iPhone acceptance are complete.
+This first workflow is unsigned and needs no Apple credentials. It produces no installable build. The manually triggered [TestFlight delivery workflow](docs/testflight-delivery.md) is milestone 6; the demo upload and user-reported iPhone acceptance are complete.
 
 ## Current defaults
 
@@ -114,10 +114,10 @@ Once a change is on `main` with a green smoke run, one command proposes the buil
 
 ```powershell
 python scripts/deliver_testflight.py --configuration starter-app-demo --dry-run
-python scripts/deliver_testflight.py --configuration starter-app-demo --approve
+python scripts/deliver_testflight.py --configuration starter-app-demo
 ```
 
-The proposal names the `main` head, the newest iOS push run for it and any delivery already in flight (a second dispatch is refused while one is running). `--approve` approves the environment gate under your own GitHub login once preflight passes; without it the command prints the exact `gh api` approval command and keeps waiting. The final report lists release-plan, delivery-validation, upload-report and processing-report statuses from the sanitized artifact and ends with one line: processed by Apple (`VALID`), upload accepted but still processing, or the exact failing job and step, with a warning when the upload was accepted before a later step failed. `--run <id>` resumes a run after a timeout (exit code 3). See [docs/testflight-delivery.md](docs/testflight-delivery.md).
+The proposal names the `main` head, the newest iOS push run for it and any delivery already in flight (a second dispatch is refused while one is running). The `apple-credentials` environment allows deployments from `main` and has no required reviewer in this repository's setup. `--approve` remains available for template users who add that optional protection; if there is no pending deployment, the command continues without attempting approval. The final report lists release-plan, delivery-validation, upload-report and processing-report statuses from the sanitized artifact and ends with one line: processed by Apple (`VALID`), upload accepted but still processing, or the exact failing job and step, with a warning when the upload was accepted before a later step failed. `--run <id>` resumes a run after a timeout (exit code 3). See [docs/testflight-delivery.md](docs/testflight-delivery.md).
 
 ## Reference tools
 
@@ -164,7 +164,7 @@ python scripts/configure-github-repo.py --repo <owner>/<repository>
 python scripts/configure-github-repo.py --repo <owner>/<repository> --apply
 ```
 
-The dry run lists current and intended values, including the authenticated GitHub user who will review the `apple-credentials` environment. `--apply` turns on auto-merge and head-branch deletion, enables secret scanning with push protection, restricts actions to GitHub-owned and verified creators, requires approval for every fork contributor's workflows, adds a default-branch ruleset that requires a pull request with passing `ios-gate` and `portable (...)` checks, and configures `apple-credentials` for exactly `main`. On a personal repository owned by the authenticated user, that owner is the required reviewer and may approve their own deployment; otherwise self-review is prevented. The ruleset blocks direct pushes to `main` for everyone, including the owner.
+The dry run shows current and intended values. `--apply` turns on auto-merge and head-branch deletion, enables secret scanning with push protection, restricts actions to GitHub-owned and verified creators, requires approval for every fork contributor's workflows, adds a default-branch ruleset that requires a pull request with passing `ios-gate` and `portable (...)` checks, and configures `apple-credentials` for exactly `main` with no required reviewer. Template users can add a reviewer with `--require-reviewer` (and then `--apply`) or in **Settings → Environments → `apple-credentials` → Required reviewers**. The ruleset blocks direct pushes to `main` for everyone, including the owner.
 
 ## Faster manual iteration
 

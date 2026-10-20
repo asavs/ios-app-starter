@@ -89,7 +89,14 @@ class CredentialBootstrapTests(unittest.TestCase):
             with self.assertRaisesRegex(bootstrap.BootstrapError, "outside the repository"):
                 bootstrap.read_key(key_path, repo)
 
-    def test_requires_main_only_policy_and_independent_review(self):
+    def test_main_only_policy_without_reviewers_is_valid_by_default(self):
+        metadata = environment()
+        metadata["protection_rules"] = []
+        with patch.object(bootstrap, "gh_json", side_effect=[metadata, {"branch_policies": metadata["branches"]}]) as read:
+            bootstrap.verify_protections("team/app")
+        self.assertEqual(read.call_count, 2)
+
+    def test_requires_main_only_policy_and_selected_review_policy(self):
         cases = [
             (environment(branches=[{"name": "*", "type": "branch"}]), "exactly the main branch"),
             (environment(reviewers=[], prevent_self_review=True), "required reviewers"),
@@ -97,8 +104,14 @@ class CredentialBootstrapTests(unittest.TestCase):
         ]
         for metadata, error in cases:
             with self.subTest(error=error), patch.object(bootstrap, "gh_json", side_effect=[metadata, {"branch_policies": metadata["branches"]}]):
+                policy = "independent" if "reviewers" in error or "self-review" in error else "none"
                 with self.assertRaisesRegex(bootstrap.BootstrapError, error):
-                    bootstrap.verify_protections("team/app")
+                    bootstrap.verify_protections("team/app", policy)
+
+        metadata = environment()
+        with patch.object(bootstrap, "gh_json", side_effect=[metadata, {"branch_policies": metadata["branches"]}]):
+            with self.assertRaisesRegex(bootstrap.BootstrapError, "choose an explicit reviewer policy"):
+                bootstrap.verify_protections("team/app", "none")
 
     def test_does_not_replace_existing_secrets_without_explicit_flag(self):
         with tempfile.TemporaryDirectory() as directory:

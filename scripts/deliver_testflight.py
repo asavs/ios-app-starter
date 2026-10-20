@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Deliver the current ``main`` branch to internal TestFlight in one approved command.
+"""Deliver the current ``main`` branch to internal TestFlight in one command.
 
 The command proposes the build (configuration, ``main`` head, the newest ``main`` iOS run
 for that head, deliveries already in flight), dispatches **TestFlight delivery** with
-``perform_upload``, finds the run it started, waits for the ``apple-credentials`` approval
-gate (approving it with ``--approve`` or printing the exact command), waits for the run
-to finish and then reports every stage from the sanitized delivery artifact, naming the
+``perform_upload``, finds the run it started, handles an optional ``apple-credentials``
+reviewer gate, waits for the run to finish and then reports every stage from the sanitized delivery artifact, naming the
 exact failing step when something goes wrong. ``--run <id>`` resumes an existing run
 instead of dispatching a new one; ``--dry-run`` stops after the proposal; ``--no-wait``
 dispatches and prints the run details without waiting for approval or completion.
@@ -140,13 +139,15 @@ def pending_environment(run_id):
     """Return the pending apple-credentials deployment (environment id, approvable), or None."""
     body = gh_json(["api", f"repos/{REPO[0]}/actions/runs/{run_id}/pending_deployments"], "pending deployment list")
     if not isinstance(body, list):
-        return None
+        raise ReviewError("GitHub returned an invalid pending deployment list.")
     for item in body:
         if not isinstance(item, dict):
             continue
         environment = item.get("environment") or {}
         if environment.get("name") == ENVIRONMENT and isinstance(environment.get("id"), int):
             return environment["id"], bool(item.get("current_user_can_approve"))
+    if body:
+        raise ReviewError(f"run {run_id} is waiting on something other than the {ENVIRONMENT} environment.")
     return None
 
 
@@ -253,12 +254,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--configuration", choices=CONFIGURATIONS, required=True, help="Configured app to deliver")
     parser.add_argument("--approve", action="store_true",
-                        help="Approve the apple-credentials gate yourself once preflight passes (a conscious upload decision)")
+                        help="Approve a pending apple-credentials deployment if you are eligible (optional reviewer policy)")
     parser.add_argument("--dry-run", action="store_true", help="Print the proposal and the dispatch command only")
     parser.add_argument("--no-wait", action="store_true",
                         help="Dispatch, print the run ID and resume command, and exit without waiting")
     parser.add_argument("--run", metavar="RUN_ID", help="Resume an existing delivery run instead of dispatching")
-    parser.add_argument("--wait-minutes", type=int, default=45, help="Total time to wait for approval and completion")
+    parser.add_argument("--wait-minutes", type=int, default=45,
+                        help="Total time to wait for an optional approval and workflow completion")
     parser.add_argument("--poll-seconds", type=int, default=30, help="Seconds between run status reads")
     args = parser.parse_args()
     if args.run is not None and not RUN_ID_RE.fullmatch(args.run):
@@ -306,22 +308,23 @@ def deliver(args, sleep=time.sleep, clock=time.monotonic):
         status = str(run.get("status") or "unknown")
         if status not in announced:
             announced.add(status)
-            print(f"Run {run_id} is {status}; waiting (preflight runs first, then the approval gate).")
+            print(f"Run {run_id} is {status}; waiting for preflight and delivery to finish.")
 
     try:
         run = wait_until(run_id, waiting_or_finished, deadline, args.poll_seconds, clock, sleep, progress)
         if is_waiting(run):
             pending = pending_environment(run_id)
-            if pending is None:
-                raise ReviewError(f"run {run_id} is waiting on something other than the {ENVIRONMENT} environment.")
-            environment_id, approvable = pending
-            if args.approve and approvable:
-                approve(run_id, environment_id, args.configuration)
-                print(f"Approved the {ENVIRONMENT} deployment for run {run_id}.")
+            if pending is not None:
+                environment_id, approvable = pending
+                if args.approve and approvable:
+                    approve(run_id, environment_id, args.configuration)
+                    print(f"Approved the {ENVIRONMENT} deployment for run {run_id}.")
+                else:
+                    reason = "" if approvable else " (your GitHub account is not listed as a reviewer)"
+                    print(f"Run {run_id} is waiting for {ENVIRONMENT} approval{reason}. Approve it with:\n  "
+                          + approval_command(run_id, environment_id) + "\n  or rerun this command with --approve.")
             else:
-                reason = "" if approvable else " (your GitHub account is not listed as a reviewer)"
-                print(f"Run {run_id} is waiting for {ENVIRONMENT} approval{reason}. Approve it with:\n  "
-                      + approval_command(run_id, environment_id) + "\n  or rerun this command with --approve.")
+                print(f"Run {run_id} has no pending {ENVIRONMENT} deployment; waiting for the workflow to continue.")
             run = wait_until(run_id, is_finished, deadline, args.poll_seconds, clock, sleep, progress)
     except DeliveryTimeout as timeout:
         print(f"Stopped waiting after {args.wait_minutes} minutes; run {run_id} is still `{timeout}`. "
