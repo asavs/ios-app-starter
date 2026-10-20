@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "skills": [
+    {
+      "name": "swiftui-pro",
+      "repository": "twostraws/SwiftUI-Agent-Skill",
+      "path": "swiftui-pro/skills/swiftui-pro",
+      "commit": "ce32af1693b9e78a7d22ff48001c97a304d32063",
+      "content_sha256": "07a9c1c7431a06dde398a63c200909f21b17756320d08dd1a58654e31a87c0b5"
+    },
+    {
+      "name": "swift-concurrency-pro",
+      "repository": "twostraws/Swift-Concurrency-Agent-Skill",
+      "path": "swift-concurrency-pro/skills/swift-concurrency-pro",
+      "commit": "bee3f69ba17142da148d3c5406f148ed62592b69",
+      "content_sha256": "83e3c7afdb33e0fa98f956aabeb658f8134e6313e39f2b185747f1efa6326275"
+    },
+    {
+      "name": "swift-testing-pro",
+      "repository": "twostraws/Swift-Testing-Agent-Skill",
+      "path": "swift-testing-pro/skills/swift-testing-pro",
+      "commit": "2d6bba14a3c8bf3694f218b92fffe617c41ae43e",
+      "content_sha256": "28f4759a641fd7f919dbc4dab7f106c146c80448454b0367ba12428a825e3994"
+    },
+    {
+      "name": "swiftdata-pro",
+      "repository": "twostraws/SwiftData-Agent-Skill",
+      "path": "swiftdata-pro",
+      "commit": "8051f177a0076e7fd45bdf4ee687b070ba58fdc6",
+      "content_sha256": "ea743bfa46f6ad0778dec1e1397d5885ea1cd9a27fa1f468aa7f5e904be71b8c"
+    },
+    {
+      "name": "write-swift",
+      "repository": "emilkowalski/skills",
+      "path": "skills/write-swift",
+      "commit": "2d228630ba1446365f614a108cb8252f1feda202",
+      "content_sha256": "9ab352c6e843a341125dbd0f8fdb06f4a22cbce23acf77ccb92ad2061fbc76e3"
+    },
+    {
+      "name": "emil-design-eng",
+      "repository": "emilkowalski/skills",
+      "path": "skills/emil-design-eng",
+      "commit": "2d228630ba1446365f614a108cb8252f1feda202",
+      "content_sha256": "90301926a38dc253973db0bb569ae1545666784559c47dbb798323b8aab766d7"
+    },
+    {
+      "name": "apple-design",
+      "repository": "emilkowalski/skills",
+      "path": "skills/apple-design",
+      "commit": "2d228630ba1446365f614a108cb8252f1feda202",
+      "content_sha256": "885c993d71097d6beee0024c3495de03a9427033b23a2bd3f10ae792e28d938a"
+    },
+    {
+      "name": "review-animations",
+      "repository": "emilkowalski/skills",
+      "path": "skills/review-animations",
+      "commit": "2d228630ba1446365f614a108cb8252f1feda202",
+      "content_sha256": "6f76cf531d65d309e7fc37755085ac825b60d4d70477dc35ed501e14da9399ba"
+    }
+  ]
+}

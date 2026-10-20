@@ -24,6 +24,10 @@ Read `roadmap.md`, `README.md`, and `docs/setup-experience.md` (the journal inde
 - `platform-and-sdk-notes.md` preserves an earlier user-provided text verbatim. Use the roadmap for current decisions rather than silently rewriting that reference.
 - `App-Store-Connect-CLI/` is an ignored reference checkout with its own Git repository. Do not stage it into this repository or treat it as an integrated dependency. Audit its license and platform support before reuse.
 
+## Agent skills
+
+Use the pinned skills in `.agents/skills/` (Codex) or `.claude/skills/` (Claude Code): `swiftui-pro` for SwiftUI views, `swift-concurrency-pro` for concurrency, `swift-testing-pro` for tests, `swiftdata-pro` for SwiftData, `write-swift` for Swift style, `emil-design-eng` for motion and interface polish, `apple-design` for Apple design conventions, and `review-animations` for motion review. `review-animations` opts out of automatic model invocation and runs only when asked. Copies are pinned in `skills.lock`; verify them with `python scripts/sync-skills.py` and update them only with `python scripts/sync-skills.py --update [name]`. To add one, add its source repository and skill path to `skills.lock`, run `python scripts/sync-skills.py --update <name>`, and add it to this list. To remove one, remove its lock entry and both copied folders, then remove it from this list. Never edit pinned copies by hand.
+
 ## Credentials and release
 
 - Use GitHub Secrets for private keys, tokens, and signing passwords. Ordinary GitHub Variables are for non-sensitive configuration.
