@@ -12,9 +12,35 @@ import TemplateVersion
 #if canImport(Theme)
 import Theme
 #endif
+#if canImport(Onboarding)
+import Onboarding
+#endif
+#if canImport(Settings)
+import Settings
+#endif
 
 struct ContentView: View {
     var body: some View {
+#if canImport(Settings)
+        NavigationStack {
+            welcome
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        NavigationLink {
+                            settings
+                        } label: {
+                            Label("Settings", systemImage: "gearshape")
+                        }
+                        .accessibilityIdentifier("settings.open")
+                    }
+                }
+        }
+#else
+        welcome
+#endif
+    }
+
+    private var welcome: some View {
         VStack(spacing: 16) {
             Image(systemName: "globe")
                 .imageScale(.large)
@@ -24,6 +50,25 @@ struct ContentView: View {
         }
         .padding()
     }
+
+#if canImport(Settings)
+    /// The Settings module's screen with the app's own rows. Replace the example secret with real ones.
+    private var settings: some View {
+        SettingsView {
+            Section("Example secret") {
+                SecureSettingRow("API key", key: "example.apiKey")
+            }
+#if canImport(Onboarding)
+            Section("Welcome tour") {
+                Button("Show the welcome tour on next launch") {
+                    OnboardingRecord().reset()
+                }
+                .accessibilityIdentifier("settings.onboarding.reset")
+            }
+#endif
+        }
+    }
+#endif
 
     /// Build details under the greeting: on a themed card when the Theme module is enabled, plain otherwise.
     @ViewBuilder private var details: some View {

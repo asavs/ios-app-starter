@@ -22,6 +22,7 @@ The template is copied once ("Use this template"), so later improvements reach e
 | `TemplateVersion` | The library version an app was built against; equals the git tag. | `TemplateVersion.modules`; the welcome screen shows it. |
 | `Theme` | Design tokens and shared UX elements, system-following by default. | Read `@Environment(\.appTheme)`; customize once at the root with `.appTheme(_:)`. |
 | `Onboarding` | First-launch page flow, remembered per version. Requires `Theme`. | `ContentView().onboardingGate(pages:version:)`; pages are `OnboardingPage` values. |
+| `Settings` | Settings screen, stored appearance choice, Keychain-backed secrets. Requires `Theme`. | `SettingsView { }` behind a navigation link; `.storedAppearance()` at the root; `KeychainStore` / `SecureStore`. |
 
 ### Theme
 
@@ -63,19 +64,44 @@ The template's welcome screen puts its build details on a `ThemedCard` under `#i
 
 The template app gates `ContentView` behind `OnboardingPage.templateDefaults` under `#if canImport(Onboarding)`. A UI test forces the flow with the launch argument `-onboarding.completedVersion 0` (`UserDefaults` reads arguments ahead of stored values) and skips it with `-onboarding.completedVersion 1`; the welcome-screen smoke test taps through the pages when they appear and asserts the welcome text either way, so it also passes with the module disabled. The page style exists on iOS only; under `#if os(iOS)` the view uses it, elsewhere a plain page switch, so `swift test` still runs host-side.
 
+### Settings
+
+`SettingsView(version:extra:)` is a `Form` with an Appearance section (a segmented `AppearancePreference` picker), the app's own sections from the `extra` builder, and an About section showing `AppInfo.version()` (`CFBundleShortVersionString (CFBundleVersion)`, e.g. `1.0 (1)`). Push it from a navigation link; it sets its own title. The picker binds to `@AppStorage(AppSettings.appearanceKey)` (`settings.appearance`), and `.storedAppearance()` on the root view applies the same key as `preferredColorScheme`, so a tap in Settings restyles the app at once. `AppSettings` reads and writes the same defaults from non-view code (`appearance`, `reset()`); it holds nothing secret.
+
+Secrets go through the `SecureStore` protocol (`data(for:)`, `set(_:for:)`, `remove`, `removeAll`, `keys()`, plus `string(for:)`/`set(String, for:)` helpers and `contains`). `KeychainStore` is the implementation: generic-password items scoped by `service` (the bundle identifier by default) and keyed by account, `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` unless `.whenUnlocked` is requested, no entitlement required for an app's own items, and `SecureStoreError.keychain(status:operation:)` for a failing Security call. `InMemorySecureStore` is the stand-in for tests and previews. `SecureSettingRow("API key", key: "api.key")` is the matching form row: it never shows the stored value, reports "Stored securely on this device." or "Not set.", replaces on Save and forgets on Clear. Accessibility identifiers for UI tests: `settings.appearance`, `settings.version`, `settings.secure.<key>.field` / `.save` / `.clear` / `.status`.
+
+```swift
+@main struct MyApp: App {
+    var body: some Scene {
+        WindowGroup { ContentView().storedAppearance() }
+    }
+}
+
+NavigationStack {
+    SettingsView {
+        Section("Account") { SecureSettingRow("API key", key: "api.key") }
+    }
+}
+```
+
+The template's welcome screen gains a gear button (`settings.open`) under `#if canImport(Settings)` that pushes `SettingsView` with an example secret row and, under `#if canImport(Onboarding)`, a "Show the welcome tour on next launch" button calling `OnboardingRecord().reset()`. The root applies `.storedAppearance()`.
+
+**Keychain and signing in tests.** The simulator Keychain answers `errSecMissingEntitlement` (-34018) to a process without an `application-identifier` entitlement. An app built with `CODE_SIGNING_ALLOWED=NO` has none, so `scripts/test-ios.sh` signs the app ad hoc (`CODE_SIGN_IDENTITY=-`, no certificate or team needed) with `scripts/simulator-tests.entitlements`, which declares only that identifier; the UI test `testSettingsScreen` then stores and clears a secret in the real simulator Keychain. Xcode's package test host has no identifier either, so the module's three Keychain tests are `.enabled(if:)` a probe write succeeds and are reported as skipped on the package lane with that reason; the in-memory tests and the preference tests run everywhere, and the real Keychain path is the app UI test's job. Release and device builds are untouched: they get the identifier from the provisioning profile.
+
 ## Add a module
 
 1. Create `Modules/<Name>/Sources/<Name>.swift` and `Modules/<Name>/Tests/<Name>Tests.swift` (Swift Testing).
 2. Add the product and both targets to `Package.swift`, with explicit `path:` values as the existing entries show.
 3. Enable it in `project.yml` under `targets.StarterApp.dependencies`, then `bash scripts/generate-project.sh` and commit the regenerated project.
 4. Use it in template sources only under `#if canImport(<Name>)`.
-5. Run `python3 scripts/check-modules.py`, `bash scripts/test-module.sh <Name>` (simulator) and `bash scripts/test-ios.sh` (app smoke test). `swift test` from the repository root is a fast host-side check when the module compiles on macOS.
+5. Run `python3 scripts/check-modules.py`, `bash scripts/test-module.sh <Name>` (simulator) and `bash scripts/test-ios.sh` (every UI test in `StarterAppUITests`; a module that adds something visible adds a UI test of its main path in the same pull request, skipping itself with `XCTSkip` when the module is disabled). `swift test` from the repository root is a fast host-side check when the module compiles on macOS.
 6. Open the pull request; the required iOS lane checks the layout and builds the app with the module.
 
 ## Test a module
 
 ```bash
 bash scripts/test-module.sh TemplateVersion            # one module's tests on the iOS simulator
+bash scripts/test-ios.sh                               # the app: every UI test except the performance and launch tests
 IOS_TEST_DESTINATION='platform=iOS Simulator,name=iPhone 17,OS=26.5' bash scripts/test-module.sh TemplateVersion
 swift test                                             # host-side, all host-portable modules
 ```

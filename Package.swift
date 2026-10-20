@@ -16,6 +16,7 @@ let package = Package(
         .library(name: "TemplateVersion", targets: ["TemplateVersion"]),
         .library(name: "Theme", targets: ["Theme"]),
         .library(name: "Onboarding", targets: ["Onboarding"]),
+        .library(name: "Settings", targets: ["Settings"]),
     ],
     targets: [
         .target(name: "TemplateVersion", path: "Modules/TemplateVersion/Sources"),
@@ -24,6 +25,8 @@ let package = Package(
         .testTarget(name: "ThemeTests", dependencies: ["Theme"], path: "Modules/Theme/Tests"),
         .target(name: "Onboarding", dependencies: ["Theme"], path: "Modules/Onboarding/Sources"),
         .testTarget(name: "OnboardingTests", dependencies: ["Onboarding"], path: "Modules/Onboarding/Tests"),
+        .target(name: "Settings", dependencies: ["Theme"], path: "Modules/Settings/Sources"),
+        .testTarget(name: "SettingsTests", dependencies: ["Settings"], path: "Modules/Settings/Tests"),
     ],
     swiftLanguageModes: [.v6]
 )
