@@ -88,7 +88,7 @@ class AppIconTests(unittest.TestCase):
         self.assertEqual([r["rendition"] for r in renders], ["Default", "Dark", "TintedLight", "Default"])
         self.assertEqual([Path(r["file"]).name for r in renders], ["Default-1024.png", "Dark-1024.png", "TintedLight-1024.png", "Default-120.png"])
         self.assertTrue(all(Path(r["file"]).is_file() for r in renders))
-        self.assertEqual(calls[0][:3], ["/fake/ictool", str(self.icon), "--export-image"])
+        self.assertEqual(calls[0][:3], [str(Path("/fake/ictool")), str(self.icon), "--export-image"])  # Windows spells the fake path with backslashes.
         self.assertIn("--rendition", calls[1])
 
         def failing_run(command, capture_output, text):
