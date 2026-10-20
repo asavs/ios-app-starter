@@ -44,24 +44,30 @@ def construction(cx=512, cy=512, r=360):
             f'<polygon points="{x2},{y} {x2 - head * 1.8},{y - head / 2} {x2 - head * 1.8},{y + head / 2}"/></g>')
 
 
-def angle(cx, cy, r, degrees=40, arc=170, head=30):
-    """A radius at `degrees` above the horizontal centre line, the slice it cuts and an arrowed arc measuring it."""
-    t = math.radians(degrees)
-    ex, ey = cx + r * math.cos(t), cy - r * math.sin(t)
-    ax, ay = cx + arc * math.cos(t), cy - arc * math.sin(t)
-    # Arrowhead at the arc's end, pointing along the arc's tangent (counter-clockwise on screen).
-    tx, ty = -math.sin(t), -math.cos(t)
-    nx, ny = math.cos(t), -math.sin(t)
-    tip = (ax, ay)
-    back = (ax - tx * head * 1.8, ay - ty * head * 1.8)
-    wings = [(back[0] + nx * head / 2, back[1] + ny * head / 2), (back[0] - nx * head / 2, back[1] - ny * head / 2)]
-    points = ' '.join(f'{x:.1f},{y:.1f}' for x, y in (tip, *wings))
-    return (f'<path d="M {cx} {cy} L {cx + r} {cy} A {r} {r} 0 0 0 {ex:.1f} {ey:.1f} Z" fill="{INK}" fill-opacity="0.16"/>'
-            f'<g fill="none" stroke="{INK}" stroke-opacity="0.9" stroke-width="10" stroke-linecap="round">'
-            f'<line x1="{cx}" y1="{cy}" x2="{ex:.1f}" y2="{ey:.1f}"/>'
-            f'<path d="M {cx + arc} {cy} A {arc} {arc} 0 0 0 {back[0]:.1f} {back[1]:.1f}"/></g>'
-            f'<polygon points="{points}" fill="{INK}" fill-opacity="0.9"/>'
-            f'<circle cx="{cx}" cy="{cy}" r="14" fill="{INK}" fill-opacity="0.9"/>')
+def angle(cx, cy, r, start=285, arc=170, head=30, steps=48):
+    """A radius at 12 o'clock and the angle swept to it from `start` (degrees clockwise from 12), drawn as a slice that
+    brightens toward the radius, like a propeller's wake, with an arc arrow turning clockwise into it."""
+    def at(degrees, radius):
+        t = math.radians(degrees)
+        return cx + radius * math.sin(t), cy - radius * math.cos(t)
+    sweep = 360 - start
+    slices = []
+    for i in range(steps):  # SVG has no conic gradient: thin wedges whose opacity ramps up clockwise
+        a0, a1 = start + sweep * i / steps, start + sweep * (i + 1.15) / steps
+        (x0, y0), (x1, y1) = at(a0, r), at(min(a1, 360), r)
+        opacity = 0.42 * ((i + 1) / steps) ** 1.6
+        slices.append(f'<path d="M {cx} {cy} L {x0:.1f} {y0:.1f} A {r} {r} 0 0 1 {x1:.1f} {y1:.1f} Z" '
+                      f'fill="{INK}" fill-opacity="{opacity:.3f}"/>')
+    tip = at(360, arc)
+    back = (tip[0] - head * 1.8, tip[1])  # the arc meets 12 o'clock heading right
+    arc_start = at(start, arc)
+    return (''.join(slices) +
+            f'<g fill="none" stroke="{INK}" stroke-opacity="0.9" stroke-linecap="round">'
+            f'<line x1="{cx}" y1="{cy}" x2="{cx}" y2="{cy - r}" stroke-width="14"/>'
+            f'<path d="M {arc_start[0]:.1f} {arc_start[1]:.1f} A {arc} {arc} 0 0 1 {back[0]:.1f} {back[1] + 4:.1f}" stroke-width="10"/></g>'
+            f'<polygon points="{tip[0]:.1f},{tip[1]:.1f} {back[0]:.1f},{back[1] - head / 2:.1f} {back[0]:.1f},{back[1] + head / 2:.1f}" '
+            f'fill="{INK}" fill-opacity="0.9"/>'
+            f'<circle cx="{cx}" cy="{cy}" r="16" fill="{INK}" fill-opacity="0.9"/>')
 
 
 def srgb(hex_color):
