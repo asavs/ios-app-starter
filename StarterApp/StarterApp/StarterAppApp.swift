@@ -23,11 +23,12 @@ struct StarterAppApp: App {
     }
 
     /// The welcome screen, behind the onboarding flow on first launch when the Onboarding module is enabled.
-    /// Replace `templateDefaults` with the app's own pages; raise `version` to show a revised flow again.
+    /// Replace `templateDefaults` with the app's own steps; raise `version` to show a revised flow again
+    /// (version 2 replaced the three tour cards with a welcome sheet, one card and a notifications primer).
     @ViewBuilder private var root: some View {
 #if canImport(Onboarding)
         ContentView()
-            .onboardingGate(pages: OnboardingPage.templateDefaults, version: 1)
+            .onboardingGate(steps: OnboardingStep.templateDefaults, version: 2)
 #else
         ContentView()
 #endif
