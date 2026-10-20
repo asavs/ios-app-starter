@@ -97,7 +97,8 @@ final class StarterAppUITests: XCTestCase {
 
         XCTAssertTrue(waitUntilHittable(element(app, "onboarding.step.tour")),
                       "The tour card should follow the choice step")
-        XCTAssertFalse(element(app, "onboarding.step.build").isHittable, "The choice step should have moved off")
+        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.step.build"), expected: false),
+                      "The choice step should have moved off")
         attach(name: "onboarding-tour")
         next.tap()
 
@@ -132,13 +133,15 @@ final class StarterAppUITests: XCTestCase {
         attach(name: "onboarding-tip-tour")
     }
 
-    private func waitUntilGone(_ element: XCUIElement, timeout: TimeInterval = 5) -> Bool {
+    private func waitUntilGone(_ element: XCUIElement, timeout: TimeInterval = 15) -> Bool {
         let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: element)
         return XCTWaiter().wait(for: [gone], timeout: timeout) == .completed
     }
 
     /// Waits for the element to become hittable (or not), which outlasts the flow's short transitions.
-    private func waitUntilHittable(_ element: XCUIElement, expected: Bool = true, timeout: TimeInterval = 5) -> Bool {
+    /// The limit is generous because on a loaded hosted runner one hierarchy snapshot of the paged flow
+    /// has taken over 4 s, so a 5 s wait expired after a single check; a settled element returns at once.
+    private func waitUntilHittable(_ element: XCUIElement, expected: Bool = true, timeout: TimeInterval = 15) -> Bool {
         let settled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == %@", NSNumber(value: expected)),
                                                 object: element)
         return XCTWaiter().wait(for: [settled], timeout: timeout) == .completed
