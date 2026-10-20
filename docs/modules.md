@@ -21,7 +21,7 @@ The template is copied once ("Use this template"), so later improvements reach e
 | --- | --- | --- |
 | `TemplateVersion` | The library version an app was built against; equals the git tag. | `TemplateVersion.modules`; the welcome screen shows it. |
 | `Theme` | Design tokens and shared UX elements, system-following by default. | Read `@Environment(\.appTheme)`; customize once at the root with `.appTheme(_:)`. |
-| `Onboarding` | First-launch page flow, remembered per version. Requires `Theme`. | `ContentView().onboardingGate(pages:version:)`; pages are `OnboardingPage` values. |
+| `Onboarding` | First-launch flow of typed steps (welcome sheet, tour card, permission primer, custom), remembered per version. Requires `Theme`. | `ContentView().onboardingGate(steps:version:)`; steps are `OnboardingStep` values. |
 | `Settings` | Settings screen, stored appearance choice, Keychain-backed secrets. Requires `Theme`. | `SettingsView { }` behind a navigation link; `.storedAppearance()` at the root; `KeychainStore` / `SecureStore`. |
 
 ### Theme
@@ -45,24 +45,38 @@ The template's welcome screen puts its build details on a `ThemedCard` under `#i
 
 ### Onboarding
 
-`OnboardingView(pages:onFinish:)` is a swipeable `TabView` page flow with a Skip button, a Continue button and a final call to action (`Get started`); the labels are parameters, and `skipTitle: nil` removes Skip. Each `OnboardingPage` is an SF Symbol, a title and a message, laid out by `OnboardingPageView` with the theme's tokens, so the module depends on `Theme`. `OnboardingPager` holds the position rules (advance, clamp, finish) as a plain value with its own tests.
+The module follows Apple's onboarding guidance (fast, optional, skippable, never shown again, sign-in and permissions deferred) and ships every well-founded piece as an opt-in step, so an app built from the template keeps the steps it needs and deletes the rest. `OnboardingView(steps:onFinish:)` is a swipeable `TabView` over an ordered `[OnboardingStep]` with a Skip button, a single Continue button and a final call to action (`Get started`); the labels are parameters, `skipTitle: nil` removes Skip everywhere, and a step can set its own `continueTitle`. The Continue button is Liquid Glass (`.glassProminent`) on iOS 26 and the theme's primary style before that. Step kinds:
 
-`.onboardingGate(pages:version:record:)` shows the flow in place of its content until the user finishes it once. `OnboardingRecord` stores the completed version in `UserDefaults` under `onboarding.completedVersion`; raise `version` when the flow changes enough to show again, and call `reset()` from a settings screen to show it on the next launch. Nothing here is secret, so `UserDefaults` is the right store; Keychain values are the Settings module's job. Accessibility identifiers for UI tests: `onboarding.next`, `onboarding.skip`, `onboarding.page.<id>`.
+- `.welcome(WelcomeContent)`: the Stocks/Journal-style sheet, an icon (`.system` symbol or `.asset` image), a large title, an optional line and `WelcomeFeature` rows (symbol, title, detail), laid out by `WelcomeStepView`.
+- `.page(OnboardingPage)`: the classic tour card (symbol, title, message) laid out by `OnboardingPageView`. `OnboardingStep.pages(_:)` wraps an array, and the `pages:` initializers of the view and the gate still work.
+- `.permission(PermissionPrimer)`: the HIG pre-permission screen. It has exactly one button, labelled Continue (never Allow) and no Cancel, so Skip is hidden on it by default (`allowsSkip: false`); tapping Continue runs the primer's `PermissionRequesting` requester and moves on whatever the `PermissionOutcome`. `NotificationPermission` is the shipped requester; add your own for location, camera and the like. `PermissionOverride.resolve(real:)` swaps in a `FakePermission` when the launch argument `-onboarding.permissions granted` (or `denied`, `unavailable`) is present, which is how UI tests on the simulator avoid the system alert.
+- `.custom(id:content:)`: any SwiftUI view, with the flow's Skip and Continue around it. The sign-in module plugs in here; onboarding itself knows nothing about accounts.
+
+`OnboardingPager` holds the position rules (advance, clamp, finish) as a plain value with its own tests; `OnboardingStep.showsSkip(isLast:)` and `OnboardingView.buttonTitle(for:isLast:continueTitle:finishTitle:)` hold the per-step rules the same way.
+
+`.onboardingGate(steps:version:record:)` shows the flow in place of its content until the user finishes it once. `OnboardingRecord` stores the completed version in `UserDefaults` under `onboarding.completedVersion`; raise `version` when the flow changes enough to show again (the template went from 1 to 2 when it moved from three cards to the typed steps), and call `reset()` from a settings screen to show it on the next launch. Nothing here is secret, so `UserDefaults` is the right store; Keychain values are the Settings module's job. Accessibility identifiers for UI tests: `onboarding.next`, `onboarding.skip`, `onboarding.step.<id>`, `onboarding.page.<id>`, `onboarding.feature.<id>`, `onboarding.permission.<id>.footnote`.
 
 ```swift
 @main struct MyApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView().onboardingGate(pages: [
-                OnboardingPage(systemImage: "sparkles", title: "Welcome", message: "What the app does."),
-                OnboardingPage(systemImage: "bell", title: "Stay informed", message: "Why notifications help."),
+            ContentView().onboardingGate(steps: [
+                .welcome(WelcomeContent(icon: .asset("AppIconPreview"), title: "Welcome to Notes", features: [
+                    WelcomeFeature(systemImage: "square.and.pencil", title: "Write anywhere", detail: "Notes sync to every device."),
+                    WelcomeFeature(systemImage: "lock", title: "Private by default", detail: "Nothing leaves the device unless you share it."),
+                ])),
+                .permission(PermissionPrimer(id: "notifications", systemImage: "bell.badge", title: "Reminders",
+                                             message: "Get a nudge when a note is due.",
+                                             requester: PermissionOverride.resolve(real: NotificationPermission()))),
             ], version: 1)
         }
     }
 }
 ```
 
-The template app gates `ContentView` behind `OnboardingPage.templateDefaults` under `#if canImport(Onboarding)`. A UI test forces the flow with the launch argument `-onboarding.completedVersion 0` (`UserDefaults` reads arguments ahead of stored values) and skips it with `-onboarding.completedVersion 1`; the welcome-screen smoke test taps through the pages when they appear and asserts the welcome text either way, so it also passes with the module disabled. The page style exists on iOS only; under `#if os(iOS)` the view uses it, elsewhere a plain page switch, so `swift test` still runs host-side.
+The template app gates `ContentView` behind `OnboardingStep.templateDefaults` (welcome sheet, one tour card, notifications primer) under `#if canImport(Onboarding)`. UI tests force the flow with `-onboarding.completedVersion 0` (`UserDefaults` reads arguments ahead of stored values) and skip it with `-onboarding.completedVersion 1`, and pass `-onboarding.permissions granted` so the primer never shows a system alert: `testOnboardingSteps` walks the three steps with a screenshot each and asserts Skip disappears on the primer, and the welcome-screen smoke test still taps through whatever flow is configured. The page style exists on iOS only; under `#if os(iOS)` the view uses it, elsewhere a plain step switch, so `swift test` still runs host-side.
+
+Research behind the design (Apple HIG on onboarding, offering help, managing accounts, sign in with Apple and privacy; the Nielsen Norman Group tutorial study; first-launch patterns of Things, Bear, Flighty and Overcast) is summarized on the board task that decided it. Planned follow-ups: a choice step (single or multi select, answers returned to the app), a TipKit wrapper for contextual tips, a Settings row that resets and re-presents the flow, and the sign-in module.
 
 ### Settings
 

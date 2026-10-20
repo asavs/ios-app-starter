@@ -3,30 +3,36 @@ import SwiftUI
 /// Shows the onboarding flow in place of its content until the user finishes it once.
 ///
 /// ```swift
-/// ContentView().onboardingGate(pages: OnboardingPage.templateDefaults)
+/// ContentView().onboardingGate(steps: OnboardingStep.templateDefaults)
 /// ```
 ///
 /// Completion is remembered through `OnboardingRecord`; raise `version` to show a revised flow
 /// to users who completed an earlier one. Within a launch the decision is kept in view state, so
 /// finishing releases the gate even when a launch argument pins the stored value.
 public extension View {
+    func onboardingGate(steps: [OnboardingStep], version: Int = 1,
+                        record: OnboardingRecord = OnboardingRecord()) -> some View {
+        modifier(OnboardingGate(steps: steps, version: version, record: record))
+    }
+
+    /// Tour cards only; the same as `onboardingGate(steps: OnboardingStep.pages(pages))`.
     func onboardingGate(pages: [OnboardingPage], version: Int = 1,
                         record: OnboardingRecord = OnboardingRecord()) -> some View {
-        modifier(OnboardingGate(pages: pages, version: version, record: record))
+        onboardingGate(steps: OnboardingStep.pages(pages), version: version, record: record)
     }
 }
 
 struct OnboardingGate: ViewModifier {
-    let pages: [OnboardingPage]
+    let steps: [OnboardingStep]
     let version: Int
     let record: OnboardingRecord
     @State private var isComplete: Bool
 
-    init(pages: [OnboardingPage], version: Int, record: OnboardingRecord) {
-        self.pages = pages
+    init(steps: [OnboardingStep], version: Int, record: OnboardingRecord) {
+        self.steps = steps
         self.version = version
         self.record = record
-        _isComplete = State(initialValue: pages.isEmpty || record.isComplete(version: version))
+        _isComplete = State(initialValue: steps.isEmpty || record.isComplete(version: version))
     }
 
     func body(content: Content) -> some View {
@@ -35,7 +41,7 @@ struct OnboardingGate: ViewModifier {
                 content
                     .transition(.opacity)
             } else {
-                OnboardingView(pages: pages) {
+                OnboardingView(steps: steps) {
                     record.markComplete(version: version)
                     withAnimation(.easeInOut(duration: 0.25)) {
                         isComplete = true

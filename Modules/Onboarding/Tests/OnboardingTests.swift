@@ -97,13 +97,102 @@ struct OnboardingTests {
         #expect(custom.key == "tour.version")
     }
 
+    @Test func templateStepsShowEachKindOnceWithDistinctIdentity() {
+        let steps = OnboardingStep.templateDefaults
+        #expect(steps.count == 3)
+        #expect(Set(steps.map(\.id)).count == steps.count)
+        guard case .welcome(let welcome) = steps[0].kind else { Issue.record("first step should be the welcome sheet"); return }
+        #expect(welcome.features.count == 3)
+        #expect(Set(welcome.features.map(\.id)).count == welcome.features.count)
+        guard case .page = steps[1].kind else { Issue.record("second step should be a tour card"); return }
+        guard case .permission(let primer) = steps[2].kind else { Issue.record("last step should be the permission primer"); return }
+        #expect(primer.continueTitle == "Continue")
+        #expect(primer.page.id == primer.id)
+    }
+
+    @Test func skipShowsExceptOnPermissionStepsAndTheLastStep() {
+        let page = OnboardingStep.page(OnboardingPage(systemImage: "star", title: "Tour", message: "..."))
+        let primer = PermissionPrimer(id: "notifications", systemImage: "bell", title: "Alerts", message: "...",
+                                      requester: FakePermission())
+        let permission = OnboardingStep.permission(primer)
+        #expect(page.allowsSkip)
+        #expect(page.showsSkip(isLast: false))
+        #expect(!page.showsSkip(isLast: true))
+        #expect(!permission.allowsSkip)
+        #expect(!permission.showsSkip(isLast: false))
+        #expect(OnboardingStep.permission(primer, allowsSkip: true).showsSkip(isLast: false))
+        #expect(OnboardingStep.welcome(WelcomeContent(title: "Hi")).id == "welcome")
+        #expect(page.id == "Tour")
+    }
+
+    @Test func pagesBridgeKeepsOrderAndIdentity() {
+        let pages = OnboardingPage.templateDefaults
+        let steps = OnboardingStep.pages(pages)
+        #expect(steps.map(\.id) == pages.map(\.id))
+        for (step, page) in zip(steps, pages) {
+            guard case .page(let wrapped) = step.kind else { Issue.record("expected a page step"); continue }
+            #expect(wrapped == page)
+        }
+    }
+
+    @Test func continueTitleComesFromTheStepThenThePrimerThenTheFlow() {
+        let page = OnboardingStep.page(OnboardingPage(systemImage: "star", title: "Tour", message: "..."))
+        let named = OnboardingStep.page(OnboardingPage(systemImage: "star", title: "Named", message: "..."),
+                                        continueTitle: "Let's go")
+        let primer = PermissionPrimer(id: "n", systemImage: "bell", title: "Alerts", message: "...",
+                                      continueTitle: "Next", requester: FakePermission())
+        let permission = OnboardingStep.permission(primer)
+        func title(_ step: OnboardingStep?, isLast: Bool) -> String {
+            OnboardingView.buttonTitle(for: step, isLast: isLast, continueTitle: "Continue", finishTitle: "Done")
+        }
+        #expect(title(page, isLast: false) == "Continue")
+        #expect(title(page, isLast: true) == "Done")
+        #expect(title(named, isLast: true) == "Let's go")
+        #expect(title(permission, isLast: false) == "Next")
+        #expect(title(permission, isLast: true) == "Next")
+        #expect(title(nil, isLast: true) == "Done")
+    }
+
+    @Test func fakePermissionReportsItsOutcome() async {
+        #expect(await FakePermission().request() == .granted)
+        #expect(await FakePermission(outcome: .denied).request() == .denied)
+        #expect(await FakePermission(outcome: .unavailable, delay: .milliseconds(1)).request() == .unavailable)
+    }
+
+    @Test func permissionOverrideReplacesTheRealRequesterOnlyWhenSet() async throws {
+        struct Probe: PermissionRequesting {
+            func request() async -> PermissionOutcome { .unavailable }
+        }
+        let defaults = try isolatedDefaults()
+        #expect(PermissionOverride.defaultKey == "onboarding.permissions")
+        let untouched = PermissionOverride.resolve(real: Probe(), defaults: defaults)
+        #expect(untouched is Probe)
+        defaults.set("denied", forKey: PermissionOverride.defaultKey)
+        let faked = PermissionOverride.resolve(real: Probe(), defaults: defaults)
+        #expect(faked is FakePermission)
+        #expect(await faked.request() == .denied)
+        defaults.set("maybe", forKey: PermissionOverride.defaultKey)
+        #expect(PermissionOverride.resolve(real: Probe(), defaults: defaults) is Probe)
+    }
+
     @Test @MainActor func viewsConstructWithPublicInitializers() throws {
         let pages = OnboardingPage.templateDefaults
+        let steps = OnboardingStep.templateDefaults
         _ = OnboardingPageView(pages[0])
+        if case .welcome(let content) = steps[0].kind {
+            _ = WelcomeStepView(content)
+            _ = WelcomeFeatureRow(content.features[0])
+        }
+        if case .permission(let primer) = steps[2].kind {
+            _ = PermissionStepView(primer)
+        }
         _ = OnboardingView(pages: pages) {}
-        _ = OnboardingView(pages: pages, skipTitle: nil, continueTitle: "Next", finishTitle: "Done") {}
+        _ = OnboardingView(steps: steps) {}
+        _ = OnboardingView(steps: steps, skipTitle: nil, continueTitle: "Next", finishTitle: "Done") {}
+        _ = OnboardingStep.custom(id: "extra") { Text("Anything") }
         _ = Text("Content").onboardingGate(pages: pages)
-        _ = Text("Content").onboardingGate(pages: [], version: 2,
+        _ = Text("Content").onboardingGate(steps: steps)
+        _ = Text("Content").onboardingGate(steps: [], version: 2,
                                            record: OnboardingRecord(defaults: try isolatedDefaults()))
     }
 }
