@@ -1,0 +1,5 @@
+/.agents/skills/** -text
+/.claude/skills/** -text
+/skills.lock text eol=lf
+/scripts/sync-skills.py text eol=lf
+/scripts/tests/test_sync_skills.py text eol=lf

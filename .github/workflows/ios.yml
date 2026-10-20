@@ -122,6 +122,9 @@ jobs:
       - name: Verify report handling
         run: python3 -m unittest discover -s scripts/tests -v
 
+      - name: Verify pinned agent skills without network access
+        run: python3 scripts/sync-skills.py
+
       - name: Inject deliberate assertion failure in runner checkout
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.verify_failure_reporting }}
         run: |

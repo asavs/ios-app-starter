@@ -21,4 +21,7 @@ AuthKey_*.p8
 .asc/
 
 # Local agent-harness state (permissions, worktrees)
-.claude/
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/**
