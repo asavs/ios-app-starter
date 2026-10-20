@@ -15,6 +15,12 @@ import Settings
 
 @main
 struct StarterAppApp: App {
+#if canImport(Onboarding)
+    init() {
+        ContextualTips.configure() // Before any tip view appears.
+    }
+#endif
+
     var body: some Scene {
         WindowGroup {
             root
@@ -23,12 +29,13 @@ struct StarterAppApp: App {
     }
 
     /// The welcome screen, behind the onboarding flow on first launch when the Onboarding module is enabled.
-    /// Replace `templateDefaults` with the app's own steps; raise `version` to show a revised flow again
-    /// (version 2 replaced the three tour cards with a welcome sheet, one card and a notifications primer).
+    /// Replace the template steps with the app's own; raise `version` to show a revised flow again
+    /// (version 2 replaced the three tour cards with a welcome sheet, one card and a notifications primer;
+    /// version 3 added the choice step, whose answer the welcome screen shows).
     @ViewBuilder private var root: some View {
 #if canImport(Onboarding)
         ContentView()
-            .onboardingGate(steps: OnboardingStep.templateDefaults, version: 2)
+            .onboardingGate(steps: OnboardingStep.template(onChoice: ContentView.rememberBuildGoals), version: 3)
 #else
         ContentView()
 #endif
