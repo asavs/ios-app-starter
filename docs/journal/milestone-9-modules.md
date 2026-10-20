@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-20 — Per-app placeholder icon: random disc colours and arrangement
+
+- **Context:** Task `ios-7yd`, the owner's decision: an app created from the template keeps the template icon (Apple's demo discs on Apple's guide grid) with the discs' colours, positions and stacking randomised. Python 3 standard library only, so it runs on Windows; local renders with Icon Composer 1.6 (refraction stripped for preview only).
+- **Discovery (confirmed):** the demo's disc SVGs are 1024 × 1024 with their positions drawn in (centres at y = 666, 512 and 358, 154 apart). A group `"position": {"scale": 1, "translation-in-points": [x, y]}` moves a group in canvas points, so the discs can be re-arranged without editing Apple's SVGs.
+- **Change:** `scripts/personalize-icon.py` rewrites `icon.json` only: three pastel hues spaced about a third of the wheel apart (HLS lightness 0.60–0.70, saturation 0.45–0.68), a dark-mode fill of the same hue 0.16 darker and less saturated, Apple's tinted fills kept; the discs at 154-point spacing along a random guide direction through the centre, so 256 + 154 meets the grid's 410 circle; the disc groups shuffled front to back with the grid kept at the back. It prints the seed; `--seed` repeats a result. It refuses a document that no longer has the three demo discs. Onboarding Stage A, the README and `docs/app-icon.md` call it after the identity change.
+- **Verification:** five new tests (valid result, same seed repeats, SVGs byte-identical, discs on a guide line inside the outer circle for 50 seeds, hues at least 0.2 apart); 168 script tests pass. Eight seeds rendered with `ictool`; the first draft's colours (saturation up to 0.78) were louder than Apple's and were toned down.
+- **Remaining:** The template repository itself keeps Apple's unpersonalized demo.
+
 ## 2026-10-20 — Template icon: Apple's guide grid behind the demo icon
 
 - **Context:** Task `ios-wta` follow-up, the owner's idea: the placeholder icons Xcode gives test runners (a white square with a black grid of three concentric circles and two diagonals) help place artwork, so put that grid behind Apple's demo discs. Xcode 26.6 locally, Icon Composer 1.6; CI uses Xcode 27.0.
