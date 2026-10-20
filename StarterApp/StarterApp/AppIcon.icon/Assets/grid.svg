@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <g stroke="#fff" stroke-width="4">
-    <path d="M128 0V1024M384 0V1024M640 0V1024M896 0V1024M0 128H1024M0 384H1024M0 640H1024M0 896H1024"/>
-  </g>
-  <g stroke="#fff" stroke-width="10">
-    <path d="M256 0V1024M512 0V1024M768 0V1024M0 256H1024M0 512H1024M0 768H1024"/>
-  </g>
-</svg>

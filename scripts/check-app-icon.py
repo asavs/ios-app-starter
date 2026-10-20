@@ -72,24 +72,31 @@ def check_document(icon):
                 raise IconError(f"{icon.name}: Assets/{name} is not an SVG or PNG layer")
             referenced.add(name)
             layers.append({"group": group.get("name", f"group {index}"), "name": layer.get("name", name), "image": name,
-                           "glass": bool(layer.get("glass", False))})
+                           "glass": bool(layer.get("glass", True))})  # Icon Composer adds Liquid Glass to layers by default.
     unused = sorted(available - referenced)
     if unused:
         raise IconError(f"{icon.name}: Assets/ contains files no layer references ({', '.join(unused)}); "
                         "reference them from a layer or remove them")
-    fills = document.get("fill-specializations")
-    if not isinstance(fills, list) or not fills:
-        raise IconError(f"{icon.name}: icon.json needs \"fill-specializations\" with at least a default background fill")
-    appearances = []
-    for fill in fills:
-        if not isinstance(fill, dict) or not isinstance(fill.get("value"), dict) or not fill["value"]:
-            raise IconError(f"{icon.name}: every fill specialization needs a \"value\" object (for example an automatic-gradient)")
-        appearances.append(fill.get("appearance", "default"))
-    if "default" not in appearances:
-        raise IconError(f"{icon.name}: add a fill specialization without \"appearance\" for the default (light) background")
-    if "dark" not in appearances:
-        raise IconError(f"{icon.name}: add a fill specialization with \"appearance\": \"dark\"; without one the Dark rendition "
-                        "paints the background black and fills enclosed shapes with the light colour")
+    fill, fills = document.get("fill"), document.get("fill-specializations")
+    if fill is not None and fills is None:
+        # One background for every appearance, such as Icon Composer's "system-light" preset, which adapts by itself.
+        if not fill:
+            raise IconError(f"{icon.name}: icon.json \"fill\" is empty; use a preset such as \"system-light\" or a gradient")
+        appearances = ["all"]
+    else:
+        if not isinstance(fills, list) or not fills:
+            raise IconError(f"{icon.name}: icon.json needs a background: \"fill\" (for example \"system-light\") or "
+                            "\"fill-specializations\" with a default and a dark fill")
+        appearances = []
+        for entry in fills:
+            if not isinstance(entry, dict) or not isinstance(entry.get("value"), (dict, str)) or not entry["value"]:
+                raise IconError(f"{icon.name}: every fill specialization needs a \"value\" (for example an automatic-gradient)")
+            appearances.append(entry.get("appearance", "default"))
+        if "default" not in appearances:
+            raise IconError(f"{icon.name}: add a fill specialization without \"appearance\" for the default (light) background")
+        if "dark" not in appearances:
+            raise IconError(f"{icon.name}: add a fill specialization with \"appearance\": \"dark\"; without one the Dark rendition "
+                            "paints the background black and fills enclosed shapes with the light colour")
     platforms = document.get("supported-platforms")
     if not isinstance(platforms, dict) or not platforms:
         raise IconError(f"{icon.name}: icon.json needs \"supported-platforms\" (Icon Composer writes {{\"squares\": \"shared\"}} for iOS)")

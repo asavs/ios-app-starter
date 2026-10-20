@@ -46,8 +46,15 @@ class AppIconTests(unittest.TestCase):
 
     def test_template_document_is_valid(self):
         record = check_app_icon.check_document(check_app_icon.DEFAULT_ICON)
-        self.assertEqual({layer["image"] for layer in record["layers"]}, {"grid.svg", "construction.svg", "sweep.svg", "radius.svg"})
-        self.assertIn("dark", record["fillAppearances"])
+        self.assertEqual({layer["image"] for layer in record["layers"]}, {"1.circle.svg", "2.circle.svg", "3.circle.svg"})
+        self.assertEqual(record["fillAppearances"], ["all"])
+
+    def test_single_fill_covers_every_appearance(self):
+        doc = document()
+        del doc["fill-specializations"]
+        doc["fill"] = "system-light"
+        self.write(doc)
+        self.assertEqual(check_app_icon.check_document(self.icon)["fillAppearances"], ["all"])
 
     def test_missing_layer_file_names_the_fix(self):
         self.write(document(groups=[{"name": "Radius", "layers": [{"name": "radius", "image-name": "missing.svg"}]},
