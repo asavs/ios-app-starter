@@ -4,9 +4,11 @@ import Theme
 /// A swipeable step sequence with Skip, a single Continue button and a final call to action.
 ///
 /// `onFinish` runs once, whether the user reached the end or skipped. On a permission step the
-/// button runs the primer's requester first and moves on with any outcome. Accessibility
-/// identifiers for UI tests: `onboarding.skip`, `onboarding.next`, `onboarding.step.<id>`, plus
-/// `onboarding.page.<id>` on tour cards and `onboarding.feature.<id>` on welcome rows.
+/// button runs the primer's requester first and moves on with any outcome. On a choice step that
+/// requires an answer the button is disabled, and swiping stops there, until one is picked.
+/// Accessibility identifiers for UI tests: `onboarding.skip`, `onboarding.next`,
+/// `onboarding.step.<id>`, plus `onboarding.page.<id>` on tour cards, `onboarding.feature.<id>` on
+/// welcome rows and `onboarding.choice.<step id>.<option id>` on choice rows.
 public struct OnboardingView: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -19,6 +21,8 @@ public struct OnboardingView: View {
     @State private var isRequesting = false
     @State private var isFinished = false
     @State private var request: Task<Void, Never>?
+    /// Picked options of each choice step, by step identifier.
+    @State private var answers: [String: Set<String>]
 
     /// - Parameters:
     ///   - steps: The stages, in order. An empty array finishes immediately on appear.
@@ -33,6 +37,7 @@ public struct OnboardingView: View {
         self.finishTitle = finishTitle
         self.onFinish = onFinish
         _pager = State(initialValue: OnboardingPager(pageCount: steps.count))
+        _answers = State(initialValue: OnboardingView.initialAnswers(for: steps))
     }
 
     /// Tour cards only; the same as `steps: OnboardingStep.pages(pages)`.
@@ -60,6 +65,7 @@ public struct OnboardingView: View {
             stepsView
                 .allowsHitTesting(!isRequesting) // No swiping away from a primer mid-request.
             OnboardingContinueButton(title: buttonTitle, isBusy: isRequesting, action: advance)
+                .disabled(!canContinue)
                 .padding(.horizontal, theme.spacing.medium)
         }
         .padding(.vertical, theme.spacing.medium)
@@ -81,6 +87,11 @@ public struct OnboardingView: View {
         current?.showsSkip(isLast: pager.isLast) ?? false
     }
 
+    private var canContinue: Bool {
+        guard let current else { return true }
+        return OnboardingView.canLeave(current, answers: answers)
+    }
+
     private var buttonTitle: String {
         OnboardingView.buttonTitle(for: current, isLast: pager.isLast,
                                    continueTitle: continueTitle, finishTitle: finishTitle)
@@ -94,7 +105,31 @@ public struct OnboardingView: View {
         return isLast ? finishTitle : continueTitle
     }
 
+    /// Each choice step's initial selection, keyed by step identifier.
+    nonisolated static func initialAnswers(for steps: [OnboardingStep]) -> [String: Set<String>] {
+        var answers: [String: Set<String>] = [:]
+        for step in steps {
+            if case .choice(let choice) = step.kind {
+                answers[step.id] = choice.initialSelection
+            }
+        }
+        return answers
+    }
+
+    /// Whether the flow may move past `step`: anything but a choice step still waiting for a required answer.
+    nonisolated static func canLeave(_ step: OnboardingStep, answers: [String: Set<String>]) -> Bool {
+        guard case .choice(let choice) = step.kind else { return true }
+        return choice.canContinue(with: answers[step.id] ?? [])
+    }
+
+    /// The furthest index up to `target` the flow may reach, stopping at the first step it cannot leave.
+    nonisolated static func reachableIndex(_ target: Int, in steps: [OnboardingStep], answers: [String: Set<String>]) -> Int {
+        let blocked = steps.indices.first { $0 < target && !canLeave(steps[$0], answers: answers) }
+        return blocked ?? target
+    }
+
     @MainActor private func advance() {
+        guard canContinue else { return }
         guard let current, case .permission(let primer) = current.kind else {
             moveOn()
             return
@@ -123,7 +158,16 @@ public struct OnboardingView: View {
     }
 
     private var selection: Binding<Int> {
-        Binding(get: { pager.index }, set: { pager.select($0) })
+        Binding(get: { pager.index },
+                set: { pager.select(OnboardingView.reachableIndex($0, in: steps, answers: answers)) })
+    }
+
+    /// The selection of one choice step; every change is reported to the host straight away.
+    private func answer(to choice: OnboardingChoice, id: String) -> Binding<Set<String>> {
+        Binding(get: { answers[id] ?? [] }, set: { selection in
+            answers[id] = selection
+            choice.onAnswer(choice.answer(for: selection))
+        })
     }
 
     @ViewBuilder private var stepsView: some View {
@@ -152,6 +196,7 @@ public struct OnboardingView: View {
             switch step.kind {
             case .welcome(let content): WelcomeStepView(content)
             case .page(let page): OnboardingPageView(page)
+            case .choice(let choice): ChoiceStepView(choice, selection: answer(to: choice, id: step.id))
             case .permission(let primer): PermissionStepView(primer)
             case .custom(let content): content.view()
             }

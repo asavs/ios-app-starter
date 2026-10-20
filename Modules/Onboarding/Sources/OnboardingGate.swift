@@ -8,7 +8,8 @@ import SwiftUI
 ///
 /// Completion is remembered through `OnboardingRecord`; raise `version` to show a revised flow
 /// to users who completed an earlier one. Within a launch the decision is kept in view state, so
-/// finishing releases the gate even when a launch argument pins the stored value.
+/// finishing releases the gate even when a launch argument pins the stored value. Contextual tips
+/// stay ineligible while the flow is on screen (`ContextualTips.isEligible`).
 public extension View {
     func onboardingGate(steps: [OnboardingStep], version: Int = 1,
                         record: OnboardingRecord = OnboardingRecord()) -> some View {
@@ -43,12 +44,16 @@ struct OnboardingGate: ViewModifier {
             } else {
                 OnboardingView(steps: steps) {
                     record.markComplete(version: version)
+                    ContextualTips.isEligible = true
                     withAnimation(.easeInOut(duration: 0.25)) {
                         isComplete = true
                     }
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
+        }
+        .onAppear {
+            ContextualTips.isEligible = isComplete
         }
     }
 }

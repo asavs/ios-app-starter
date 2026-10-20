@@ -28,7 +28,8 @@ final class StarterAppUITests: XCTestCase {
         // Force the onboarding flow when the Onboarding module is enabled: UserDefaults reads this
         // launch argument ahead of the stored completion, so the smoke test covers a first launch.
         app.launchArguments += ["-onboarding.completedVersion", "0",
-                                "-onboarding.permissions", "granted"] // No system alert on the primer.
+                                "-onboarding.permissions", "granted", // No system alert on the primer.
+                                "-tips.testing", "hideAll"] // No tip popover over the welcome screen.
         app.launch()
 
         // Step through onboarding when it appears; with the module disabled the welcome screen is first.
@@ -57,12 +58,14 @@ final class StarterAppUITests: XCTestCase {
         XCTAssertTrue(visible, "Welcome text should be visible")
     }
 
-    /// The Onboarding module's main path: welcome sheet, a tour card, the notifications primer against a
-    /// fake requester, then the welcome screen. Skips when the module is disabled (no Continue button).
+    /// The Onboarding module's main path: welcome sheet, the choice step (multiple select, answer shown on the
+    /// welcome screen), a tour card, the notifications primer against a fake requester, then the welcome
+    /// screen with its first contextual tip. Skips when the module is disabled (no Continue button).
     @MainActor
     func testOnboardingSteps() throws {
         let app = XCUIApplication()
-        app.launchArguments += ["-onboarding.completedVersion", "0", "-onboarding.permissions", "granted"]
+        app.launchArguments += ["-onboarding.completedVersion", "0", "-onboarding.permissions", "granted",
+                                "-tips.reset", "YES"] // Forget earlier runs' dismissals so the first tip shows.
         app.launch()
 
         let next = app.buttons["onboarding.next"]
@@ -78,10 +81,23 @@ final class StarterAppUITests: XCTestCase {
         attach(name: "onboarding-welcome")
         next.tap()
 
+        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.step.build")),
+                      "The choice step should follow the welcome sheet")
+        let tool = app.buttons["onboarding.choice.build.A tool for myself"]
+        let product = app.buttons["onboarding.choice.build.A product to sell"]
+        XCTAssertTrue(tool.isHittable, "Each answer should be a button")
+        tool.tap()
+        product.tap()
+        XCTAssertTrue(tool.isSelected && product.isSelected, "A multiple choice keeps every picked answer")
+        attach(name: "onboarding-choice")
+        tool.tap()
+        XCTAssertFalse(tool.isSelected, "Tapping a picked answer again clears it")
+        XCTAssertTrue(skip.isHittable, "Skip should still be offered on a choice step")
+        next.tap()
+
         XCTAssertTrue(waitUntilHittable(element(app, "onboarding.step.tour")),
-                      "The tour card should follow the welcome sheet")
-        XCTAssertFalse(element(app, "onboarding.step.welcome").isHittable, "The welcome sheet should have moved off")
-        XCTAssertTrue(skip.isHittable, "Skip should still be offered on a tour card")
+                      "The tour card should follow the choice step")
+        XCTAssertFalse(element(app, "onboarding.step.build").isHittable, "The choice step should have moved off")
         attach(name: "onboarding-tour")
         next.tap()
 
@@ -97,6 +113,28 @@ final class StarterAppUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 10),
                       "Finishing onboarding should reveal the welcome screen")
         XCTAssertFalse(next.exists, "The flow should be gone once finished")
+        let goals = app.staticTexts["welcome.buildGoals"]
+        XCTAssertTrue(goals.waitForExistence(timeout: 5), "The welcome screen should show the choice step's answer")
+        XCTAssertEqual(goals.label, "Building: A product to sell", "The host should receive the final answer")
+
+        // Contextual tips follow onboarding one at a time: the inline Settings tip when that module is
+        // enabled, then, once it is closed, the tour tip as a popover on the replay button.
+        let tour = app.staticTexts["See the tour again"]
+        if app.buttons["settings.open"].exists {
+            let settingsTip = app.staticTexts["Settings live here"]
+            XCTAssertTrue(settingsTip.waitForExistence(timeout: 10), "The Settings tip should show after onboarding")
+            XCTAssertFalse(tour.exists, "Tips show one at a time")
+            attach(name: "onboarding-tip-settings")
+            app.buttons["Close"].firstMatch.tap()
+            XCTAssertTrue(waitUntilGone(settingsTip), "Closing a tip should remove it")
+        }
+        XCTAssertTrue(tour.waitForExistence(timeout: 10), "The tour tip should show next")
+        attach(name: "onboarding-tip-tour")
+    }
+
+    private func waitUntilGone(_ element: XCUIElement, timeout: TimeInterval = 5) -> Bool {
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: element)
+        return XCTWaiter().wait(for: [gone], timeout: timeout) == .completed
     }
 
     /// Waits for the element to become hittable (or not), which outlasts the flow's short transitions.
@@ -125,7 +163,8 @@ final class StarterAppUITests: XCTestCase {
         let app = XCUIApplication()
         // The argument domain shadows the stored value but never replaces it, so the first launch is
         // forced to show the flow while completion still writes to the persistent defaults.
-        app.launchArguments = ["-onboarding.completedVersion", "0", "-onboarding.permissions", "granted"]
+        app.launchArguments = ["-onboarding.completedVersion", "0", "-onboarding.permissions", "granted",
+                               "-tips.testing", "hideAll"]
         app.launch()
         let next = app.buttons["onboarding.next"]
         try requireModuleUI("Onboarding", appeared: next.waitForExistence(timeout: 10), "no Continue button on launch")
@@ -136,7 +175,8 @@ final class StarterAppUITests: XCTestCase {
                       "Skipping should reveal the welcome screen and record completion")
 
         app.terminate()
-        app.launchArguments = ["-onboarding.permissions", "granted"] // No override: the stored version decides.
+        app.launchArguments = ["-onboarding.permissions", "granted", // No override: the stored version decides.
+                               "-tips.testing", "hideAll"]
         app.launch()
         XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 10),
                       "A relaunch after completion should open on the welcome screen")
@@ -150,7 +190,8 @@ final class StarterAppUITests: XCTestCase {
     @MainActor
     func testThemeRendersInLightAndDark() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-onboarding.completedVersion", "99", "-settings.appearance", "light"]
+        app.launchArguments = ["-onboarding.completedVersion", "99", "-settings.appearance", "light",
+                                "-tips.testing", "hideAll"]
         app.launch()
         let card = element(app, "welcome.card")
         try requireModuleUI("Theme", appeared: card.waitForExistence(timeout: 10), "no themed card on the welcome screen")
@@ -162,7 +203,8 @@ final class StarterAppUITests: XCTestCase {
 
         try requireModuleUI("Settings", appeared: hasSettings, "no settings button, so dark appearance cannot be forced")
         app.terminate()
-        app.launchArguments = ["-onboarding.completedVersion", "99", "-settings.appearance", "dark"]
+        app.launchArguments = ["-onboarding.completedVersion", "99", "-settings.appearance", "dark",
+                                "-tips.testing", "hideAll"]
         app.launch()
         XCTAssertTrue(card.waitForExistence(timeout: 10), "The themed card should render in dark appearance")
         let dark = try assertThemedWelcome(app, name: "theme-dark")
@@ -241,7 +283,8 @@ final class StarterAppUITests: XCTestCase {
     @MainActor
     func testSettingsScreen() throws {
         let app = XCUIApplication()
-        app.launchArguments += ["-onboarding.completedVersion", "99"] // Past any flow version: straight to the welcome screen.
+        app.launchArguments += ["-onboarding.completedVersion", "99", // Past any flow version: straight to the welcome screen.
+                                "-tips.testing", "hideAll"] // No tip popover over the gear button.
         app.launch()
 
         let open = app.buttons["settings.open"]
@@ -283,7 +326,7 @@ final class StarterAppUITests: XCTestCase {
         // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {
             let app = XCUIApplication()
-            app.launchArguments += ["-onboarding.completedVersion", "99"] // Measure the app, not onboarding.
+            app.launchArguments += ["-onboarding.completedVersion", "99", "-tips.testing", "hideAll"] // Measure the app, not onboarding.
             app.launch()
         }
     }
