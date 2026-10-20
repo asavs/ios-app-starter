@@ -66,9 +66,7 @@ final class StarterAppUITests: XCTestCase {
         app.launch()
 
         let next = app.buttons["onboarding.next"]
-        guard next.waitForExistence(timeout: 10) else {
-            throw XCTSkip("Onboarding module disabled: no Continue button on launch")
-        }
+        try requireModuleUI("Onboarding", appeared: next.waitForExistence(timeout: 10), "no Continue button on launch")
         let skip = app.buttons["onboarding.skip"]
 
         // The page style keeps neighbouring pages in the hierarchy, so existence alone proves nothing;
@@ -120,18 +118,134 @@ final class StarterAppUITests: XCTestCase {
         add(screenshot)
     }
 
+    /// Onboarding is remembered: finish it once, relaunch without the override, and it must not show again.
+    /// Skips when the module is disabled.
+    @MainActor
+    func testOnboardingNotShownAgainAfterCompletion() throws {
+        let app = XCUIApplication()
+        // The argument domain shadows the stored value but never replaces it, so the first launch is
+        // forced to show the flow while completion still writes to the persistent defaults.
+        app.launchArguments = ["-onboarding.completedVersion", "0", "-onboarding.permissions", "granted"]
+        app.launch()
+        let next = app.buttons["onboarding.next"]
+        try requireModuleUI("Onboarding", appeared: next.waitForExistence(timeout: 10), "no Continue button on launch")
+        let skip = app.buttons["onboarding.skip"]
+        XCTAssertTrue(waitUntilHittable(skip), "Skip should be offered on the first step")
+        skip.tap()
+        XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 10),
+                      "Skipping should reveal the welcome screen and record completion")
+
+        app.terminate()
+        app.launchArguments = ["-onboarding.permissions", "granted"] // No override: the stored version decides.
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 10),
+                      "A relaunch after completion should open on the welcome screen")
+        XCTAssertFalse(next.waitForExistence(timeout: 3), "A completed flow must not show again on relaunch")
+        attach(name: "onboarding-relaunch")
+    }
+
+    /// The Theme module's main path: the themed welcome card and primary button render in light and in
+    /// dark appearance, with a screenshot of each. Dark is forced through the Settings module's stored
+    /// appearance (`-settings.appearance dark`); without Settings only the light pass runs.
+    @MainActor
+    func testThemeRendersInLightAndDark() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-onboarding.completedVersion", "99", "-settings.appearance", "light"]
+        app.launch()
+        let card = element(app, "welcome.card")
+        try requireModuleUI("Theme", appeared: card.waitForExistence(timeout: 10), "no themed card on the welcome screen")
+        let hasSettings = app.buttons["settings.open"].exists
+        let light = try assertThemedWelcome(app, name: "theme-light")
+        if hasSettings {
+            XCTAssertGreaterThan(light, 0.5, "The light background should be bright, got luminance \(light)")
+        }
+
+        try requireModuleUI("Settings", appeared: hasSettings, "no settings button, so dark appearance cannot be forced")
+        app.terminate()
+        app.launchArguments = ["-onboarding.completedVersion", "99", "-settings.appearance", "dark"]
+        app.launch()
+        XCTAssertTrue(card.waitForExistence(timeout: 10), "The themed card should render in dark appearance")
+        let dark = try assertThemedWelcome(app, name: "theme-dark")
+        XCTAssertLessThan(dark, 0.5, "The dark background should be dark, got luminance \(dark)")
+    }
+
+    /// Asserts the card and (when Onboarding is enabled) the primary button are on screen, attaches a
+    /// screenshot, and returns the luminance of the screen background below the content.
+    @MainActor
+    private func assertThemedWelcome(_ app: XCUIApplication, name: String) throws -> CGFloat {
+        let card = element(app, "welcome.card")
+        XCTAssertTrue(waitUntilHittable(card), "The themed card should be visible")
+        XCTAssertTrue(app.staticTexts["Built on GitHub Actions."].isHittable, "The card should show its details")
+        let replay = app.buttons["onboarding.replay"]
+        if replay.exists {
+            XCTAssertTrue(replay.isHittable, "The primary-styled button should be visible")
+        }
+        let screenshot = XCUIScreen.main.screenshot()
+        let attachment = XCTAttachment(screenshot: screenshot)
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        return try luminance(of: screenshot.image, atNormalized: CGPoint(x: 0.5, y: 0.93))
+    }
+
+    /// Relative luminance (0 dark to 1 bright) of one pixel, given as a fraction of the image size.
+    private func luminance(of image: UIImage, atNormalized point: CGPoint) throws -> CGFloat {
+        let cgImage = try XCTUnwrap(image.cgImage, "Screenshot should have image data")
+        let x = Int(CGFloat(cgImage.width) * point.x)
+        let y = Int(CGFloat(cgImage.height) * point.y)
+        var pixel = [UInt8](repeating: 0, count: 4)
+        let context = try XCTUnwrap(CGContext(data: &pixel, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4,
+                                              space: CGColorSpaceCreateDeviceRGB(),
+                                              bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        context.draw(cgImage, in: CGRect(x: -x, y: -(cgImage.height - 1 - y), width: cgImage.width, height: cgImage.height))
+        return (0.299 * CGFloat(pixel[0]) + 0.587 * CGFloat(pixel[1]) + 0.114 * CGFloat(pixel[2])) / 255
+    }
+
+    /// Gives a text field keyboard focus. On the iOS 27 simulator a single tap on a `SecureField` in a
+    /// `Form` row sometimes selects the row without focusing the field, and `typeText` then fails with
+    /// "Neither element nor any descendant has keyboard focus"; tapping again focuses it.
+    private func focus(_ field: XCUIElement, attempts: Int = 4) throws {
+        for attempt in 1...attempts {
+            field.tap()
+            let focused = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hasKeyboardFocus == true"), object: field)
+            if XCTWaiter().wait(for: [focused], timeout: 2) == .completed { return }
+            XCTContext.runActivity(named: "Field not focused after tap \(attempt)") { _ in }
+        }
+        XCTFail("\(field.identifier) did not take keyboard focus after \(attempts) taps")
+        throw ModuleUIMissing(description: "no keyboard focus on \(field.identifier)")
+    }
+
+    /// Modules the lane built the app with, from `scripts/test-ios.sh` (`TEST_RUNNER_IOS_ENABLED_MODULES`);
+    /// `nil` when unknown, such as a run from Xcode.
+    private static let enabledModules: Set<String>? = ProcessInfo.processInfo.environment["IOS_ENABLED_MODULES"]
+        .map { Set($0.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }).filter { !$0.isEmpty } }
+
+    private struct ModuleUIMissing: Error, CustomStringConvertible {
+        let description: String
+    }
+
+    /// Skips the test when `module` is disabled in this build; fails it when the lane says the module is
+    /// enabled but its UI did not appear, so a stale launch argument cannot hide behind a skip.
+    private func requireModuleUI(_ module: String, appeared: Bool, _ detail: String) throws {
+        guard !appeared else { return }
+        if let enabled = Self.enabledModules, enabled.contains(module) {
+            let message = "\(module) is enabled in this build but \(detail)"
+            XCTFail(message)
+            throw ModuleUIMissing(description: message)
+        }
+        throw XCTSkip("\(module) module disabled: \(detail)")
+    }
+
     /// The Settings module's main path: open the screen, pick an appearance, store and clear a secret
     /// in the simulator's real Keychain. Skips when the module is disabled (no gear button).
     @MainActor
     func testSettingsScreen() throws {
         let app = XCUIApplication()
-        app.launchArguments += ["-onboarding.completedVersion", "1"] // Go straight to the welcome screen.
+        app.launchArguments += ["-onboarding.completedVersion", "99"] // Past any flow version: straight to the welcome screen.
         app.launch()
 
         let open = app.buttons["settings.open"]
-        guard open.waitForExistence(timeout: 10) else {
-            throw XCTSkip("Settings module disabled: no settings button on the welcome screen")
-        }
+        try requireModuleUI("Settings", appeared: open.waitForExistence(timeout: 10), "no settings button on the welcome screen")
         open.tap()
 
         let picker = app.descendants(matching: .any).matching(identifier: "settings.appearance").firstMatch
@@ -146,7 +260,7 @@ final class StarterAppUITests: XCTestCase {
         XCTAssertTrue(field.waitForExistence(timeout: 5), "Settings should show the example secret row")
         if clear.exists { clear.tap() } // A previous run on this simulator may have left a value.
         XCTAssertTrue(status.label.hasPrefix("Not set"), "Secret should start empty, got: \(status.label)")
-        field.tap()
+        try focus(field)
         field.typeText("ui-test-secret")
         app.buttons["settings.secure.\(key).save"].tap()
         XCTAssertTrue(clear.waitForExistence(timeout: 5), "Saving should store the secret and offer Clear")
@@ -169,7 +283,7 @@ final class StarterAppUITests: XCTestCase {
         // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {
             let app = XCUIApplication()
-            app.launchArguments += ["-onboarding.completedVersion", "1"] // Measure the app, not onboarding.
+            app.launchArguments += ["-onboarding.completedVersion", "99"] // Measure the app, not onboarding.
             app.launch()
         }
     }

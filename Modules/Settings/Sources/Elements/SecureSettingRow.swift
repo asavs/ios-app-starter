@@ -26,8 +26,7 @@ public struct SecureSettingRow: View {
         VStack(alignment: .leading, spacing: theme.spacing.small) {
             HStack(spacing: theme.spacing.small) {
                 SecureField(title, text: $draft)
-                    .textContentType(.password)
-                    .autocorrectionDisabled()
+                    .autocorrectionDisabled() // No password content type: these are keys and tokens, not credentials AutoFill should offer to save.
                     .accessibilityIdentifier("settings.secure.\(key).field")
                 Button("Save", action: save)
                     .disabled(draft.isEmpty)

@@ -41,7 +41,7 @@ The template is copied once ("Use this template"), so later improvements reach e
 }
 ```
 
-The template's welcome screen puts its build details on a `ThemedCard` under `#if canImport(Theme)`. The module's tests are host-portable (`swift test`) because the tokens and the appearance mapping hold no UIKit; the views compile for macOS too.
+The template's welcome screen puts its build details on a `ThemedCard` under `#if canImport(Theme)` (identifier `welcome.card`); the UI test `testThemeRendersInLightAndDark` checks the card and the primary button in both appearances, forcing dark through the Settings module's `-settings.appearance dark` and asserting the screenshot's background luminance. The module's tests are host-portable (`swift test`) because the tokens and the appearance mapping hold no UIKit; the views compile for macOS too.
 
 ### Onboarding
 
@@ -74,7 +74,7 @@ The module follows Apple's onboarding guidance (fast, optional, skippable, never
 }
 ```
 
-The template app gates `ContentView` behind `OnboardingStep.templateDefaults` (welcome sheet, one tour card, notifications primer) under `#if canImport(Onboarding)`. UI tests force the flow with `-onboarding.completedVersion 0` (`UserDefaults` reads arguments ahead of stored values) and skip it with `-onboarding.completedVersion 1`, and pass `-onboarding.permissions granted` so the primer never shows a system alert: `testOnboardingSteps` walks the three steps with a screenshot each and asserts Skip disappears on the primer, and the welcome-screen smoke test still taps through whatever flow is configured. The page style exists on iOS only; under `#if os(iOS)` the view uses it, elsewhere a plain step switch, so `swift test` still runs host-side.
+The welcome screen's "Take the tour" button (`onboarding.replay`, the theme's primary style) replays the flow in a sheet without touching the record. The template app gates `ContentView` behind `OnboardingStep.templateDefaults` (welcome sheet, one tour card, notifications primer) under `#if canImport(Onboarding)`. UI tests force the flow with `-onboarding.completedVersion 0` (`UserDefaults` reads arguments ahead of stored values) and skip it with `-onboarding.completedVersion 1`, and pass `-onboarding.permissions granted` so the primer never shows a system alert: `testOnboardingSteps` walks the three steps with a screenshot each and asserts Skip disappears on the primer, and the welcome-screen smoke test still taps through whatever flow is configured. The page style exists on iOS only; under `#if os(iOS)` the view uses it, elsewhere a plain step switch, so `swift test` still runs host-side.
 
 The research behind the design, and behind the planned conversion steps, is in [research/onboarding.md](research/onboarding.md): Apple's guidance, the tutorial studies, first-launch patterns of well-regarded apps, and a strength-graded review of what converts to trials and purchases, with every source linked. Planned follow-ups: a choice step (single or multi select, answers returned to the app), a TipKit wrapper for contextual tips, a Settings row that resets and re-presents the flow, commitment and plan-summary steps, a host-supplied paywall step, a social-proof slot, an event hook with a holdout flag, and the sign-in module.
 
@@ -108,7 +108,7 @@ The template's welcome screen gains a gear button (`settings.open`) under `#if c
 2. Add the product and both targets to `Package.swift`, with explicit `path:` values as the existing entries show.
 3. Enable it in `project.yml` under `targets.StarterApp.dependencies`, then `bash scripts/generate-project.sh` and commit the regenerated project.
 4. Use it in template sources only under `#if canImport(<Name>)`.
-5. Run `python3 scripts/check-modules.py`, `bash scripts/test-module.sh <Name>` (simulator) and `bash scripts/test-ios.sh` (every UI test in `StarterAppUITests`; a module that adds something visible adds a UI test of its main path in the same pull request, skipping itself with `XCTSkip` when the module is disabled). `swift test` from the repository root is a fast host-side check when the module compiles on macOS.
+5. Run `python3 scripts/check-modules.py`, `bash scripts/test-module.sh <Name>` (simulator) and `bash scripts/test-ios.sh` (every UI test in `StarterAppUITests`; a module that adds something visible adds a UI test of its main path in the same pull request). Gate the test with `requireModuleUI("<Name>", appeared:_:)`: it skips when the module is disabled and fails when `test-ios.sh` reports the module enabled (`TEST_RUNNER_IOS_ENABLED_MODULES`, read from the generated project) but its UI did not appear, so a stale launch argument cannot hide behind a skip. `swift test` from the repository root is a fast host-side check when the module compiles on macOS.
 6. Open the pull request; the required iOS lane checks the layout and builds the app with the module.
 
 ## Test a module

@@ -8,6 +8,21 @@ mkdir -p "$report_root"
 report_dir="$(mktemp -d "$report_root/run.XXXXXX")"
 printf 'Test reports: %s\n' "$report_dir"
 
+# Tell the UI tests which modules this build enables (the same reading check-modules.py makes of
+# the generated project) so a module's test fails, rather than skips, when its UI is missing.
+# Empty when the check cannot run; the tests then skip as before.
+enabled_modules="$(python3 - "$repo_dir" <<'PYMOD' 2>/dev/null || true
+import importlib.util, pathlib, sys
+root = pathlib.Path(sys.argv[1])
+spec = importlib.util.spec_from_file_location("check_modules", root / "scripts/check-modules.py")
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+print(",".join(module.check(project=root / "StarterApp/StarterApp.xcodeproj").get("enabled", [])))
+PYMOD
+)"
+printf 'Enabled modules: %s\n' "${enabled_modules:-(unknown)}"
+export TEST_RUNNER_IOS_ENABLED_MODULES="$enabled_modules"
+
 # The app is signed ad hoc (no certificate or team needed) with an application-identifier
 # entitlement: the simulator Keychain returns errSecMissingEntitlement (-34018) to an unsigned
 # app, and the Settings UI test stores a secret for real. Release signing is untouched.

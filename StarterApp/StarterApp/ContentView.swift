@@ -20,6 +20,10 @@ import Settings
 #endif
 
 struct ContentView: View {
+#if canImport(Onboarding)
+    @State private var isReplayingTour = false
+#endif
+
     var body: some View {
 #if canImport(Settings)
         NavigationStack {
@@ -47,8 +51,26 @@ struct ContentView: View {
                 .foregroundStyle(.tint)
             Text("Hello, world!")
             details
+            replayTour
         }
         .padding()
+    }
+
+    /// Replays the onboarding flow in a sheet; the theme's primary button style on the welcome screen.
+    /// Onboarding depends on Theme, so the style is available whenever the button is.
+    @ViewBuilder private var replayTour: some View {
+#if canImport(Onboarding)
+        Button("Take the tour") {
+            isReplayingTour = true
+        }
+        .buttonStyle(.primary)
+        .accessibilityIdentifier("onboarding.replay")
+        .sheet(isPresented: $isReplayingTour) {
+            OnboardingView(steps: OnboardingStep.templateDefaults) {
+                isReplayingTour = false
+            }
+        }
+#endif
     }
 
 #if canImport(Settings)
@@ -74,6 +96,8 @@ struct ContentView: View {
     @ViewBuilder private var details: some View {
 #if canImport(Theme)
         ThemedCard { detailLines }
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("welcome.card")
 #else
         detailLines
 #endif
