@@ -285,6 +285,36 @@ class DeliverTestFlightTests(unittest.TestCase):
         self.assertIn("--run 31", text)
         self.assertFalse(any(call[:3] == ["api", "-X", "POST"] for call in fake.calls))
 
+    def test_waiting_run_with_no_pending_deployment_continues_without_approval(self):
+        for approve in (False, True):
+            with self.subTest(approve=approve):
+                statuses = iter([
+                    {"id": 31, "status": "waiting"},
+                    {"id": 31, "status": "completed", "conclusion": "failure", "jobs": []},
+                ])
+                api = {
+                    "repos/o/r/actions/runs/31/pending_deployments": [],
+                    "repos/o/r/actions/runs/31/jobs?per_page=100": {"jobs": []},
+                    "repos/o/r/actions/runs/31/artifacts": {"artifacts": []},
+                }
+                fake = FakeGitHub(api=api)
+
+                def fake_gh(args, **kwargs):
+                    if args[0] == "api" and args[1] == "repos/o/r/actions/runs/31":
+                        return SimpleNamespace(stdout=json.dumps(next(statuses)))
+                    return fake(args, **kwargs)
+
+                args = SimpleNamespace(configuration="starter", approve=approve, dry_run=False,
+                                       run="31", wait_minutes=1, poll_seconds=5)
+                with ExitStack() as stack:
+                    patch_gh(stack, fake_gh)
+                    output = stack.enter_context(patch("sys.stdout", new_callable=io.StringIO))
+                    code = deliver.deliver(args, sleep=lambda _: None, clock=lambda: 0)
+                self.assertEqual(code, 1)
+                self.assertIn("has no pending apple-credentials deployment", output.getvalue())
+                self.assertIn("TestFlight delivery run 31", output.getvalue())
+                self.assertFalse(any(call[:3] == ["api", "-X", "POST"] for call in fake.calls))
+
     def test_cli_validates_arguments(self):
         for argv in (["--configuration", "nope"], ["--run", "x", "--configuration", "starter"],
                      ["--run", "1", "--dry-run", "--configuration", "starter"],

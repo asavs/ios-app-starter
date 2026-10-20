@@ -55,22 +55,26 @@ def ruleset_body():
     }
 
 
-def apple_environment_plan(repo):
+def apple_environment_plan(repo, required_reviewer=False):
     """Return a preview and apply function for the protected Apple credential environment."""
     base = f"repos/{repo}"
     metadata = gh_api(base)
-    caller = gh_api("user")
     owner = metadata.get("owner") or {}
-    login = str(caller.get("login", ""))
-    reviewer_id = caller.get("id")
-    if not login or not isinstance(reviewer_id, int):
-        raise ConfigError("GitHub did not return the authenticated user's reviewer identity.")
+    login = ""
+    reviewer_id = None
+    prevent_self_review = False
+    if required_reviewer:
+        caller = gh_api("user")
+        login = str(caller.get("login", ""))
+        reviewer_id = caller.get("id")
+        if not login or not isinstance(reviewer_id, int):
+            raise ConfigError("GitHub did not return the authenticated user's reviewer identity.")
 
-    # A personal repository owner may approve their own deployment. In every other
-    # case, prevent the workflow initiator from also approving the environment.
-    solo_owner = (owner.get("type") == "User"
-                  and str(owner.get("login", "")).casefold() == login.casefold())
-    prevent_self_review = not solo_owner
+        # A personal repository owner may approve their own deployment. In every other
+        # case, prevent the workflow initiator from also approving the environment.
+        solo_owner = (owner.get("type") == "User"
+                      and str(owner.get("login", "")).casefold() == login.casefold())
+        prevent_self_review = not solo_owner
     environments = gh_api(f"{base}/environments").get("environments", [])
     current = next((item for item in environments if item.get("name") == APPLE_ENVIRONMENT), None)
     if current:
@@ -95,7 +99,8 @@ def apple_environment_plan(repo):
 
     intended = {
         "exists": True,
-        "reviewers": [{"type": "User", "login": login, "id": reviewer_id}],
+        "reviewers": ([{"type": "User", "login": login, "id": reviewer_id}]
+                      if required_reviewer else []),
         "prevent_self_review": prevent_self_review,
         "deployment_branch_policy": {"protected_branches": False, "custom_branch_policies": True},
         "branches": [{"name": "main", "type": "branch"}],
@@ -103,7 +108,8 @@ def apple_environment_plan(repo):
 
     def apply():
         gh_api(f"{base}/environments/{APPLE_ENVIRONMENT}", "PUT", {
-            "reviewers": [{"type": "User", "id": reviewer_id}],
+            "reviewers": ([{"type": "User", "id": reviewer_id}]
+                          if required_reviewer else []),
             "prevent_self_review": prevent_self_review,
             "deployment_branch_policy": {"protected_branches": False, "custom_branch_policies": True},
         })
@@ -119,7 +125,7 @@ def apple_environment_plan(repo):
     return current_value, intended, apply
 
 
-def plan(repo):
+def plan(repo, required_reviewer=False):
     """Return (label, current, intended, apply_callable) for every managed setting."""
     base = f"repos/{repo}"
     meta = gh_api(base)
@@ -129,7 +135,7 @@ def plan(repo):
     fork = gh_api(f"{base}/actions/permissions/fork-pr-contributor-approval")
     rulesets = gh_api(f"{base}/rulesets")
     existing = next((item for item in rulesets if item.get("name") == RULESET_NAME), None)
-    environment_current, environment_intended, apply_environment = apple_environment_plan(repo)
+    environment_current, environment_intended, apply_environment = apple_environment_plan(repo, required_reviewer)
 
     items = [
         ("Auto-merge allowed", meta.get("allow_auto_merge"), True,
@@ -152,7 +158,8 @@ def plan(repo):
         (f"Ruleset '{RULESET_NAME}' on the default branch",
          "present" if existing else "absent", "present (pull request + required checks: " + ", ".join(REQUIRED_CHECKS) + ")",
          lambda: gh_api(f"{base}/rulesets", "POST", ruleset_body())),
-        (f"Environment '{APPLE_ENVIRONMENT}' (required reviewer + main only)",
+        (f"Environment '{APPLE_ENVIRONMENT}' (main only; "
+         f"{'required reviewer' if required_reviewer else 'no required reviewer'})",
          environment_current, environment_intended, apply_environment),
     ]
     return items
@@ -161,11 +168,13 @@ def plan(repo):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--repo", required=True, help="owner/repository to configure")
+    parser.add_argument("--require-reviewer", action="store_true",
+                        help="Require the authenticated GitHub user to review apple-credentials deployments (default: off; main-only policy still applies)")
     parser.add_argument("--apply", action="store_true", help="Change settings that differ; default is a dry run")
     args = parser.parse_args()
     if not REPO_NAME.fullmatch(args.repo):
         raise ConfigError("Use owner/repository form.")
-    items = plan(args.repo)
+    items = plan(args.repo, args.require_reviewer)
     changes = 0
     for label, current, intended, apply in items:
         differs = current != intended and not (isinstance(intended, str) and intended.startswith("present") and current == "present")

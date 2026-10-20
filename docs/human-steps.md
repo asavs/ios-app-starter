@@ -15,7 +15,7 @@ Add a row the same day any agent or document says "only you can do this". Update
 
 | Category | Grants | Used by |
 | --- | --- | --- |
-| `github-settings` | Repository settings, rulesets, environments, secrets metadata | `configure-github-repo.py`, environment reviewer setup |
+| `github-settings` | Repository settings, rulesets, environments, secrets metadata | `configure-github-repo.py`, main-only environment policy; optional reviewer setup |
 | `apple-read` | Read-only App Store Connect API calls | diagnostics, feedback reader, build inventory |
 | `apple-provisioning` | Xcode automatic signing may create or refresh profiles and certificates for the named team | signing, delivery, `run-on-device` |
 | `apple-testflight` | Create or modify beta groups, assign builds, set build attributes | dev-group automation, compliance attribute |
@@ -32,7 +32,7 @@ Add a row the same day any agent or document says "only you can do this". Update
 | Accept Apple agreements (Paid Apps, program license) | Human | Human | Legal acceptance stays with the Account Holder; the runbook detects the "agreement outstanding" API error and names the agreement. |
 | Create App Store Connect API key and download the one-time `.p8` | Human in browser | Browser agent (`apple-browser`), then `bootstrap-apple-credentials.py` | Key creation is a portal form; the download is a single file the agent can hand to the bootstrap script without reading it back. Role choice is presented first (issue #1). |
 | Transfer `.p8` into the GitHub environment | Scripted | API / CLI (`github-settings`) | Done: `bootstrap-apple-credentials.py` sends over stdin, verifies metadata only. |
-| Create the `apple-credentials` environment with reviewer and `main`-only policy | Scripted | API / CLI (`github-settings`) | Done: `configure-github-repo.py` previews the authenticated reviewer and applies exactly one `main` branch policy. Personal repository owners may self-approve; other configurations prevent self-review. |
+| Create the `apple-credentials` environment with a `main`-only policy | Scripted | API / CLI (`github-settings`) | Done: `configure-github-repo.py` defaults to no required reviewer and applies exactly one `main` branch policy. Template users may opt in to a reviewer with `--require-reviewer` or add one in repository Settings → Environments → `apple-credentials`. |
 | Repository settings and `main` ruleset | Scripted | API / CLI (`github-settings`) | Done: `configure-github-repo.py --apply`. |
 | `gh auth login` | Human (device code in browser) | Human, once | A login is the user's; the runbook asks for it first and verifies with `gh auth status`. |
 | Register the App ID / bundle identifier | Human in portal | API / CLI (`apple-provisioning`) | `bundle-ids` create exists in the pinned CLI; Xcode automatic signing also registers it on first signed build. Preview before creating; reuse existing (issue #4). |
@@ -45,7 +45,6 @@ Add a row the same day any agent or document says "only you can do this". Update
 | Choose whether an ad hoc signed IPA may be publicly hosted | Human decision | Config / API / CLI | Before implementing ad hoc delivery, default to private hosting. A public GitHub Release requires explicit approval for that app's binary; a public template repository alone is not approval. |
 | Enable Developer Mode and trust the computer on the phone | Human | Human (once per device) | Physical device prompts; the runbook names them before the first `run-on-device`. |
 | Register the device for development | Human in portal | API / CLI (`apple-provisioning`) | `run-on-device` with `IOS_REGISTER_DEVICE=1` lets Xcode do it; the pinned CLI can also create the device record. Preview first. |
-| Approve the `apple-credentials` environment deployment per run | Scripted behind a flag | API / CLI (`github-settings`), or policy | `scripts/deliver_testflight.py --approve` posts the approval under the caller's GitHub login once preflight passes; without the flag it prints the exact `gh api ... pending_deployments` command. With solo-owner policy the approval is self-approval already; the flag keeps it a conscious decision per upload. Read-only dispatches (groups plan, diagnostics) still need the click until a separate read-only environment exists. |
 | Merge pull requests | Was human | Done: auto-merge after required checks | Rulesets and `gh pr merge --auto`. |
 | Grant the agent harness permission for `gh pr merge` / `gh pr close` | Human, once | Human, once | Recorded in the runbook as a one-time local setup step. |
 | Apple ID two-factor code when a browser session starts | Human | Human (each new session) | API keys avoid it for everything the API covers; browser-agent steps ask the user for the code. |

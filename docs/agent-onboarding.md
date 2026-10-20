@@ -19,7 +19,7 @@ Before running setup steps, ask which categories the owner grants for this repos
 | `apple-browser` | Yes / No | Let the agent use the owner's already signed-in browser for the named App Store Connect or developer-portal task. The owner enters any second-factor code. |
 | `device-install` | Yes / No | Install and launch a development build on the owner's registered device. |
 
-Record each answer for this setup with `python scripts/setup.py` or explicitly in the setup conversation. A `No` or unanswered category is not granted. If a later step needs one, stop before acting and ask: “May I use `<category>` for `<specific task and target>`?” Continue only after the owner grants it. Do not ask again about a category already granted for this setup. Category consent does not replace the concrete change preview and action approval in [section 3](#3-permission-script), a GitHub environment gate, or a human-only decision. The setup command saves the checklist locally in the ignored `build/setup-state.json`; other tools do not read it as authorization.
+Record each answer for this setup with `python scripts/setup.py` or explicitly in the setup conversation. A `No` or unanswered category is not granted. If a later step needs one, stop before acting and ask: “May I use `<category>` for `<specific task and target>`?” Continue only after the owner grants it. Do not ask again about a category already granted for this setup. Category consent does not replace the concrete action approval in [section 3](#3-permission-script) or a human-only decision. The setup command saves the checklist locally in the ignored `build/setup-state.json`; other tools do not read it as authorization.
 
 ## 1. Human-only prerequisites
 
@@ -33,7 +33,7 @@ These are the steps Apple and GitHub reserve for a person. Ask for each one by t
 | "Accept any outstanding agreements in App Store Connect as Account Holder." | Stage D | Legal acceptance. | An agreement error from a later read or upload names it. Diagnostics do not prove that agreements are complete ([apple-setup.md](apple-setup.md#human-prerequisites)). |
 | "Request App Store Connect API access, then create a **team** API key with role \<the role you chose in Stage C step 1\> and download the `.p8` once to a folder outside this checkout." | Stage C, after the role decision | A portal form and a single file download. A browser agent can drive the form with `apple-browser` consent; the download stays in the owner's custody. | The key ID and issuer ID shown on the page (both non-secret), then Stage C's metadata check. |
 | "Create the App Store Connect app record with these values: team \<team\>, platform iOS, bundle ID \<from `project.yml`\>, name \<record name\>, primary language \<language\>, SKU \<SKU\>. The SKU cannot be changed later." | Stage E, when Stage D reports the app record `missing` | The public API is believed not to create apps (unverified, see issue #4). Browser-agent path with `apple-browser` consent. | Stage D account reads report the app `present`. |
-| "Add the `apple-credentials` environment with yourself as required reviewer and only `main` allowed to deploy." | Stage C | Today this is done in the GitHub UI. Planned as a scripted step in `configure-github-repo.py` (master plan step 6). | `bootstrap-apple-credentials.py` refuses to run unless the environment matches the declared policy. |
+| "Allow only `main` to deploy to the `apple-credentials` environment." | Stage C | Stage A's `configure-github-repo.py --apply` configures it. A required reviewer is optional; add one in Settings → Environments → `apple-credentials` if desired. | `bootstrap-apple-credentials.py` checks for the exact `main` rule and the selected optional reviewer policy. |
 | "Turn on Developer Mode on the phone and trust this computer." | Mac inner loop only | Physical device prompts. | `run-on-device.sh` lists the device. |
 | "Open TestFlight on the iPhone, sign in with the Apple ID that is an App Store Connect user, and install build *X (Y)*." | Stage H | Physical device action. | The owner reports the version and build they see. Ask for the device OS too. |
 | "Type the two-factor code from your trusted device." | Any browser-agent step | A second factor. | The browser step proceeds. |
@@ -79,15 +79,15 @@ Needs `github-settings`. The owner must be enrolled (section 1) before an API ke
 
 1. **Stop for the role decision.** Present [Choose access for the operation](apple-setup.md#choose-access-for-the-operation) and get an explicit choice of key type and role before a key is created or transferred. For app-only diagnostics, an individual **Developer** key is the least-privilege starting point. The full diagnostic also reads provisioning resources, which require a **team** key; Apple's endpoint references do not define the minimum role for each inventory read, so verify using existing authorized access and treat denials as unknown. The supported hosted automatic-signing path passes a team key to Xcode with `-allowProvisioningUpdates`; use **Admin** only when Xcode may create or refresh distribution assets. Apple's certificate and App Store profile guides name Account Holder or Admin for those writes, making Admin the least-privileged documented team-key role for this path. Prefer prepared signing assets and a path that reuses them if provisioning writes are unnecessary. Reuse an existing key that already fits; never create or broaden one automatically.
 2. Present the concrete plan: team, key type, the chosen role, environment policy ([section 3](#3-permission-script)). Only then ask for the key (section 1).
-3. The `apple-credentials` environment must exist with exactly one deployment-branch rule for `main` and a required reviewer. Stage A creates this through `configure-github-repo.py --apply`; confirm the planned reviewer and policy in its dry run first. The authenticated owner of a personal repository may self-approve; other configurations prevent self-review.
+3. The `apple-credentials` environment must exist with exactly one deployment-branch rule for `main`. Stage A creates this through `configure-github-repo.py --apply`; its default has no required reviewer. Template users who choose to add reviewers can do so with `--require-reviewer` or in GitHub environment settings.
 4. Add `DEVELOPMENT_TEAM: <10-character team ID>` under `settings.base` in `project.yml`, the way [examples/starter-app-demo.yml](../examples/starter-app-demo.yml) does. Signing reads the team from the exported configuration and fails without it ([scripts/signing_configuration.py](../scripts/signing_configuration.py)).
 5. After the owner approves the concrete transfer plan in section 3, transfer the existing key with the narrow bootstrap command ([scripts/bootstrap-apple-credentials.py](../scripts/bootstrap-apple-credentials.py)):
 
    ```powershell
-   python scripts/bootstrap-apple-credentials.py --repo <owner>/<repo> --key-type team --approval-policy solo-owner --key-id <KEY_ID> --issuer-id <ISSUER_ID> --private-key-file <path outside the checkout>\AuthKey_<KEY_ID>.p8
+   python scripts/bootstrap-apple-credentials.py --repo <owner>/<repo> --key-type team --key-id <KEY_ID> --issuer-id <ISSUER_ID> --private-key-file <path outside the checkout>\AuthKey_<KEY_ID>.p8
    ```
 
-   Use `--approval-policy independent` when a second person reviews; organization repositories always do. `solo-owner` is limited to a personal repository where the authenticated owner is the sole required reviewer and self-review is enabled. The script verifies that policy and the exact `main` deployment rule; it does not create or change environment protection. It checks for existing credential secret **names** and stops if any are present unless `--replace-existing` is explicitly supplied.
+   Reviewer checks are optional. The default `--approval-policy none` verifies that the environment has no required reviewers; choose `independent` or `solo-owner` only if reviewers were configured. `solo-owner` is limited to a personal repository where the authenticated owner is the sole required reviewer and self-review is enabled. The script verifies the selected policy and exact `main` deployment rule; it does not create or change environment protection. It checks for existing credential secret **names** and stops if any are present unless `--replace-existing` is explicitly supplied.
 
    Keep the `.p8` in its existing secure location outside this checkout. The path is the only key-file reference passed to the command. Do not put key contents in arguments, shell variables, chat or files in the repository, and do not open, print, copy or upload the file. The script validates the PEM markers and size, reads the file locally, then sends it to `gh secret set` through standard input. The key contents are not included in process arguments, stdout, stderr, logs or artifacts. GitHub CLI output is captured; failures are reduced to a generic operation and exit code rather than forwarding upstream text.
 
@@ -100,7 +100,7 @@ Needs `github-settings`. The owner must be enrolled (section 1) before an API ke
 
 ### Stage D: authenticated read-only diagnostics
 
-Needs `apple-read`. Dispatch from `main`, then approve the environment gate (see "Approving an environment gate" below):
+Needs `apple-read`. Dispatch from `main`; no environment approval is needed in the default setup:
 
 ```powershell
 gh workflow run apple-diagnostics.yml --ref main --field configuration=starter --field account=true
@@ -133,11 +133,11 @@ Apply creates the group with `--internal --access-all-builds` and adds each user
 
 ### Stage G: deliver to TestFlight
 
-Needs `apple-provisioning` and `apple-testflight`, plus the owner's explicit approval of this upload. One command dispatches, waits, approves the gate when `--approve` is given, and reports each stage ([scripts/deliver_testflight.py](../scripts/deliver_testflight.py)):
+Needs `apple-provisioning` and `apple-testflight`, plus the owner's explicit approval of this upload. One command dispatches, waits for preflight and completion, and reports each stage ([scripts/deliver_testflight.py](../scripts/deliver_testflight.py)):
 
 ```powershell
 python scripts/deliver_testflight.py --configuration starter --dry-run
-python scripts/deliver_testflight.py --configuration starter --approve
+python scripts/deliver_testflight.py --configuration starter
 ```
 
 Exit codes: 0 processed or accepted; 1 failed at a named step; 2 setup problem; 3 still running after `--wait-minutes` (resume with `--run <id>`). `upload_accepted` means the uploader returned success, not that the build is installable. Once processing reports `VALID` and the build is in the Stage F group, it reaches the phone. The build number comes from the run number and attempt, so gaps are expected ([testflight-delivery.md](testflight-delivery.md#reviewed-configuration-and-numbering)). The manifest declares `ITSAppUsesNonExemptEncryption = NO`, so there is no per-build compliance question until the app adds networking or cryptography.
@@ -167,7 +167,7 @@ gh run download $run --name apple-configuration --dir build/review/$run/configur
 Get-Content build/review/$run/project/report.md
 ```
 
-For a Stage D run (`account=true`, gate approved), also read the account report. This artifact does not exist for a Stage B run, so skip these lines there:
+For a Stage D run (`account=true`), also read the account report. This artifact does not exist for a Stage B run, so skip these lines there:
 
 ```powershell
 gh run download $run --name apple-credentials-diagnostics --dir build/review/$run/account
@@ -176,15 +176,15 @@ Get-Content build/review/$run/account/report.md
 
 The two SHAs must match before you trust the configuration findings. Otherwise the export describes a different `project.yml`; dispatch again. `build/` is gitignored. Each artifact holds `report.md` and `report.json`, and `apple-configuration` holds `configuration.json` ([.github/workflows/apple-diagnostics.yml](../.github/workflows/apple-diagnostics.yml)).
 
-### Approving an environment gate
+### Optional required-reviewer gate
 
-Every job in `apple-credentials` waits for a reviewer. Approve only a run whose workflow and effect the owner authorized. To approve from the shell, read the environment ID from `gh api repos/<owner>/<repo>/actions/runs/<id>/pending_deployments`, then:
+The default setup restricts `apple-credentials` deployments to `main` and has no required reviewer, so its workflows continue without an approval step. Template users who add required reviewers can approve a pending deployment only after the owner authorized that workflow and effect. Read the environment ID from `gh api repos/<owner>/<repo>/actions/runs/<id>/pending_deployments`, then:
 
 ```powershell
 gh api -X POST repos/<owner>/<repo>/actions/runs/<id>/pending_deployments -F "environment_ids[]=<environment id>" -f state=approved -f comment="<what was authorized>"
 ```
 
-`deliver_testflight.py` prints this exact command for its own run when `--approve` is omitted. With the solo-owner policy, this is the owner approving their own run, not an independent review.
+`deliver_testflight.py --approve` posts the approval when an eligible reviewer is configured and a pending deployment exists. It continues normally if there is no pending deployment.
 
 ## 3. Permission script
 
@@ -194,10 +194,10 @@ Say the "before" line, wait for an answer that names the action, and only then a
 | --- | --- | --- | --- |
 | Apply repository settings | `github-settings` | "This changes these settings on `<owner>/<repo>`: \<dry-run diff\>. Direct pushes to `main` will be blocked for you too. Apply?" | "Apply the repo settings." |
 | Transfer the API key | `github-settings` | "I'll send the `.p8` at \<path\> to `apple-credentials` secrets on `<owner>/<repo>` over stdin, as a **team** key with role \<role\>, approval policy \<policy\>. I won't open or print the file." | "Transfer the key." |
-| Authenticated diagnostics | `apple-read` | "I'll run read-only App Store Connect checks for \<bundle ID\> on team \<team\> and approve that one environment gate." | "Run the account diagnostics." |
+| Authenticated diagnostics | `apple-read` | "I'll run read-only App Store Connect checks for \<bundle ID\> on team \<team\> from `main`." | "Run the account diagnostics." |
 | Signed archive | `apple-provisioning` | "Xcode may create a distribution certificate and create or refresh the App Store profile for \<bundle ID\> on team \<team\>. Nothing is uploaded." | "Sign it." |
 | Create the TestFlight group | `apple-testflight` | "The plan run says: \<plan summary\>. Apply will create internal group \<name\> with access to all builds and add \<n\> users holding \<role\>. Nothing is deleted." | "Create the group." |
-| Upload a build | `apple-testflight` | "I'll upload \<configuration\> at `main` \<sha\>, build \<proposed number\>, to internal TestFlight, approving the gate as you." | "Upload it." / "Deliver." |
+| Upload a build | `apple-testflight` | "I'll upload \<configuration\> at `main` \<sha\>, build \<proposed number\>, to internal TestFlight." | "Upload it." / "Deliver." |
 | Device install (Mac) | `device-install` | "I'll build Debug for \<device\> and let Xcode register it and refresh the development profile on team \<team\>." | "Run it on the phone." |
 | Browser step | `apple-browser` | "I'll open \<page\> in your signed-in browser to \<create the app record / create the key\> with these values: \<…\>. You will need to type any two-factor code yourself." | "Go ahead in the browser." |
 
@@ -229,7 +229,7 @@ Mined from [the journal](setup-experience.md). Check here before diagnosing from
 | Jobs sit queued, cancelled runs show in progress, or skipped jobs look green. | Queue cause unknown (issue #6). Skipped and cancelled are not passes. | Read job states and test counts in the artifact, not the check color. `ios-gate` fails on missing or cancelled lanes. | [milestone 8](journal/milestone-8-iteration-loop.md), 2026-10-16 pull-request gate |
 | `review_ci.py --latest` reports a run that has not finished, or prints `MISMATCH`. | Confirmed: `--latest` picks by creation time; the checkout differs from the reviewed head. | Review a specific run with `--run <id>`; use `--require-checkout-head` after checking out the head. | [milestone 8](journal/milestone-8-iteration-loop.md), 2026-10-16 `review_ci.py` modes |
 | `upload_accepted`, but the build is not installable, or the upload timed out. | Confirmed: upload, processing and installation are separate states. | Check App Store Connect before retrying. For `PROCESSING`, resume with `deliver_testflight.py --run <id>`. | [milestone 6](journal/milestone-6-testflight.md), 2026-10-10; [milestone 8](journal/milestone-8-iteration-loop.md), 2026-10-17 |
-| An account job waits indefinitely after dispatch. | Confirmed: the `apple-credentials` reviewer gate is pending. | Approve only an authorized run ("Approving an environment gate" above). | [milestone 5](journal/milestone-5-signing.md), 2026-10-09 |
+| An account job waits indefinitely after dispatch. | Confirmed historically: a configured `apple-credentials` reviewer gate was pending. | Check `pending_deployments`; when reviewers are configured, approve only an authorized run ("Optional required-reviewer gate" above). | [milestone 5](journal/milestone-5-signing.md), 2026-10-09 |
 | The app record name is rejected as taken. | Confirmed: record names are global across developers. | Propose another record name for approval. The Home Screen name and the bundle ID are unaffected. The SKU cannot be changed later. | [milestones 1–4](journal/milestone-1-4-foundation.md), Starter App demo identity |
 | A dispatch fails with zero jobs and `Unrecognized named-value: 'runner'`. | Confirmed: `runner.*` used in a job-level `env`. | Move it to step-level `env`. | [milestone 7](journal/milestone-7-diagnostics.md), 2026-10-16 probe rejected |
 | PowerShell prints replacement characters in diagnostic output. | Confirmed: Windows default stream encoding. | `$env:PYTHONUTF8='1'` and `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()`. | [milestone 5](journal/milestone-5-signing.md), 2026-10-09 PR #8 |

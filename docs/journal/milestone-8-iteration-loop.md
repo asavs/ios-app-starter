@@ -2,6 +2,14 @@
 
 Entries for the pull-request gate, path filters, repository settings, device iteration tiers and reporting improvements. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-19 — Make the Apple environment reviewer optional
+
+- **Context and tools:** `ios-no-approval`, milestone 8. Python 3.13.14 and Git 2.54.0.windows.1 on Windows. The task records that `apple-credentials` now permits deployments from `main` without a required reviewer, while delivery, setup docs and credential bootstrap still described reviewer approval as mandatory.
+- **Symptom and cause:** `deliver_testflight.py` treated a waiting run with no pending deployment as an error. `configure-github-repo.py` always configured the authenticated user as a reviewer, and credential bootstrap required a reviewer policy. This made the documented default diverge from the requested main-only environment policy.
+- **Fix:** Made reviewer configuration opt-in (`--require-reviewer`), retained the `main` deployment rule, made credential bootstrap verify the no-reviewer policy by default, and updated delivery, onboarding, Apple setup and repository guidance. `deliver_testflight.py` now waits for workflow completion when the run is waiting but GitHub reports no pending deployment; it still reports unrelated pending environments as errors.
+- **Verification:** `python -m unittest discover -s scripts/tests -v` passed 152 tests with 8 platform-specific skips, including both `--approve` values with no pending deployment, credential bootstrap under main-only protection without reviewers, and default/opt-in reviewer configuration. `git diff --check` and the configurator's `--help` output also passed. Required PR checks remain the merge gate.
+- **Remaining:** Live GitHub environment state was not read or changed in this task; the branch-policy behavior is based on the task's supplied state. Verify the final PR checks and merge before closing.
+
 ## 2026-10-20 — Reduce repeated work on the Xcode runner
 
 - **Context and tools:** `ios-runner-load`, milestone 8. Python 3.13.14, Git 2.54.0.windows.1 and GitHub CLI 2.95.0 on Windows. Inspected all seven workflows, recent Actions job records, and GitHub's larger-runner concurrency and pricing documentation. Recent evidence includes PR run [39363363377](https://github.com/asavs/ios-app-starter/actions/runs/39363363377) and main push runs [39365840731](https://github.com/asavs/ios-app-starter/actions/runs/39365840731) and [39365840723](https://github.com/asavs/ios-app-starter/actions/runs/39365840723).

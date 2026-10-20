@@ -33,6 +33,7 @@ Use the pinned skills in `.agents/skills/` (Codex) or `.claude/skills/` (Claude 
 - Use GitHub Secrets for private keys, tokens, and signing passwords. Ordinary GitHub Variables are for non-sensitive configuration.
 - Do not request secret values in chat or put them in source, example files, logs, app bundles, or uploaded artifacts. Never dump the process environment when diagnosing credentials.
 - At the signing/release milestones, scope credential access to the release job and intended environment. Keep pull-request builds unsigned and secretless. Preview account changes; do not silently revoke existing signing assets.
+- The documented `apple-credentials` setup restricts deployments to `main` and does not require a reviewer. A template user may opt into an additional required reviewer in GitHub environment settings or with `scripts/configure-github-repo.py --require-reviewer`.
 - Repository visibility is a user decision. Private source is not a substitute for secure credential handling; do not change visibility without user authorization.
 
 ## Do not wait on CI
