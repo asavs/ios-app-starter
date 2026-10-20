@@ -10,6 +10,13 @@ Entries for the module library mechanism, the first-round modules, their lanes a
 - **Verification:** `swift test`: 42 tests pass (11 new in Onboarding: single and multiple selection, answer order, initial selection, required-answer gating and swipe stop, the template's answer reaching the host, tip content, sequence anchoring, reset flag). `test-ios.sh` on the iOS 26.5 simulator: 5/5 UI tests pass; `testOnboardingSteps` picks two answers, clears one, asserts "Building: A product to sell" on the welcome screen, then the Settings tip, its Close, and the tour popover, with screenshots `onboarding-choice`, `onboarding-tip-settings` and `onboarding-tip-tour`. Other UI tests pass `-tips.testing hideAll` so no tip covers what they check.
 - **Remaining:** The hosted Xcode 27 lane is the first run on iOS 27; whether toolbar popovers work there is unchecked. The iOS 17 ordered-group fallback (first tip only) has no runtime test, since no iOS 17 simulator runs in the required lanes. VoiceOver on a device is pending.
 
+## 2026-10-20 — App icon guide
+
+- **Context:** Task `ios-ng7`. Xcode 26.6 with Icon Composer 1.6 (`ictool` bundle 99.1) on the Mac. The renders and CI previews the task asked for had already landed with `scripts/check-app-icon.py` (PR #73), so a separate `render-icon.sh` would only duplicate it. This change adds the guide.
+- **Change:** `docs/app-icon.md` covers the document's structure, editing in Icon Composer or by hand, local and CI previews, and the pitfalls from `ios-mark` and `ios-mod-icon`. The README icon paragraph links to it.
+- **Observed:** Icon Composer 1.6's `ictool` exports the renditions `Default`, `Dark`, `TintedLight`, `TintedDark`, `ClearLight` and `ClearDark` (all exited 0 for the template document), as well as the `macOS` and `watchOS` platforms. An unknown rendition exits 255. `check-app-icon.py --output` rendered its four files again.
+- **Remaining:** Whether Icon Composer saves the hand-written document unchanged is still untested. The guide's section on the per-app placeholder waits for `ios-7yd`.
+
 ## 2026-10-20 — App icon check and per-run previews; the per-app placeholder waits on a decision
 
 - **Context:** Task `ios-mod-icon` was written as "AppIcon module from the existing SVG script and generator". After `ios-mark` (PR #69) the mark is a hand-authored Icon Composer document and the generator is gone, so a Swift-package module makes no sense for an icon (icons are app-target resources, not library code). The decision-independent part is landed here; whether a generated app gets the blank sheet or its initial on it is owner task `ios-7yd`, which blocks this one. Tools: Xcode 26.6 with Icon Composer 1.6 bundled at `Xcode.app/Contents/Applications/Icon Composer.app`; CI on Xcode 27.0.
