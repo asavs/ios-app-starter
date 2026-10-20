@@ -31,7 +31,9 @@ def load_lock() -> dict:
 
 def content_hash(folder: Path) -> str:
     digest = hashlib.sha256()
-    paths = sorted(folder.rglob("*"))
+    # pathlib sorts WindowsPath case-insensitively and PosixPath case-sensitively.
+    # Sort the repository-relative POSIX names so pinned hashes agree on both.
+    paths = sorted(folder.rglob("*"), key=lambda path: path.relative_to(folder).as_posix())
     for path in paths:
         if path.is_symlink():
             raise ValueError(f"symlink is not allowed in a pinned skill copy: {path}")

@@ -6,28 +6,28 @@
       "repository": "twostraws/SwiftUI-Agent-Skill",
       "path": "swiftui-pro/skills/swiftui-pro",
       "commit": "ce32af1693b9e78a7d22ff48001c97a304d32063",
-      "content_sha256": "07a9c1c7431a06dde398a63c200909f21b17756320d08dd1a58654e31a87c0b5"
+      "content_sha256": "240d03edff01bbf095c643052eb873c4059b0839c712940fbf6e2b8565e32b8f"
     },
     {
       "name": "swift-concurrency-pro",
       "repository": "twostraws/Swift-Concurrency-Agent-Skill",
       "path": "swift-concurrency-pro/skills/swift-concurrency-pro",
       "commit": "bee3f69ba17142da148d3c5406f148ed62592b69",
-      "content_sha256": "83e3c7afdb33e0fa98f956aabeb658f8134e6313e39f2b185747f1efa6326275"
+      "content_sha256": "92c4ff32b6dc46503485c2a4ac3453bfb1f27b1a6fbf47c1ad24ced74f4e1ec8"
     },
     {
       "name": "swift-testing-pro",
       "repository": "twostraws/Swift-Testing-Agent-Skill",
       "path": "swift-testing-pro/skills/swift-testing-pro",
       "commit": "2d6bba14a3c8bf3694f218b92fffe617c41ae43e",
-      "content_sha256": "28f4759a641fd7f919dbc4dab7f106c146c80448454b0367ba12428a825e3994"
+      "content_sha256": "3c9e56c7844ab3c2e437b5a4d6771fd268dfac80ddc9c7b53cc74585c85d97fa"
     },
     {
       "name": "swiftdata-pro",
       "repository": "twostraws/SwiftData-Agent-Skill",
       "path": "swiftdata-pro",
       "commit": "8051f177a0076e7fd45bdf4ee687b070ba58fdc6",
-      "content_sha256": "ea743bfa46f6ad0778dec1e1397d5885ea1cd9a27fa1f468aa7f5e904be71b8c"
+      "content_sha256": "51772b9c5fc040970b67b6630701c0b67aa2af07eaefa058d1bd0acf588487fd"
     },
     {
       "name": "write-swift",
