@@ -12,6 +12,8 @@ set -euo pipefail
 #   IOS_DEVELOPMENT_TEAM    10-character Apple Team ID; otherwise read from the generated project
 #   IOS_DEVICE_CONSOLE=1    attach the app's standard streams to this terminal until it exits
 #   IOS_REGISTER_DEVICE=1   also let xcodebuild register this device in the team's portal
+#   IOS_SIGNING_KEYCHAIN    keychain file whose certificates alone may sign this build; the user
+#                           keychain search list is narrowed to it for xcodebuild and restored after
 #   IOS_RUN_ON_DEVICE_DRY_RUN=1  print the commands that would run instead of running them
 #   IOS_DEVICE_LIST_JSON    reuse a saved `devicectl list devices --json-output` file (tests, previews)
 #   IOS_RUN_ON_DEVICE_OUTPUT_DIR  where logs and DerivedData go (default build/run-on-device, gitignored)
@@ -25,6 +27,15 @@ set -euo pipefail
 # accounts, so the default com.example.StarterApp from project.yml may not be
 # provisionable under an arbitrary team. Use IOS_CONFIGURATION=starter-app-demo or a
 # manifest with your own reverse-DNS identifier and DEVELOPMENT_TEAM.
+#
+# Signing from an SSH session: codesign reports errSecInternalComponent when the login
+# keychain is locked or a key only allows use after a GUI prompt. Unlock it once per session
+# (`security unlock-keychain ~/Library/Keychains/login.keychain-db`) and let Apple's tools use
+# the keys without a dialog (`security set-key-partition-list -S apple-tool:,apple:,codesign:
+# -s ~/Library/Keychains/login.keychain-db`); both prompt for the login password. When another
+# keychain in the search list holds a development certificate for the same team whose key is
+# not usable here, automatic signing may still pick it: set IOS_SIGNING_KEYCHAIN to the keychain
+# that holds the working identity.
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 helper="$repo_dir/scripts/device_selection.py"
@@ -118,6 +129,31 @@ build_cmd=(xcodebuild
   CODE_SIGN_STYLE=Automatic
   "DEVELOPMENT_TEAM=$team"
   build)
+# Optionally narrow the user keychain search list to one keychain while xcodebuild signs, so
+# automatic signing cannot pick a same-team certificate whose key lives in another keychain.
+# The previous list is restored on every exit path, including a failed build.
+saved_keychains=()
+restore_keychains() {
+  if (( ${#saved_keychains[@]} )); then
+    run security list-keychains -d user -s "${saved_keychains[@]}"
+    saved_keychains=()
+  fi
+}
+if [[ -n "${IOS_SIGNING_KEYCHAIN:-}" ]]; then
+  [[ "$dry_run" == "1" || -f "$IOS_SIGNING_KEYCHAIN" ]] || fail "IOS_SIGNING_KEYCHAIN not found: $IOS_SIGNING_KEYCHAIN"
+  if [[ "$dry_run" == "1" ]]; then
+    saved_keychains=('<current user keychain search list>')
+  else
+    while IFS= read -r line; do
+      line="${line#"${line%%[![:space:]]*}"}"; line="${line%\"}"; line="${line#\"}"
+      [[ -n "$line" ]] && saved_keychains+=("$line")
+    done < <(security list-keychains -d user)
+    (( ${#saved_keychains[@]} )) || fail "could not read the user keychain search list"
+  fi
+  log "signing keychain: $IOS_SIGNING_KEYCHAIN (search list restored after the build)"
+  trap restore_keychains EXIT
+  run security list-keychains -d user -s "$IOS_SIGNING_KEYCHAIN"
+fi
 if [[ "$dry_run" == "1" ]]; then
   run "${build_cmd[@]}"
   log "build log would be written to $build_log"
@@ -133,9 +169,12 @@ else
   fi
   if [[ "$build_status" -ne 0 ]]; then
     fail "build failed (exit $build_status). Signing errors usually mean the team cannot provision \
-this bundle identifier or device; see the header of this script and $build_log"
+this bundle identifier or device, or that codesign cannot use the key from this session; see the \
+header of this script and $build_log"
   fi
 fi
+restore_keychains
+trap - EXIT
 
 # 6. Locate the device (.app) product and read its bundle identifier.
 app="$derived/Build/Products/Debug-iphoneos/StarterApp.app"

@@ -211,6 +211,23 @@ class DryRunScriptTests(unittest.TestCase):
         # With a console attached the summary is shown before the blocking launch.
         self.assertLess(result.stdout.index("run-on-device summary"), result.stdout.index("process launch"))
 
+    def test_dry_run_signing_keychain_narrows_search_list_around_the_build(self):
+        result = self.run_script(payload(PHONE), IOS_SIGNING_KEYCHAIN="/tmp/login.keychain-db")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = result.stdout
+        narrow = out.index("security list-keychains -d user -s /tmp/login.keychain-db")
+        build = out.index("xcodebuild")
+        restore = out.index("security list-keychains -d user -s", narrow + 1)
+        install = out.index("devicectl device install app")
+        self.assertLess(narrow, build)
+        self.assertLess(build, restore)
+        self.assertLess(restore, install)
+        self.assertIn("search list restored", out)
+        # Without the option the search list is never touched.
+        plain = self.run_script(payload(PHONE))
+        self.assertEqual(plain.returncode, 0, plain.stderr)
+        self.assertNotIn("list-keychains", plain.stdout)
+
     def test_dry_run_fails_clearly_without_a_device(self):
         result = self.run_script(payload(OFFLINE, MAC))
         self.assertNotEqual(result.returncode, 0)
