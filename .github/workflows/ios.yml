@@ -78,6 +78,7 @@ jobs:
     timeout-minutes: 30
     env:
       IOS_TEST_DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=27.0
+      IOS_SPM_CACHE_DIR: ${{ github.workspace }}/build/swiftpm-cache
 
     steps:
       - name: Check out repository
@@ -99,6 +100,14 @@ jobs:
         with:
           path: build/tool-downloads/xcodegen
           key: xcodegen-v1-${{ runner.os }}-${{ runner.arch }}-2.46.0-${{ hashFiles('scripts/generate-project.sh', 'scripts/tool_download.py') }}
+
+      - name: Cache Swift package sources
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/swiftpm-cache
+          key: swiftpm-v1-${{ runner.os }}-${{ runner.arch }}-xcode-27.0-${{ hashFiles('**/Package.resolved', '**/Package.swift', 'project.yml', 'examples/*.yml') }}
+          restore-keys: |
+            swiftpm-v1-${{ runner.os }}-${{ runner.arch }}-xcode-27.0-
 
       - name: Generate Xcode project
         env:
@@ -190,6 +199,7 @@ jobs:
     timeout-minutes: 30
     env:
       IOS_TEST_DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=27.0
+      IOS_SPM_CACHE_DIR: ${{ github.workspace }}/build/swiftpm-cache
     steps:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -203,6 +213,13 @@ jobs:
           test "$(xcodebuild -version | head -n 1)" = 'Xcode 27.0'
           test "$(xcrun --sdk iphoneos --show-sdk-version)" = '27.0'
           echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
+      - name: Cache Swift package sources
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/swiftpm-cache
+          key: swiftpm-v1-${{ runner.os }}-${{ runner.arch }}-xcode-27.0-${{ hashFiles('**/Package.resolved', '**/Package.swift', 'project.yml', 'examples/*.yml') }}
+          restore-keys: |
+            swiftpm-v1-${{ runner.os }}-${{ runner.arch }}-xcode-27.0-
       - name: Prepare simulator
         timeout-minutes: 5
         run: python3 scripts/prepare-simulator.py

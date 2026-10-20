@@ -122,6 +122,8 @@ swift test                                             # host-side, all host-por
 
 Xcode derives schemes from the manifest: one scheme per product plus `StarterModules-Package` (with a single product, just `StarterModules`). Only the package-wide scheme has a test action, so the script runs it with `-only-testing:<Name>Tests` and writes the same `summary.md`, `results.json` and log layout as `test-ios.sh`. The required iOS workflow discovers each module under `Modules/` and runs one simulator test lane per module. It also generates the `examples/no-modules.yml` app, verifies that it enables no module products, and builds it for the iOS Simulator.
 
+The app, module and compatibility lanes cache Xcode's cloned Swift package sources in `build/swiftpm-cache/`. Keys include the Xcode version and hashes of package manifests, resolved pins and XcodeGen specs; a cache miss or stale restored entry still runs normal package resolution. Compiled DerivedData is never cached. The current root package has no remote dependencies, so this cache will save downloads only after one is added.
+
 ## Release a version
 
 Tags on this repository are module library versions, never app builds. Semantic versions without a `v` prefix, as Swift Package Manager expects.

@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-20 — Cache Swift package sources in hosted Xcode lanes
+
+- **Context:** Task `ios-cache-spm`; Python 3.13.14 and Git 2.54.0 on Windows. The required app and per-module lanes use Xcode 27.0; the compatibility matrix selects its Xcode version per lane. Windows has no local Xcode, so simulator verification runs on the hosted macOS pull-request jobs.
+- **Observation:** The root `Package.swift` currently declares only in-repository module targets and no remote dependencies. The cache has no current package downloads to save, but each module lane is a fresh job and later tagged app consumers can add remote packages.
+- **Change:** The iOS app, module and compatibility jobs cache only Xcode's cloned Swift package sources under `build/swiftpm-cache/`. Cache keys include runner OS/architecture, the exact selected Xcode version, `Package.swift`, `Package.resolved` and XcodeGen specs; scripts pass that path to `xcodebuild -clonedSourcePackagesDirPath`. DerivedData, compiler products, reports and credentials are not in the cache path. A miss uses normal package resolution. The no-modules overlay has no package reference and does not need this cache.
+- **Verification:** Static workflow/script review and `git diff --check` on Windows; Python 3.13.14 and Git 2.54.0. Xcode 27.0 simulator execution remains for the hosted PR check. No speedup is claimed until a remote dependency exists.
+- **Remaining:** Confirm cache restore/save on the hosted Xcode 27 lane. Re-measure only after the package manifest adds a remote dependency.
+
 ## 2026-10-20 — UI test backfill: relaunch and light/dark coverage, and a skip that hid a stale test
 
 - **Context:** Task `ios-ui-backfill`: the modules merged before the UI-test rule get a UI test of their main path. Tools: Xcode 26.6 and the iOS 26.5 simulator on the Mac; CI on Xcode 27.0. By the time this started, PR #64 had already added `testOnboardingSteps` (the full flow to completion), so the backfill is the relaunch check for Onboarding and light/dark coverage for Theme; Settings had its test from PR #60.
