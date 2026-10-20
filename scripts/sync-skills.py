@@ -146,7 +146,11 @@ def source_tree(skill: dict, temp: Path, latest: bool) -> tuple[str, Path]:
     checkout = temp / "repo"
     checkout.parent.mkdir(parents=True, exist_ok=True)
     git("clone", "--quiet", "--filter=blob:none", "--no-checkout", local_or_url, str(checkout))
-    if latest:
+    ref = skill.get("ref")
+    if ref:
+        git("fetch", "--quiet", "origin", f"refs/tags/{ref}", cwd=checkout)
+        commit = git("rev-parse", "FETCH_HEAD^{commit}", cwd=checkout)
+    elif latest:
         commit = git("rev-parse", "origin/HEAD", cwd=checkout)
     else:
         commit = skill["commit"]
