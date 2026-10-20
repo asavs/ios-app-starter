@@ -41,7 +41,7 @@ BRANCH = "main"
 CONFIGURATIONS = ("starter", "pocket-notes", "starter-app-demo")
 STAGES = ("release-plan", "delivery-validation", "upload-report", "processing-report")
 PENDING = set(review_ci.PENDING_STATUSES)
-RUN_LIST_FIELDS = "databaseId,createdAt,status,conclusion,event,headSha,url"
+RUN_LIST_FIELDS = "databaseId,createdAt,status,conclusion,event,headSha,url,displayTitle"
 RUN_ID_RE = re.compile(r"\d{1,20}\Z")
 DISPATCH_WINDOW = timedelta(minutes=5)
 FIND_ATTEMPTS = 12
@@ -84,7 +84,9 @@ def propose(configuration):
         newest = max(smoke, key=lambda run: (str(run.get("createdAt") or ""), run["databaseId"]))
         smoke_state = f"run {newest['databaseId']}: {newest.get('conclusion') or newest.get('status') or 'unknown'}"
     in_flight = [run for run in list_runs(WORKFLOW_FILE, limit=10)
-                 if str(run.get("status") or "").lower() in PENDING]
+                 if run.get("event") == "workflow_dispatch"
+                 and run.get("displayTitle") == "TestFlight delivery upload"
+                 and str(run.get("status") or "").lower() in PENDING]
     return {"repo": repo, "configuration": configuration, "head": head,
             "smoke": smoke_state, "inFlight": [run["databaseId"] for run in in_flight],
             "command": dispatch_command(configuration)}

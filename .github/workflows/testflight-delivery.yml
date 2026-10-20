@@ -1,10 +1,10 @@
 name: TestFlight delivery
 
+run-name: ${{ github.event_name == 'workflow_dispatch' && inputs.perform_upload && 'TestFlight delivery upload' || 'TestFlight preflight' }}
+
 on:
   pull_request:
     paths-ignore: ['docs/**', '**.md', 'LICENSE']
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       configuration:
