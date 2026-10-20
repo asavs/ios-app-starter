@@ -242,9 +242,33 @@
       "layers" : [
         {
           "glass" : false,
-          "image-name" : "0.grid.svg",
+          "image-name-specializations" : [
+            {
+              "value" : "0.grid.svg"
+            },
+            {
+              "appearance" : "dark",
+              "value" : "0.grid-dark.svg"
+            },
+            {
+              "appearance" : "tinted",
+              "value" : "0.grid-dark.svg"
+            }
+          ],
           "name" : "0.grid",
-          "opacity" : 0.5
+          "opacity-specializations" : [
+            {
+              "value" : 0.5
+            },
+            {
+              "appearance" : "dark",
+              "value" : 0.5
+            },
+            {
+              "appearance" : "tinted",
+              "value" : 0.6
+            }
+          ]
         }
       ],
       "shadow" : {

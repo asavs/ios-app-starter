@@ -61,17 +61,22 @@ def check_document(icon):
             raise IconError(f"{icon.name}: group {index} ({group.get('name', 'unnamed') if isinstance(group, dict) else '?'}) "
                             "needs a non-empty \"layers\" list")
         for layer in group["layers"]:
-            name = layer.get("image-name") if isinstance(layer, dict) else None
-            if not name:
+            if not isinstance(layer, dict):
+                raise IconError(f"{icon.name}: group {group.get('name', index)!r} has a layer that is not an object")
+            # A layer names one file, or one per appearance; Icon Composer then lists the default in the specializations too.
+            names = [layer["image-name"]] if layer.get("image-name") else []
+            names += [entry.get("value") for entry in layer.get("image-name-specializations", []) if isinstance(entry, dict)]
+            if not names or not all(names):
                 raise IconError(f"{icon.name}: a layer in group {group.get('name', index)!r} has no \"image-name\"; "
                                 "point it at a file under Assets/")
-            if name not in available:
-                raise IconError(f"{icon.name}: layer {layer.get('name', name)!r} references Assets/{name}, which does not exist; "
-                                "add the file or fix \"image-name\"")
-            if Path(name).suffix.lower() not in {".svg", ".png"}:
-                raise IconError(f"{icon.name}: Assets/{name} is not an SVG or PNG layer")
-            referenced.add(name)
-            layers.append({"group": group.get("name", f"group {index}"), "name": layer.get("name", name), "image": name,
+            for name in names:
+                if name not in available:
+                    raise IconError(f"{icon.name}: layer {layer.get('name', name)!r} references Assets/{name}, which does not exist; "
+                                    "add the file or fix \"image-name\"")
+                if Path(name).suffix.lower() not in {".svg", ".png"}:
+                    raise IconError(f"{icon.name}: Assets/{name} is not an SVG or PNG layer")
+                referenced.add(name)
+            layers.append({"group": group.get("name", f"group {index}"), "name": layer.get("name", names[0]), "image": names[0],
                            "glass": bool(layer.get("glass", True))})  # Icon Composer adds Liquid Glass to layers by default.
     unused = sorted(available - referenced)
     if unused:

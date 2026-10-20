@@ -49,6 +49,19 @@ class AppIconTests(unittest.TestCase):
         self.assertEqual({layer["image"] for layer in record["layers"]}, {"0.grid.svg", "1.circle.svg", "2.circle.svg", "3.circle.svg"})
         self.assertEqual(record["fillAppearances"], ["all"])
 
+    def test_per_appearance_images_are_referenced(self):
+        (self.icon / "Assets" / "grid-dark.svg").write_text("<svg xmlns='http://www.w3.org/2000/svg'/>")
+        doc = document()
+        layer = doc["groups"][1]["layers"][0]
+        del layer["image-name"]
+        layer["image-name-specializations"] = [{"value": "grid.svg"}, {"appearance": "dark", "value": "grid-dark.svg"}]
+        self.write(doc)
+        self.assertEqual(check_app_icon.check_document(self.icon)["layers"][1]["image"], "grid.svg")
+        layer["image-name-specializations"][1]["value"] = "missing.svg"
+        self.write(doc)
+        with self.assertRaisesRegex(check_app_icon.IconError, "missing.svg"):
+            check_app_icon.check_document(self.icon)
+
     def test_single_fill_covers_every_appearance(self):
         doc = document()
         del doc["fill-specializations"]
