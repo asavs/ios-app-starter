@@ -201,6 +201,20 @@ final class StarterAppUITests: XCTestCase {
         return (0.299 * CGFloat(pixel[0]) + 0.587 * CGFloat(pixel[1]) + 0.114 * CGFloat(pixel[2])) / 255
     }
 
+    /// Gives a text field keyboard focus. On the iOS 27 simulator a single tap on a `SecureField` in a
+    /// `Form` row sometimes selects the row without focusing the field, and `typeText` then fails with
+    /// "Neither element nor any descendant has keyboard focus"; tapping again focuses it.
+    private func focus(_ field: XCUIElement, attempts: Int = 4) throws {
+        for attempt in 1...attempts {
+            field.tap()
+            let focused = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hasKeyboardFocus == true"), object: field)
+            if XCTWaiter().wait(for: [focused], timeout: 2) == .completed { return }
+            XCTContext.runActivity(named: "Field not focused after tap \(attempt)") { _ in }
+        }
+        XCTFail("\(field.identifier) did not take keyboard focus after \(attempts) taps")
+        throw ModuleUIMissing(description: "no keyboard focus on \(field.identifier)")
+    }
+
     /// Modules the lane built the app with, from `scripts/test-ios.sh` (`TEST_RUNNER_IOS_ENABLED_MODULES`);
     /// `nil` when unknown, such as a run from Xcode.
     private static let enabledModules: Set<String>? = ProcessInfo.processInfo.environment["IOS_ENABLED_MODULES"]
@@ -246,7 +260,7 @@ final class StarterAppUITests: XCTestCase {
         XCTAssertTrue(field.waitForExistence(timeout: 5), "Settings should show the example secret row")
         if clear.exists { clear.tap() } // A previous run on this simulator may have left a value.
         XCTAssertTrue(status.label.hasPrefix("Not set"), "Secret should start empty, got: \(status.label)")
-        field.tap()
+        try focus(field)
         field.typeText("ui-test-secret")
         app.buttons["settings.secure.\(key).save"].tap()
         XCTAssertTrue(clear.waitForExistence(timeout: 5), "Saving should store the secret and offer Clear")
