@@ -2,6 +2,13 @@
 
 Entries for the pull-request gate, path filters, repository settings, device iteration tiers and reporting improvements. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-19 — Test cadence and non-blocking delivery
+
+- **Context and tools:** `ios-ship-ladder`, milestone 8. Python 3.13.14 and Git 2.54.0.windows.1 on Windows. The requested automated delivery caller needed a dispatch mode that returns without waiting for the Apple approval gate or workflow completion.
+- **Change:** Added `--no-wait` to `scripts/deliver_testflight.py`. It locates and prints the newly dispatched run ID and URL, provides the `--run <id>` resume command, and exits 0 before reading approval state. `--approve` and `--no-wait` are rejected together; resuming an existing run with `--no-wait` is also rejected. Added portable fakes for dispatch/run lookup and documented PR, `main`, owner-device and external-tester testing cadence in `docs/testflight-delivery.md`, linked from master plan step 4.
+- **Verification:** `python -m unittest scripts.tests.test_deliver_testflight` passed (10 tests). The new test mocks all GitHub CLI calls. No real delivery or approval was dispatched.
+- **Remaining uncertainty:** Hosted required checks and merge are pending. The once-per-hour owner-device cadence is documented guidance; the delivery command does not enforce a schedule.
+
 ## 2026-10-19 — Sanitized TestFlight issue drafts
 
 - **Context:** The fixed TestFlight feedback reader could retrieve feedback and optionally save a private report, but actionable comments still had to be copied manually into the documented issue-body format.

@@ -7,7 +7,8 @@ for that head, deliveries already in flight), dispatches **TestFlight delivery**
 gate (approving it with ``--approve`` or printing the exact command), waits for the run
 to finish and then reports every stage from the sanitized delivery artifact, naming the
 exact failing step when something goes wrong. ``--run <id>`` resumes an existing run
-instead of dispatching a new one; ``--dry-run`` stops after the proposal.
+instead of dispatching a new one; ``--dry-run`` stops after the proposal; ``--no-wait``
+dispatches and prints the run details without waiting for approval or completion.
 
 Only GitHub CLI is used; no Apple credential is read or printed. Blocking in this command
 is a shell wait, not a model loop.
@@ -252,6 +253,8 @@ def main():
     parser.add_argument("--approve", action="store_true",
                         help="Approve the apple-credentials gate yourself once preflight passes (a conscious upload decision)")
     parser.add_argument("--dry-run", action="store_true", help="Print the proposal and the dispatch command only")
+    parser.add_argument("--no-wait", action="store_true",
+                        help="Dispatch, print the run ID and resume command, and exit without waiting")
     parser.add_argument("--run", metavar="RUN_ID", help="Resume an existing delivery run instead of dispatching")
     parser.add_argument("--wait-minutes", type=int, default=45, help="Total time to wait for approval and completion")
     parser.add_argument("--poll-seconds", type=int, default=30, help="Seconds between run status reads")
@@ -260,6 +263,10 @@ def main():
         parser.error("--run must be a numeric workflow run ID")
     if args.run is not None and args.dry_run:
         parser.error("--dry-run applies only when dispatching")
+    if getattr(args, "no_wait", False) and args.approve:
+        parser.error("--approve cannot be combined with --no-wait")
+    if getattr(args, "no_wait", False) and args.run is not None:
+        parser.error("--no-wait applies only when dispatching")
     if args.wait_minutes < 1 or args.poll_seconds < 5:
         parser.error("--wait-minutes must be at least 1 and --poll-seconds at least 5")
     try:
@@ -277,11 +284,15 @@ def deliver(args, sleep=time.sleep, clock=time.monotonic):
             return 0
         if proposal["inFlight"]:
             raise ReviewError("a delivery is already in flight; resume it with --run <id> or wait for it to finish.")
+        known_ids = {run["databaseId"] for run in list_runs(WORKFLOW_FILE, limit=20, event="workflow_dispatch")}
         since = datetime.now(timezone.utc)
         dispatch(args.configuration)
-        run = find_dispatched_run(set(), since, sleep=sleep)
+        run = find_dispatched_run(known_ids, since, sleep=sleep)
         run_id = run["databaseId"]
         print(f"Dispatched run {run_id}: {run.get('url') or ''}")
+        if getattr(args, "no_wait", False):
+            print(f"Resume with: python scripts/deliver_testflight.py --configuration {args.configuration} --run {run_id}")
+            return 0
     else:
         run_id = int(args.run)
         print(f"Resuming run {run_id}.")
