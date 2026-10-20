@@ -124,6 +124,12 @@ jobs:
           IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
         run: python3 scripts/check-modules.py --output "$IOS_TEST_OUTPUT_DIR/modules.json"
 
+      - name: Check app icon document and render previews
+        if: matrix.configuration == 'starter'
+        env:
+          IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
+        run: python3 scripts/check-app-icon.py --output "$IOS_TEST_OUTPUT_DIR/icon"
+
       - name: Verify invalid configurations fail clearly
         if: matrix.configuration == 'starter'
         run: python3 scripts/tests/check-configurations.py
@@ -174,6 +180,8 @@ jobs:
             ${{ runner.temp }}/ios-test-results/configuration.json
             ${{ runner.temp }}/ios-test-results/modules.json
             ${{ runner.temp }}/ios-test-results/built-app.json
+            ${{ runner.temp }}/ios-test-results/icon/app-icon.json
+            ${{ runner.temp }}/ios-test-results/icon/*.png
             ${{ runner.temp }}/ios-test-results/run.*/summary.md
             ${{ runner.temp }}/ios-test-results/run.*/failures.json
             ${{ runner.temp }}/ios-test-results/run.*/results.json
