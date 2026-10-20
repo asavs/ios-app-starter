@@ -81,8 +81,9 @@ class DeliverTestFlightTests(unittest.TestCase):
                 {"databaseId": 4, "event": "push", "headSha": "OLD", "status": "completed",
                  "conclusion": "failure", "createdAt": "2026-10-16T09:00:00Z"}],
                 "testflight-delivery.yml": [
-                    {"databaseId": 9, "event": "workflow_dispatch", "status": "waiting", "createdAt": "2026-10-16T11:00:00Z"},
-                    {"databaseId": 8, "event": "push", "status": "completed", "createdAt": "2026-10-16T08:00:00Z"}]},
+                    {"databaseId": 9, "event": "workflow_dispatch", "displayTitle": "TestFlight delivery upload", "status": "waiting", "createdAt": "2026-10-16T11:00:00Z"},
+                    {"databaseId": 8, "event": "push", "displayTitle": "TestFlight preflight", "status": "in_progress", "createdAt": "2026-10-16T12:00:00Z"},
+                    {"databaseId": 10, "event": "workflow_dispatch", "displayTitle": "TestFlight preflight", "status": "queued", "createdAt": "2026-10-16T12:01:00Z"}]},
             api={"repos/o/r/branches/main": {"commit": {"sha": "abcdef"}}})
         with ExitStack() as stack:
             patch_gh(stack, fake)
@@ -261,7 +262,8 @@ class DeliverTestFlightTests(unittest.TestCase):
                 {"environment": {"id": 9, "name": "apple-credentials"}, "current_user_can_approve": True}],
         }
         fake = FakeGitHub(runs={"iOS": [], "testflight-delivery.yml": [
-            {"databaseId": 31, "event": "workflow_dispatch", "status": "waiting", "createdAt": "2026-10-16T11:00:00Z"}]}, api=api)
+            {"databaseId": 31, "event": "workflow_dispatch", "displayTitle": "TestFlight delivery upload",
+             "status": "waiting", "createdAt": "2026-10-16T11:00:00Z"}]}, api=api)
         args = SimpleNamespace(configuration="starter", approve=False, dry_run=False, run=None, wait_minutes=1, poll_seconds=5)
         with ExitStack() as stack:
             patch_gh(stack, fake)

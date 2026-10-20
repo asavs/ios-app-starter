@@ -19,10 +19,10 @@ on:
 
 run-name: ${{ github.event_name == 'workflow_dispatch' && inputs.verify_failure_reporting && 'iOS (deliberate test failure)' || 'iOS' }}
 
-# PR updates replace obsolete runs; main/manual runs get unique groups.
+# PR updates and newer main pushes replace obsolete runs; manual runs stay independent.
 concurrency:
-  group: ios-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ios-${{ github.event_name }}-${{ github.event.pull_request.number || (github.event_name == 'push' && github.ref == 'refs/heads/main' && 'main') || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
 
 permissions:
   contents: read
