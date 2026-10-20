@@ -92,6 +92,7 @@ jobs:
     env:
       IOS_TEST_DESTINATION: ${{ matrix.destination }}
       IOS_TEST_ARTIFACT_NAME: ios-compat-${{ inputs.configuration || 'starter' }}-${{ matrix.lane }}
+      IOS_SPM_CACHE_DIR: ${{ github.workspace }}/build/swiftpm-cache
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -121,6 +122,14 @@ jobs:
         with:
           path: build/tool-downloads/xcodegen
           key: xcodegen-v1-${{ runner.os }}-${{ runner.arch }}-2.46.0-${{ hashFiles('scripts/generate-project.sh', 'scripts/tool_download.py') }}
+
+      - name: Cache Swift package sources
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/swiftpm-cache
+          key: swiftpm-v1-${{ runner.os }}-${{ runner.arch }}-xcode-${{ matrix.xcode_version }}-${{ hashFiles('**/Package.resolved', '**/Package.swift', 'project.yml', 'examples/*.yml') }}
+          restore-keys: |
+            swiftpm-v1-${{ runner.os }}-${{ runner.arch }}-xcode-${{ matrix.xcode_version }}-
 
       - name: Generate Xcode project
         env:

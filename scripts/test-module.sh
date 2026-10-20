@@ -37,6 +37,7 @@ xcodebuild \
   -scheme "$scheme" \
   -destination "$destination" \
   -derivedDataPath "$report_dir/DerivedData" \
+  -clonedSourcePackagesDirPath "${IOS_SPM_CACHE_DIR:-$report_dir/SourcePackages}" \
   -resultBundlePath "$report_dir/Tests.xcresult" \
   -only-testing:"${module}Tests" \
   -parallel-testing-enabled NO \

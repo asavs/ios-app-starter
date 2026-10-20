@@ -33,6 +33,7 @@ xcodebuild \
   -scheme StarterApp \
   -destination "$destination" \
   -derivedDataPath "$report_dir/DerivedData" \
+  -clonedSourcePackagesDirPath "${IOS_SPM_CACHE_DIR:-$report_dir/SourcePackages}" \
   -resultBundlePath "$report_dir/Tests.xcresult" \
   -skip-testing:StarterAppUITests/StarterAppUITests/testLaunchPerformance \
   -skip-testing:StarterAppUITests/StarterAppUITestsLaunchTests \
