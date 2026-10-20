@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-20 — Required app lane runs the full UI test target
+
+- **Context:** Task `ios-ui-all`; required iOS lane uses Xcode 27.0 and the iOS 27.0 simulator on `xcode-27`.
+- **Change:** `scripts/test-ios.sh` now runs all tests in `StarterAppUITests`, skipping only `testLaunchPerformance` and `StarterAppUITestsLaunchTests` so future feature UI tests gate the required lane. The existing xcresult, report, log and screenshot attachment handling is unchanged. The workflow's deliberate failure probe still targets the existing welcome-screen assertion.
+- **Duration before:** In successful main run [39342691707](https://github.com/asavs/ios-app-starter/actions/runs/39342691707), `test (starter)` ran from 23:45:32Z to 23:53:40Z (8m 08s job time); the “Build and test iOS app” step ran from 23:47:27Z to 23:52:56Z (5m 29s). This is the baseline while only `testWelcomeScreen` was selected.
+- **Verification:** `python -m unittest discover -s scripts/tests -v` passed 141 tests (7 skipped, including Bash/macOS-only checks). The local `bash -n` attempt could not start Bash (`CreateInstance/E_ACCESSDENIED`); Windows here has no usable Xcode simulator. Hosted pull-request lane remains the verification for test selection and screenshots.
+- **Remaining:** Record the hosted after duration and test counts when the pull-request lane completes.
+
 ## 2026-10-19 — Onboarding module: gated page flow, completion by version, smoke test steps through it
 
 - **Context:** Round-one module `Onboarding` (board task `ios-mod-onb`), the first module that depends on another (`Theme`). Tools: Xcode 26.6 and the iOS 26.5 simulator on the Mac, XcodeGen 2.46.0 through `scripts/generate-project.sh`, Swift 6 language mode.
