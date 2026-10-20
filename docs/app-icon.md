@@ -87,4 +87,12 @@ gh run download <run-id> -n ios-test-results-starter -D build/ci-results
 
 ## For an app created from the template
 
-A new app starts with Apple's demo icon. Replace it before the first App Store submission: draw your layers (Apple's templates have the grid), import them into Icon Composer or replace the files in `Assets/` and their entries in `icon.json`, run the check, and look at the previews in every appearance. Delete `third_party/apple-icon-composer-demo/` once the demo is gone. Whether new apps get a generated per-app placeholder is still being decided; this page will be updated once that is settled.
+A new app gets its own placeholder: the same discs on the guide grid, with its own colours and arrangement. Run this once after setting the app identity, on any platform:
+
+```bash
+python3 scripts/personalize-icon.py
+```
+
+It rewrites only `icon.json`: each disc gets a random colour (a dimmer one for dark mode; Apple's grey tinted variants stay), and the three discs are re-arranged at Apple's 154-point spacing along one of the grid's guide lines (vertical, horizontal or diagonal), in a random order and stacking. Apple's SVGs are not changed; positions are group `position` translations. It prints its seed: run it again for another look, or pass `--seed <n>` to repeat one. Then run the check and look at the previews as above.
+
+Replace the placeholder with your real icon before the first App Store submission: draw your layers (Apple's templates have the grid), import them into Icon Composer or replace the files in `Assets/` and their entries in `icon.json`, run the check, and look at the previews in every appearance. Delete `third_party/apple-icon-composer-demo/` once the demo is gone.
