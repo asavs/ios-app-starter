@@ -46,7 +46,7 @@ class AppIconTests(unittest.TestCase):
 
     def test_template_document_is_valid(self):
         record = check_app_icon.check_document(check_app_icon.DEFAULT_ICON)
-        self.assertEqual({layer["image"] for layer in record["layers"]}, {"1.circle.svg", "2.circle.svg", "3.circle.svg"})
+        self.assertEqual({layer["image"] for layer in record["layers"]}, {"0.grid.svg", "1.circle.svg", "2.circle.svg", "3.circle.svg"})
         self.assertEqual(record["fillAppearances"], ["all"])
 
     def test_single_fill_covers_every_appearance(self):

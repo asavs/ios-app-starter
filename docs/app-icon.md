@@ -2,7 +2,7 @@
 
 The app icon is one Icon Composer document, `StarterApp/StarterApp/AppIcon.icon`. It is the only icon source: there is no asset catalog icon, no PNG and no generator.
 
-The template's placeholder is Apple's own Icon Composer demo icon (three overlapping circles), copied unchanged from the *Icon Composer Demo Project* in the iOS 27 Icon Templates on [Apple Design Resources](https://developer.apple.com/design/resources/). It is Apple's reference for a correctly built document, so it is kept byte for byte rather than redrawn. It is covered by the Apple Design Resources license, kept in [`third_party/apple-icon-composer-demo/`](../third_party/apple-icon-composer-demo/): use it for mock-ups while you build, and replace it with your own icon before you ship. It uses iOS 27 refraction, so it needs Xcode 27 (or Icon Composer 27) to build or render; Xcode 26 fails with "Could not open “AppIcon.icon”". CI builds with Xcode 27. You can edit it on a Mac in Icon Composer, or by hand on any platform, and review it from Windows through the previews that CI renders on each run.
+The template's placeholder is Apple's own Icon Composer demo icon (three overlapping circles) on Apple's app icon guide grid, the grid with three concentric circles and two diagonals that Xcode shows for a missing icon and Icon Composer overlays while you edit. The demo is copied unchanged from the *Icon Composer Demo Project* in the iOS 27 Icon Templates on [Apple Design Resources](https://developer.apple.com/design/resources/). It is Apple's reference for a correctly built document, so it is kept byte for byte rather than redrawn. The grid, `Assets/0.grid.svg`, is Apple's `appicongrid.ios.svg` from Icon Composer's bundle (`IconComposerKit.framework`), also unchanged; the only addition is a fourth group at the back of `icon.json` that shows it at 50% opacity with glass off. Keep the grid while you position your own layers on it, then delete it and its group. It is covered by the Apple Design Resources license, kept in [`third_party/apple-icon-composer-demo/`](../third_party/apple-icon-composer-demo/): use it for mock-ups while you build, and replace it with your own icon before you ship. It uses iOS 27 refraction, so it needs Xcode 27 (or Icon Composer 27) to build or render; Xcode 26 fails with "Could not open “AppIcon.icon”". CI builds with Xcode 27. You can edit it on a Mac in Icon Composer, or by hand on any platform, and review it from Windows through the previews that CI renders on each run.
 
 ## What is in the document
 
@@ -12,6 +12,7 @@ An `.icon` document is a folder:
 AppIcon.icon/
   icon.json          fills, groups, layers and their effects
   Assets/
+    0.grid.svg       Apple's guide grid (1028 × 1028: 1024 plus the line width)
     1.circle.svg     one flat SVG (or PNG) per layer, numbered back to front
     2.circle.svg
     3.circle.svg
@@ -74,6 +75,7 @@ gh run download <run-id> -n ios-test-results-starter -D build/ci-results
 
 - **A malformed document gives no detail.** `ictool` reports only "The data couldn't be read because it isn't in the correct format" and exit with status 255. Run `check-app-icon.py` first, because it names the problem.
 - **No dark fill means a black icon.** Without a `"appearance": "dark"` fill specialization, the Dark rendition paints the background black and fills enclosed shapes (such as the inside of a dashed circle) with the light colour. The check requires a dark fill for this reason.
+- **A solid layer fill fills every shape.** A `solid` or gradient `fill` recolours the whole layer, including the inside of circles drawn with `fill:none`, so a line drawing becomes discs. To show line art in another colour, change the stroke colour in the SVG instead.
 - **Glass gives an edge a hard rim.** A layer with Liquid Glass gets a lit rim on all its edges, which ruins a shape meant to fade out. Apple's guide says the same from the other side: prefer clearly defined edges, and avoid soft or feathered ones.
 - **There is no angular gradient.** The format offers `linear-gradient` layer fills and `automatic-gradient` backgrounds, not conic gradients.
 - **Refraction needs Xcode 27.** `refractivity` is an iOS 27 setting. Icon Composer 1.6 and `actool` from Xcode 26 refuse the whole document (`actool` crashes with "attempt to insert nil object").
