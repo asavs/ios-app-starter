@@ -1,0 +1,120 @@
+{
+  "fill-specializations" : [
+    {
+      "value" : {
+        "automatic-gradient" : "extended-srgb:0.05000,0.55000,1.00000,1.00000"
+      }
+    },
+    {
+      "appearance" : "dark",
+      "value" : {
+        "automatic-gradient" : "extended-srgb:0.04000,0.16000,0.38000,1.00000"
+      }
+    }
+  ],
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "glass" : true,
+          "image-name" : "radius.svg",
+          "name" : "radius"
+        }
+      ],
+      "lighting" : "combined",
+      "name" : "Radius",
+      "shadow" : {
+        "kind" : "layer-color",
+        "opacity" : 0.6
+      },
+      "specular" : true,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.2
+      }
+    },
+    {
+      "blur-material" : 0.4,
+      "layers" : [
+        {
+          "blend-mode" : "plus-lighter",
+          "fill" : {
+            "linear-gradient" : [
+              "extended-srgb:1.00000,1.00000,1.00000,0.00000",
+              "extended-srgb:1.00000,1.00000,1.00000,0.60000"
+            ],
+            "orientation" : {
+              "start" : {
+                "x" : 0.28,
+                "y" : 0.62
+              },
+              "stop" : {
+                "x" : 0.5,
+                "y" : 0.2
+              }
+            }
+          },
+          "glass" : false,
+          "image-name" : "sweep.svg",
+          "name" : "sweep"
+        }
+      ],
+      "lighting" : "combined",
+      "name" : "Sweep",
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.0
+      },
+      "specular" : true,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    },
+    {
+      "layers" : [
+        {
+          "glass" : true,
+          "image-name" : "construction.svg",
+          "name" : "construction",
+          "opacity" : 0.85
+        }
+      ],
+      "lighting" : "combined",
+      "name" : "Construction",
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.35
+      },
+      "specular" : true,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.4
+      }
+    },
+    {
+      "layers" : [
+        {
+          "glass" : true,
+          "image-name" : "grid.svg",
+          "name" : "grid",
+          "opacity" : 0.5
+        }
+      ],
+      "lighting" : "combined",
+      "name" : "Grid",
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.2
+      },
+      "specular" : true,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : "shared"
+  }
+}
