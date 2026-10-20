@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-20 — testOnboardingSteps flaked on hosted runners: 5 s waits shorter than one snapshot
+
+- **Context:** Task `ios-lwl`. Since PR #74, `testOnboardingSteps` failed in a different configuration lane on each run (main run [39468959391](https://github.com/asavs/ios-app-starter/actions/runs/39468959391) `pocket-notes`, run 39459323150 `starter-app-demo`, PR #76 run 39476387230 `starter` on both attempts). Locally: Xcode 26.6 and the iOS 26.5 simulator. CI: Xcode 27.0, iOS 27.0.
+- **Cause (confirmed from the logs):** `waitUntilHittable` gave up after 5 s. On the hosted runner a single `isHittable` evaluation of `descendants(matching: .any)` in the paged flow took 4.4 s (`Find the "onboarding.step.welcome"` at 11.89 s, debug description at 16.33 s) and 4.5 s for `onboarding.step.build` on PR #76. The wait therefore expired after one check, while the step had in fact appeared. The failure moved between the welcome, choice and tour steps from run to run. A local run with 16 busy processes on 8 cores reproduced it on the tour step.
+- **Change:** The hittable and gone waits default to 15 s, and they return as soon as the element settles. The one-shot "choice step moved off" assertion now waits for the step to leave instead of reading it once mid-transition.
+- **Verification:** Locally, the full UI class passed (5 tests). With one busy process per core, old and new code each passed testOnboardingSteps three times out of three; that load does not reproduce the flake, so the hosted lanes are the real check.
+- **Remaining:** The same runs also showed XCTest infrastructure stalls that no test timeout covers: a launch that waited 3.5 min to terminate the previous app ("does not have a process ID"), "Failed to terminate" in `testSettingsScreen`, and a 60 s "Setting up automation session". Saturating the local Mac produced the same class ("Failed to get background assertion", screenshot timeouts). These come from runner load. If they recur, the next step is to retry the whole UI test pass (for example `-retry-tests-on-failure` with a count of 1) instead of lengthening more waits.
+
 ## 2026-10-20 — Template icon: Apple's Icon Composer demo icon, unchanged
 
 - **Context:** Task `ios-wta`, the owner's decision after reading Apple's app icon guidance (HIG "App icons", updated 2026-06-08 for Liquid Glass) and "Creating your app icon using Icon Composer". Xcode 26.6 locally (Icon Composer 1.6); CI uses Xcode 27.0.
