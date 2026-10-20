@@ -14,6 +14,104 @@ TARGETS = {"StarterApp", "StarterAppTests", "StarterAppUITests"}
 TEAM_ID = re.compile(r"[A-Z0-9]{10}\Z")
 
 
+def manifest_scalars(path, stack=()):
+    """Read the scalar mapping subset used by the checked-in XcodeGen manifests."""
+    path = path.resolve()
+    if path in stack:
+        raise ValueError("manifest include cycle detected")
+    values = {}
+    parents = []
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        stripped = line.lstrip()
+        if not stripped or stripped.startswith("#") or stripped.startswith("-"):
+            continue
+        indent = len(line) - len(stripped)
+        key, separator, raw = stripped.partition(":")
+        if not separator or not re.fullmatch(r"[A-Za-z0-9_-]+", key):
+            continue
+        while parents and parents[-1][0] >= indent:
+            parents.pop()
+        key_path = tuple(item[1] for item in parents) + (key,)
+        raw = raw.strip()
+        if not raw:
+            parents.append((indent, key))
+            continue
+        # Strip a YAML inline comment while preserving # inside quoted scalars.
+        quote = None
+        escaped = False
+        for index, char in enumerate(raw):
+            if escaped:
+                escaped = False
+            elif char == "\\" and quote == '"':
+                escaped = True
+            elif quote and char == quote:
+                quote = None
+            elif not quote and char in ('"', "'"):
+                quote = char
+            elif not quote and char == "#" and (index == 0 or raw[index - 1].isspace()):
+                raw = raw[:index].rstrip()
+                break
+        try:
+            if raw.startswith('"'):
+                value = json.loads(raw)
+            elif raw.startswith("'") and raw.endswith("'") and len(raw) >= 2:
+                value = raw[1:-1].replace("''", "'")
+            elif raw and raw[0] not in "[{|>&*!%`":
+                value = raw
+            else:
+                continue
+        except (ValueError, TypeError) as error:
+            raise ValueError(f"invalid scalar in manifest at {path.name}:{number}") from error
+        values[key_path] = value
+
+    include = values.get(("include",))
+    if include:
+        included_path = (path.parent / include).resolve()
+        inherited = manifest_scalars(included_path, stack + (path,))
+        inherited.update(values)
+        values = inherited
+    return values
+
+
+def check_manifest(manifest):
+    """Export the selected app identity without Xcode for read-only ASC workflows."""
+    values = manifest_scalars(manifest)
+    app = ("targets", "StarterApp", "settings", "base")
+    root_settings = ("settings", "base")
+
+    def required(key):
+        value = values.get(app + (key,))
+        if value is None:
+            raise ValueError(f"manifest is missing targets.StarterApp.settings.base.{key}")
+        return str(value)
+
+    bundle_id = required("PRODUCT_BUNDLE_IDENTIFIER")
+    display_name = required("INFOPLIST_KEY_CFBundleDisplayName")
+    if not re.fullmatch(r"[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+", bundle_id):
+        raise ValueError("manifest app bundle identifier is invalid")
+    if not display_name.strip() or any(ord(char) < 32 for char in display_name):
+        raise ValueError("manifest app display name is missing or invalid")
+    minimum = values.get(("options", "deploymentTarget", "iOS"))
+    if not minimum:
+        raise ValueError("manifest is missing options.deploymentTarget.iOS")
+    version(str(minimum))
+    team = str(values.get(app + ("DEVELOPMENT_TEAM",),
+                          values.get(root_settings + ("DEVELOPMENT_TEAM",), "")))
+    records = []
+    for configuration in ("Debug", "Release"):
+        records.append({
+            "configuration": configuration,
+            "displayName": display_name,
+            "bundleIdentifier": bundle_id,
+            "teamIdentifier": team,
+            "minimumIOS": str(minimum),
+            "deviceFamilies": required("TARGETED_DEVICE_FAMILY"),
+            "marketingVersion": str(values.get(("settings", "base", "MARKETING_VERSION"), "")),
+            "buildNumber": str(values.get(("settings", "base", "CURRENT_PROJECT_VERSION"), "")),
+        })
+    return records
+
+
 def command_json(*args):
     result = subprocess.run(args, text=True, capture_output=True)
     if result.returncode:
@@ -141,9 +239,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("project", nargs="?", type=Path, default=ROOT / "StarterApp/StarterApp.xcodeproj")
     parser.add_argument("--output", type=Path, help="Save checked non-secret settings as JSON")
+    parser.add_argument("--manifest-only", type=Path,
+                        help="Export app identity from an XcodeGen manifest without requiring Xcode")
     args = parser.parse_args()
     try:
-        records = check(args.project)
+        records = check_manifest(args.manifest_only) if args.manifest_only else check(args.project)
         if args.output:
             args.output.parent.mkdir(parents=True, exist_ok=True)
             args.output.write_text(json.dumps(records, indent=2) + "\n")
