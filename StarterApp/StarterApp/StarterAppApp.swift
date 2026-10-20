@@ -9,12 +9,16 @@ import SwiftUI
 #if canImport(Onboarding)
 import Onboarding
 #endif
+#if canImport(Settings)
+import Settings
+#endif
 
 @main
 struct StarterAppApp: App {
     var body: some Scene {
         WindowGroup {
             root
+                .modifier(Appearance())
         }
     }
 
@@ -26,6 +30,17 @@ struct StarterAppApp: App {
             .onboardingGate(pages: OnboardingPage.templateDefaults, version: 1)
 #else
         ContentView()
+#endif
+    }
+}
+
+/// Applies the appearance chosen in Settings (light, dark or system) when the Settings module is enabled.
+private struct Appearance: ViewModifier {
+    func body(content: Content) -> some View {
+#if canImport(Settings)
+        content.storedAppearance()
+#else
+        content
 #endif
     }
 }

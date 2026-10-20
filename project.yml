@@ -35,6 +35,8 @@ targets:
         product: Theme
       - package: StarterModules
         product: Onboarding
+      - package: StarterModules
+        product: Settings
     settings:
       base:
         # User-facing name. Spaces are fine; this does not rename Swift modules.

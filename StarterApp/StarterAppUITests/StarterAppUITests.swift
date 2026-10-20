@@ -56,6 +56,50 @@ final class StarterAppUITests: XCTestCase {
         XCTAssertTrue(visible, "Welcome text should be visible")
     }
 
+    /// The Settings module's main path: open the screen, pick an appearance, store and clear a secret
+    /// in the simulator's real Keychain. Skips when the module is disabled (no gear button).
+    @MainActor
+    func testSettingsScreen() throws {
+        let app = XCUIApplication()
+        app.launchArguments += ["-onboarding.completedVersion", "1"] // Go straight to the welcome screen.
+        app.launch()
+
+        let open = app.buttons["settings.open"]
+        guard open.waitForExistence(timeout: 10) else {
+            throw XCTSkip("Settings module disabled: no settings button on the welcome screen")
+        }
+        open.tap()
+
+        let picker = app.descendants(matching: .any).matching(identifier: "settings.appearance").firstMatch
+        XCTAssertTrue(picker.waitForExistence(timeout: 10), "Settings should show the appearance picker")
+        picker.buttons["Dark"].tap()
+        XCTAssertTrue(picker.buttons["Dark"].isSelected, "Picking Dark should select it")
+
+        let key = "example.apiKey"
+        let field = app.secureTextFields["settings.secure.\(key).field"]
+        let status = app.staticTexts["settings.secure.\(key).status"]
+        let clear = app.buttons["settings.secure.\(key).clear"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "Settings should show the example secret row")
+        if clear.exists { clear.tap() } // A previous run on this simulator may have left a value.
+        XCTAssertTrue(status.label.hasPrefix("Not set"), "Secret should start empty, got: \(status.label)")
+        field.tap()
+        field.typeText("ui-test-secret")
+        app.buttons["settings.secure.\(key).save"].tap()
+        XCTAssertTrue(clear.waitForExistence(timeout: 5), "Saving should store the secret and offer Clear")
+        XCTAssertTrue(status.label.hasPrefix("Stored"), "Status should report the stored secret, got: \(status.label)")
+
+        let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        screenshot.name = "settings-screen"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+
+        clear.tap()
+        XCTAssertTrue(status.label.hasPrefix("Not set"), "Clearing should forget the secret, got: \(status.label)")
+        XCTAssertFalse(clear.exists, "Clear should disappear once nothing is stored")
+        picker.buttons["System"].tap() // Leave the simulator's stored appearance as it was.
+        XCTAssertTrue(picker.buttons["System"].isSelected)
+    }
+
     @MainActor
     func testLaunchPerformance() throws {
         // This measures how long it takes to launch your application.

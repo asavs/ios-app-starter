@@ -8,6 +8,9 @@ mkdir -p "$report_root"
 report_dir="$(mktemp -d "$report_root/run.XXXXXX")"
 printf 'Test reports: %s\n' "$report_dir"
 
+# The app is signed ad hoc (no certificate or team needed) with an application-identifier
+# entitlement: the simulator Keychain returns errSecMissingEntitlement (-34018) to an unsigned
+# app, and the Settings UI test stores a secret for real. Release signing is untouched.
 # Preserve xcodebuild's failure status even when tee succeeds.
 set +e
 xcodebuild \
@@ -23,7 +26,9 @@ xcodebuild \
   -default-test-execution-time-allowance 300 \
   -maximum-test-execution-time-allowance 300 \
   -collect-test-diagnostics "${IOS_TEST_DIAGNOSTICS:-never}" \
-  CODE_SIGNING_ALLOWED=NO \
+  CODE_SIGN_IDENTITY=- \
+  CODE_SIGNING_REQUIRED=NO \
+  CODE_SIGN_ENTITLEMENTS="$repo_dir/scripts/simulator-tests.entitlements" \
   test 2>&1 | tee "$report_dir/xcodebuild.log"
 pipeline_status=("${PIPESTATUS[@]}")
 set -e
