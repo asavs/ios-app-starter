@@ -43,6 +43,11 @@ def load_document(icon):
         raise IconError(f"{manifest}: not valid JSON ({error}); fix the syntax or re-save from Icon Composer") from error
     if not isinstance(document, dict):
         raise IconError(f"{manifest}: the top level must be a JSON object")
+    if document.get("features"):
+        # Xcode 27 renders refraction from each group's "refractivity" alone; this key only makes Xcode 26's actool crash.
+        raise IconError(f"{manifest}: remove the top-level \"features\" list ({', '.join(map(str, document['features']))}) "
+                        "that Icon Composer 27 adds on save; Xcode 27 renders refraction without it and Xcode 26 cannot "
+                        "compile a document that has it")
     return document
 
 

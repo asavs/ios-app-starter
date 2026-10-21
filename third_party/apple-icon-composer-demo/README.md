@@ -1,6 +1,6 @@
 # Apple Icon Composer demo icon
 
-`StarterApp/StarterApp/AppIcon.icon` is Apple's *Icon Composer Demo Project* (`Demo Project.icon`), copied unchanged from the iOS 27 Icon Templates download on [Apple Design Resources](https://developer.apple.com/design/resources/). It is the template's placeholder app icon.
+`StarterApp/StarterApp/AppIcon.icon` is Apple's *Icon Composer Demo Project* (`Demo Project.icon`), copied unchanged from the iOS 27 Icon Templates download on [Apple Design Resources](https://developer.apple.com/design/resources/). It is the template's placeholder app icon. The template removes the top-level `"features": ["refractivity"]` from its `icon.json` so that Xcode 26 can compile it; Xcode 27 renders the same refraction without it.
 
 `StarterApp/StarterApp/AppIcon.icon/Assets/0.grid.svg` is Apple's app icon guide grid, `appicongrid.ios.svg`, as bundled in Icon Composer (`Xcode.app/Contents/Applications/Icon Composer.app/Contents/Frameworks/IconComposerKit.framework/Versions/A/Resources/Assets.car`), unchanged. `0.grid-dark.svg` is a copy with only the stroke colour changed from black to white, for the dark, tinted and clear appearances. The template adds the grid as a back group in `icon.json`.
 

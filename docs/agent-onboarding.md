@@ -149,7 +149,7 @@ Ask the owner to install that exact version and build from TestFlight and descri
 ### The loop after first install
 
 - **What happened on my last run:** `python scripts/review_ci.py --latest` ([scripts/review_ci.py](../scripts/review_ci.py)).
-- **Mac with a phone attached:** `IOS_CONFIGURATION=starter IOS_DEVELOPMENT_TEAM=<team> bash scripts/run-on-device.sh`. Preview it first with `IOS_RUN_ON_DEVICE_DRY_RUN=1`. Needs Xcode 27 while the icon uses refraction (the script checks; see [app icon pitfalls](app-icon.md#pitfalls-we-hit)), plus `device-install` and `apple-provisioning` ([scripts/run-on-device.sh](../scripts/run-on-device.sh)).
+- **Mac with a phone attached:** `IOS_CONFIGURATION=starter IOS_DEVELOPMENT_TEAM=<team> bash scripts/run-on-device.sh`. Preview it first with `IOS_RUN_ON_DEVICE_DRY_RUN=1`. Works with Xcode 26 or 27 (only 27 shows the icon's refraction; see [app icon pitfalls](app-icon.md#pitfalls-we-hit)) and needs `device-install` and `apple-provisioning` ([scripts/run-on-device.sh](../scripts/run-on-device.sh)).
 - **Next build to the phone from any OS:** Stage G again from `main`.
 - **Tester feedback:** with `apple-read` consent, `python scripts/install-asc.py`, then `python scripts/read-testflight-feedback.py --account --asc build/tools/asc.exe --app-id <app-id> --private-report <path outside checkout>` ([scripts/read-testflight-feedback.py](../scripts/read-testflight-feedback.py)). Comments go only to the private report. Triage them with [tester-feedback.md](tester-feedback.md), and sanitize before filing an issue with that guide's issue template. Automatic generation of a sanitized issue draft is planned (master plan step 4). An ad hoc install channel that skips TestFlight is under evaluation in the same step.
 
