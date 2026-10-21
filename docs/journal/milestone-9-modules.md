@@ -2,6 +2,13 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-20 — App icon from Windows: a flat PNG is enough for the upload
+
+- **Context:** Task `ios-5ar`. The owner wants Windows users to get their own icon into the TestFlight upload with tools they already have, without building more into the repository. Verified on a Mac with Xcode 26.6 (actool 26.6, Icon Composer 1.6).
+- **Observation (confirmed):** An `.icon` with one opaque 1024 × 1024 PNG layer (`glass: false`) and `"fill": "automatic"` passes `check-app-icon.py`, renders in the Default, Dark and TintedLight renditions (the system tints it; Dark matches Default), and `actool` compiles it into `AppIcon60x60@2x.png` and `AppIcon76x76@2x~ipad.png`, the fallbacks the TestFlight release requires. A flattened image gets no separate dark variant and no glass depth.
+- **Change:** `docs/app-icon.md` has a five-step Windows recipe: draw (Apple's Figma App Icon Template or any vector tool), put it in the document (one flat PNG with a copy-paste `icon.json`, or numbered SVG layers), check, see the CI previews, and deliver with `deliver_testflight.py`. Documentation only.
+- **Remaining:** The layered route from a Figma export has not been run end to end; the template's own `icon.json` is the reference for its settings.
+
 ## 2026-10-20 — Per-app placeholder icon: random disc colours and arrangement
 
 - **Context:** Task `ios-7yd`, the owner's decision: an app created from the template keeps the template icon (Apple's demo discs on Apple's guide grid) with the discs' colours, positions and stacking randomised. Python 3 standard library only, so it runs on Windows; local renders with Icon Composer 1.6 (refraction stripped for preview only).

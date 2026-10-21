@@ -27,6 +27,47 @@ AppIcon.icon/
 
 XcodeGen picks the document up from the target's sources as an icon resource, so `project.yml` needs no entry beyond `ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon`. `actool` compiles the document into the iOS 26 layered icon and into the `AppIcon60x60@2x.png` and `AppIcon76x76@2x~ipad.png` fallbacks for the iOS 17 minimum. The TestFlight release checks that those fallbacks exist in the built app.
 
+## From Windows, start to upload
+
+No Mac and nothing extra to install in the repository: draw with a tool you already have, put the files in `AppIcon.icon`, and let CI and TestFlight do the rest.
+
+**1. Draw it.** Apple's [App Icon Template for Figma](https://www.figma.com/community/file/1645923469870515372/app-icon-template-ios-ipados-and-watchos-27) runs in the browser and has the grid and canvas; Inkscape, Affinity or Illustrator work too. Use a 1024 × 1024 canvas, keep the main shape centred, and don't draw the rounded corners, shadows or glass: the system adds them.
+
+**2. Put it in the document.** Choose one route.
+
+- *One flat image (quickest).* Export the whole icon as one opaque 1024 × 1024 PNG. Delete everything in `AppIcon.icon/Assets/`, save your file there as `1.icon.png`, and replace `icon.json` with:
+
+  ```json
+  {
+    "fill" : "automatic",
+    "groups" : [
+      {
+        "layers" : [
+          {
+            "glass" : false,
+            "image-name" : "1.icon.png",
+            "name" : "1.icon"
+          }
+        ]
+      }
+    ],
+    "supported-platforms" : {
+      "squares" : "shared"
+    }
+  }
+  ```
+
+  The system still tints it and draws the clear look, but a flat image has no separate dark version and no glass depth.
+- *Layers (Liquid Glass).* Export each layer as its own SVG on the full 1024 × 1024 frame, numbered from back to front (`1.background-shape.svg`, `2.symbol.svg`, …). In Figma, export the frame once per layer with the other layers hidden. Replace the files in `Assets/`, then edit `icon.json`: keep one group per layer (at most four), point each `image-name` at your files, and set the background `fill` and any per-appearance colours. The template's own `icon.json` is a working example of every setting; [What is in the document](#what-is-in-the-document) explains them.
+
+Either way, delete `third_party/apple-icon-composer-demo/` once Apple's demo is gone.
+
+**3. Check it.** `python scripts/check-app-icon.py` names a missing file, a stray file or a missing background.
+
+**4. See it.** Push a branch and open a pull request. The iOS workflow renders previews with Icon Composer under `icon/` in the `ios-test-results-starter` artifact (`gh run download <run-id> -n ios-test-results-starter -D build/ci-results`).
+
+**5. Ship it.** After the pull request merges, `python scripts/deliver_testflight.py --configuration starter` builds the app with the icon and uploads it ([TestFlight delivery](testflight-delivery.md)). The release refuses a build without a compiled icon. Check it on the home screen in light, dark and tinted modes.
+
 ## Editing it
 
 ### In Icon Composer (Mac)
@@ -95,4 +136,4 @@ python3 scripts/personalize-icon.py
 
 It rewrites only `icon.json`: each disc gets a random colour (a dimmer one for dark mode; Apple's grey tinted variants stay), and the three discs are re-arranged at Apple's 154-point spacing along one of the grid's guide lines (vertical, horizontal or diagonal), in a random order and stacking. Apple's SVGs are not changed; positions are group `position` translations. It prints its seed: run it again for another look, or pass `--seed <n>` to repeat one. Then run the check and look at the previews as above.
 
-Replace the placeholder with your real icon before the first App Store submission: draw your layers (Apple's templates have the grid), import them into Icon Composer or replace the files in `Assets/` and their entries in `icon.json`, run the check, and look at the previews in every appearance. Delete `third_party/apple-icon-composer-demo/` once the demo is gone.
+Replace the placeholder with your real icon before the first App Store submission: on Windows follow [From Windows, start to upload](#from-windows-start-to-upload); on a Mac, Icon Composer does the same. Delete `third_party/apple-icon-composer-demo/` once the demo is gone.
