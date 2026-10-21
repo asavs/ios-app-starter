@@ -2,6 +2,13 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-21 ? Compatibility check after the Icon Composer switch: no runtime verified
+
+- **Context:** Manual `starter`, `one-per-major` compatibility [run 39644462624](https://github.com/asavs/ios-app-starter/actions/runs/39644462624) on `734fa218b4bf4ac63d41d0983009a4660ac60932`, reviewed with `python scripts/review_ci.py --run 39644462624` and downloaded per-lane artifacts. The question was whether the new `.icon` needs a PNG fallback on Xcode 16.2.
+- **Observed:** iOS 17.0.1 and 18.1 (iPhone SE 3rd generation, Xcode 16.2 / SDK 18.2) both failed compilation, exit 65, with zero tests: `OnboardingContinueButton.swift:33` cannot resolve `.glassProminent`. The runtime availability branch still references an API absent from this SDK. Add a compile-time guard, audit other newer-SDK references, then repeat the older-toolchain lanes before judging the icon fallback.
+- **Independent setup failures:** iOS 27.0 was planned with Xcode 27.2 / SDK 27.2, but `/Applications/Xcode_27.2_beta_3.app/Contents/Developer` was missing on the test runner. iOS 26.0.1 selected Xcode 26.2 / SDK 26.2, then its native inventory failed after about 60 seconds with ?Native inventory incomplete?; timeout is suspected, not confirmed. That lane uploaded only `lane-result.json`, so no diagnostic inventory JSON is available. Revalidate toolchain paths on the executing runner and retain failed inventory diagnostics.
+- **Verification and remaining uncertainty:** The aggregate report names no verified runtimes: the older lanes failed before tests and the newer lanes are unverified. This run does not establish that the icon works or fails on Xcode 16.2, nor that the current source retains the earlier runtime coverage. No icon or app configuration was changed by this investigation.
+
 ## 2026-10-20 — Xcode 26.6 cannot compile the refraction icon locally
 
 - **Context:** Mac inner loop (`run-on-device.sh`, local simulator builds) after the icon changes in #76/#78. Xcode 26.6 (17F113), macOS 26.2. CI selects Xcode 27 and is unaffected.
