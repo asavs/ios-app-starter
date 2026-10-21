@@ -2,6 +2,13 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-21 — The icon's top-level `features` key is not needed on Xcode 27
+
+- **Context:** Follow-up to the entry below. Xcode 27.0 on the `xcode-27` runner (Icon Composer 27.0, `ictool` bundle 129); Xcode 26.6 locally (Icon Composer 1.6).
+- **Question:** Xcode 26's `actool` crashes only because of the top-level `"features": ["refractivity"]`. Does Xcode 27 still render refraction without it?
+- **Result (confirmed):** A throwaway workflow rendered `AppIcon.icon`, a copy without `features`, and a control copy without the groups' `refractivity`, in all six renditions at 1024 px ([run 39644783884](https://github.com/asavs/ios-app-starter/actions/runs/39644783884)). Without `features`, every PNG was byte-identical to the original. The control differed in all six, so `ictool` does draw refraction, and only the per-group settings drive it.
+- **Fix:** Removed the key from the template icon (the only deviation from Apple's demo), made `check-app-icon.py` reject it with the fix named, since Icon Composer 27 writes it back on save, and removed the Xcode 26 stop from `run-on-device.sh`. Xcode 26.6 now renders the icon with `ictool` and builds the app (`BUILD SUCCEEDED`, simulator).
+- **Uncertainty:** The comparison is `ictool`'s, not `actool`'s compiled `Assets.car`; refraction on an iOS 27 home screen still needs a look on a device. The two-icon fallback (`AppIcon26.icon` chosen by `XCODE_VERSION_MAJOR`) stays available if Apple starts to require the key.
 ## 2026-10-21 — Xcode 16.2 compatibility lanes: `glassProminent` and the `.icon` app icon
 
 - **Context:** iOS compatibility matrix, iOS 17.0.1 and 18.1 lanes on `macos-14` with Xcode 16.2 (iOS 18.2 SDK, Swift 6.0). First run since the onboarding module and `AppIcon.icon` landed.

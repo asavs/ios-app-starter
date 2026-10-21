@@ -86,6 +86,11 @@ class AppIconTests(unittest.TestCase):
         with self.assertRaisesRegex(check_app_icon.IconError, '"appearance": "dark"'):
             check_app_icon.check_document(self.icon)
 
+    def test_top_level_features_list_is_reported(self):
+        self.write({**document(), "features": ["refractivity"]})
+        with self.assertRaisesRegex(check_app_icon.IconError, "remove the top-level \"features\" list \\(refractivity\\)"):
+            check_app_icon.check_document(self.icon)
+
     def test_invalid_json_and_missing_groups_are_reported(self):
         (self.icon / "icon.json").write_text("{\"groups\": [}")
         with self.assertRaisesRegex(check_app_icon.IconError, "not valid JSON"):
