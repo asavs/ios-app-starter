@@ -2,6 +2,15 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-21 — Xcode 27.2 rejects XcodeGen's folder reference beside the local module package
+
+- **Context:** `ios-27-0` compatibility lane on `xcode-27`, which selected Xcode 27.2 (build 27B5028f); the main workflow pins 27.0. XcodeGen 2.46.0.
+- **Symptom (confirmed):** `xcodebuild` exits 65 before compiling: "Cannot open ios-app-starter as a Swift Package Dependency because it is already open as a Folder", then "Missing package product TemplateVersion/Theme/Onboarding/Settings" ([run 39648646270](https://github.com/asavs/ios-app-starter/actions/runs/39648646270)).
+- **Cause (confirmed from XcodeGen's source):** For each local package XcodeGen writes the `XCLocalSwiftPackageReference` path as given, which Xcode reads relative to the project directory, and also adds a navigator folder reference that it resolves relative to the spec file. With `project.yml` at the repo root and the project in `StarterApp/`, `path: ..` made the folder reference point at the checkout's parent (`../..`, named after that directory), which contains the package. For `examples/*.yml` it points at the package itself. Xcode 27.0 tolerates this and 27.2 does not. The committed project also differed by machine, since the folder took the parent directory's name.
+- **Fix:** `scripts/generate-project.sh` runs `scripts/drop-package-folder-refs.py` after XcodeGen, which removes every folder reference at or above a local package, along with the `Packages` group it leaves empty. The modules still show under Package Dependencies. `excludeFromProject: true` is not a fix: it drops the package reference too.
+- **Verification:** Regenerated with `project.yml` and both examples: no folder reference is left. Locally on Xcode 26.6 the project resolves and links all four products and builds (with the icon fix from PR #83 applied locally); 3 of 5 UI tests passed there, and the 2 failures (multiple choice, Settings secret) are in app behaviour, not package resolution. A unit test covers the edit and checks the committed project. Xcode 27.2 needs a compatibility dispatch after merge.
+- **Uncertainty:** A newer XcodeGen may fix the path mismatch upstream; drop the step once the pinned version does.
+
 ## 2026-10-21 — The icon's top-level `features` key is not needed on Xcode 27
 
 - **Context:** Follow-up to the entry below. Xcode 27.0 on the `xcode-27` runner (Icon Composer 27.0, `ictool` bundle 129); Xcode 26.6 locally (Icon Composer 1.6).
@@ -9,6 +18,7 @@ Entries for the module library mechanism, the first-round modules, their lanes a
 - **Result (confirmed):** A throwaway workflow rendered `AppIcon.icon`, a copy without `features`, and a control copy without the groups' `refractivity`, in all six renditions at 1024 px ([run 39644783884](https://github.com/asavs/ios-app-starter/actions/runs/39644783884)). Without `features`, every PNG was byte-identical to the original. The control differed in all six, so `ictool` does draw refraction, and only the per-group settings drive it.
 - **Fix:** Removed the key from the template icon (the only deviation from Apple's demo), made `check-app-icon.py` reject it with the fix named, since Icon Composer 27 writes it back on save, and removed the Xcode 26 stop from `run-on-device.sh`. Xcode 26.6 now renders the icon with `ictool` and builds the app (`BUILD SUCCEEDED`, simulator).
 - **Uncertainty:** The comparison is `ictool`'s, not `actool`'s compiled `Assets.car`; refraction on an iOS 27 home screen still needs a look on a device. The two-icon fallback (`AppIcon26.icon` chosen by `XCODE_VERSION_MAJOR`) stays available if Apple starts to require the key.
+
 ## 2026-10-21 — Xcode 16.2 compatibility lanes: `glassProminent` and the `.icon` app icon
 
 - **Context:** iOS compatibility matrix, iOS 17.0.1 and 18.1 lanes on `macos-14` with Xcode 16.2 (iOS 18.2 SDK, Swift 6.0). First run since the onboarding module and `AppIcon.icon` landed.
@@ -204,6 +214,7 @@ Entries for the module library mechanism, the first-round modules, their lanes a
 - **Change:** `Modules/Theme/Sources` (`AppTheme`, `ThemeEnvironment`, `AppearancePreference`, `Elements/ButtonStyles`, `ThemedCard`, `EmptyStateView`), `Modules/Theme/Tests/ThemeTests.swift` (8 Swift Testing tests), `Package.swift` product and targets, `project.yml` product line, regenerated project, `ContentView` build details on a `ThemedCard` under `#if canImport(Theme)`, and the Available modules section in `docs/modules.md`.
 - **Verification:** `swift test` passed (9 tests, both modules). `test-module.sh Theme` on the iOS 26.5 simulator: 8/8 passed through the `StarterModules-Package` scheme. `test-ios.sh` on the same simulator: welcome-screen smoke test 1/1 passed, and its screenshot shows the build details on the themed card. `check-modules.py` reports both modules enabled for `project.yml` and both disabled for the `no-modules` overlay, whose generated project built for the simulator (`BUILD SUCCEEDED`). Portable tests (`unittest discover`, `check-configurations.py`) pass. The hosted Xcode 27 lane runs on the pull request.
 - **Limits and next:** The element tests check public initializers and token invariants, not rendering; snapshot or UI checks of the elements can be added later. `#Preview` blocks in the package are for Xcode users and are not exercised in CI. Remaining round-one modules: onboarding (unblocked by this), settings and icon pipeline.
+
 ## 2026-10-19 — Required package lanes and no-modules build
 
 - **Context:** Task `ios-pkg-lane`; workflow toolchain remains explicitly pinned to Xcode 27.0 and the iOS 27 SDK on `xcode-27`.

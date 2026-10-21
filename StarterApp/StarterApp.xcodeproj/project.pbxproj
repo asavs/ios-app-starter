@@ -46,7 +46,6 @@
 		505187150B7A25E42E197DFD /* StarterAppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterAppTests.swift; sourceTree = "<group>"; };
 		81985762715118C68FC81834 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BD60802B2CF34042A128A2F5 /* StarterAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterAppApp.swift; sourceTree = "<group>"; };
-		129A8E94265460CFE54956DA /* projects */ = {isa = PBXFileReference; lastKnownFileType = folder; name = projects; path = ../..; sourceTree = SOURCE_ROOT; };
 		E8D93B988D8534CAF4748EAB /* StarterAppUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterAppUITests.swift; sourceTree = "<group>"; };
 		FBF5C48B8DEE60F1BE83C0C8 /* StarterApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = StarterApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -90,7 +89,6 @@
 		86E543BF154DCFCE66B61433 = {
 			isa = PBXGroup;
 			children = (
-				C924432133D7BD8B0AC7ECB2 /* Packages */,
 				28D9222601D1F6EC7EFB0606 /* StarterApp */,
 				9EC16C0E8EE1B5A32847093D /* StarterAppTests */,
 				B1E6C38E9A9B23785D2921CB /* StarterAppUITests */,
@@ -113,14 +111,6 @@
 				208BC1917057466CB928A5D6 /* StarterAppUITestsLaunchTests.swift */,
 			);
 			path = StarterAppUITests;
-			sourceTree = "<group>";
-		};
-		C924432133D7BD8B0AC7ECB2 /* Packages */ = {
-			isa = PBXGroup;
-			children = (
-				129A8E94265460CFE54956DA /* projects */,
-			);
-			name = Packages;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
