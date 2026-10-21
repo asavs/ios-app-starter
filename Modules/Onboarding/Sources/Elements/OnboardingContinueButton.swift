@@ -28,6 +28,8 @@ struct OnboardingContinueButton: View {
 
 private struct ProminentButton: ViewModifier {
     func body(content: Content) -> some View {
+        // `#available` does not hide a symbol the SDK lacks: Xcode 16 (Swift 6.0) has no `.glassProminent`.
+        #if compiler(>=6.2)
         if #available(iOS 26, macOS 26, *) {
             content
                 .buttonStyle(.glassProminent)
@@ -36,6 +38,10 @@ private struct ProminentButton: ViewModifier {
             content
                 .buttonStyle(.primary)
         }
+        #else
+        content
+            .buttonStyle(.primary)
+        #endif
     }
 }
 

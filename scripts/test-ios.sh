@@ -23,6 +23,17 @@ PYMOD
 printf 'Enabled modules: %s\n' "${enabled_modules:-(unknown)}"
 export TEST_RUNNER_IOS_ENABLED_MODULES="$enabled_modules"
 
+# Xcode 16, which the compatibility lanes need for iOS 17 and 18 simulators, cannot read an Icon
+# Composer document and fails with "None of the input catalogs contained a matching ... app icon
+# set named AppIcon". Those lanes test behaviour, not the icon, so build them without one; the
+# iOS 17 fallback PNGs that users get come from Xcode 27's actool.
+icon_settings=()
+xcode_major="$(xcodebuild -version 2>/dev/null | awk 'NR == 1 { split($2, v, "."); print v[1] }')"
+if [[ "$xcode_major" =~ ^[0-9]+$ ]] && (( xcode_major < 26 )); then
+  printf 'Xcode %s cannot compile AppIcon.icon; building without an app icon.\n' "$xcode_major"
+  icon_settings=(ASSETCATALOG_COMPILER_APPICON_NAME=)
+fi
+
 # The app is signed ad hoc (no certificate or team needed) with an application-identifier
 # entitlement: the simulator Keychain returns errSecMissingEntitlement (-34018) to an unsigned
 # app, and the Settings UI test stores a secret for real. Release signing is untouched.
@@ -45,6 +56,7 @@ xcodebuild \
   CODE_SIGN_IDENTITY=- \
   CODE_SIGNING_REQUIRED=NO \
   CODE_SIGN_ENTITLEMENTS="$repo_dir/scripts/simulator-tests.entitlements" \
+  ${icon_settings[@]+"${icon_settings[@]}"} \
   test 2>&1 | tee "$report_dir/xcodebuild.log"
 pipeline_status=("${PIPESTATUS[@]}")
 set -e

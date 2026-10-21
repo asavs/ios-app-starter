@@ -2,6 +2,18 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-21 — Xcode 16.2 compatibility lanes: `glassProminent` and the `.icon` app icon
+
+- **Context:** iOS compatibility matrix, iOS 17.0.1 and 18.1 lanes on `macos-14` with Xcode 16.2 (iOS 18.2 SDK, Swift 6.0). First run since the onboarding module and `AppIcon.icon` landed.
+- **Symptom 1 (confirmed):** `OnboardingContinueButton.swift` failed to compile: `.glassProminent` does not exist in the iOS 18.2 SDK. `if #available(iOS 26, *)` guards only at run time, and the symbol must still resolve at compile time.
+- **Fix 1:** Wrap the iOS 26 branch in `#if compiler(>=6.2)` (Xcode 26 and later), with the theme's primary style otherwise. An audit of `Modules/` and `StarterApp/` found no other symbol newer than the iOS 18.2 SDK.
+- **Symptom 2 (confirmed):** Once Swift compiled, `actool` stopped with "None of the input catalogs contained a matching stickers icon set or app icon set named AppIcon". Xcode 16 cannot read an Icon Composer document. The `SwiftCompile StarterAppApp.swift` entry in the failure list was cancelled with the build and has no error of its own.
+- **Fix 2:** `scripts/test-ios.sh` sets `ASSETCATALOG_COMPILER_APPICON_NAME=` when the selected Xcode is older than 26. These lanes test behaviour on old runtimes; the icon that iOS 17 users get is the PNG fallback that Xcode 27's `actool` builds from the `.icon`. A second `AppIcon16.appiconset` selected by `XCODE_VERSION_MAJOR` would also work, but it is a second icon source to keep in sync.
+- **Also seen:** The `ios-27-0` lane picked Xcode 27.2, which refuses the repo root as both a folder reference and the local package. That is tracked separately, and the main workflow still pins 27.0.
+- **Symptom 3 (confirmed):** Swift 6.0 then rejected the UI test helpers `element`, `attach` and `focus`, which call main-actor `XCUIElement` APIs from nonisolated methods; Xcode 26 accepts them. **Fix 3:** mark them `@MainActor`, like the tests themselves.
+- **Verification:** The iOS 17.0.1 lane builds and runs 6 UI tests: 5 pass ([run 39654097837](https://github.com/asavs/ios-app-starter/actions/runs/39654097837)). `testOnboardingSteps` fails because the tour tip does not appear after the Settings tip on iOS 17. That is a real behavioural difference, tracked separately. iOS 26.0.1 on Xcode 26.2 passes 6/6 ([run 39648537379](https://github.com/asavs/ios-app-starter/actions/runs/39648537379)).
+- **Remaining:** The icon outcome is that Xcode 16 cannot build any app icon from `AppIcon.icon`, and these lanes now build without one. The iOS 17 PNG fallback from Xcode 27's `actool` is not yet checked on an iOS 17 device.
+
 ## 2026-10-21 ? Compatibility check after the Icon Composer switch: no runtime verified
 
 - **Context:** Manual `starter`, `one-per-major` compatibility [run 39644462624](https://github.com/asavs/ios-app-starter/actions/runs/39644462624) on `734fa218b4bf4ac63d41d0983009a4660ac60932`, reviewed with `python scripts/review_ci.py --run 39644462624` and downloaded per-lane artifacts. The question was whether the new `.icon` needs a PNG fallback on Xcode 16.2.

@@ -149,10 +149,12 @@ final class StarterAppUITests: XCTestCase {
     }
 
     /// Any element with this accessibility identifier; containers and combined rows vary in type.
+    @MainActor
     private func element(_ app: XCUIApplication, _ identifier: String) -> XCUIElement {
         app.descendants(matching: .any).matching(identifier: identifier).firstMatch
     }
 
+    @MainActor
     private func attach(name: String) {
         let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         screenshot.name = name
@@ -252,6 +254,7 @@ final class StarterAppUITests: XCTestCase {
     /// Focus is read from the keyboard, not the field: on the hosted runner the field's
     /// `hasKeyboardFocus` stayed false through four taps while the recording showed its cursor and
     /// keyboard, and one snapshot there takes over a second. Type with `app.typeText` afterwards.
+    @MainActor
     private func focus(_ field: XCUIElement, in app: XCUIApplication, attempts: Int = 3) throws {
         let keyboard = app.keyboards.firstMatch
         for attempt in 1...attempts {
