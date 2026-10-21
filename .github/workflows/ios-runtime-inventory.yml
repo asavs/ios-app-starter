@@ -23,6 +23,7 @@ jobs:
       - name: Export current native inventory
         run: python3 scripts/inventory-ios-runtimes.py --output "$RUNNER_TEMP/ios-runtime-inventory.json"
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: always()
         with:
           name: ios-runtime-inventory-${{ inputs.runner }}
           path: ${{ runner.temp }}/ios-runtime-inventory.json

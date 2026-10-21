@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 SCRIPTS = Path(__file__).resolve().parents[1]
 
@@ -19,6 +20,8 @@ def load(name):
 
 planner = load('plan-compatibility-matrix')
 reporter = load('report-compatibility')
+inventory = load('inventory-ios-runtimes')
+resolver = load('resolve-compatibility-toolchain')
 
 
 def xcode(version, sdk):
@@ -113,6 +116,47 @@ class PlanTests(unittest.TestCase):
             self.assertEqual(outputs['count'], '1')
             self.assertEqual(json.loads(outputs['matrix'])['include'][0]['lane'], 'ios-17-0-1')
             self.assertIn('| `ios-17-0-1` |', (path / 'summary.md').read_text())
+
+
+class RunnerDriftTests(unittest.TestCase):
+    def test_relocated_exact_toolchain_and_reject_upgrade_or_build_drift(self):
+        lane = dict(xcode_path='/removed', xcode_version='27.0', xcode_build='TEST', sdk='27.0')
+        exact = xcode('27.0', '27.0')
+        self.assertEqual(resolver.resolve(lane, [xcode('27.2', '27.2'), exact]), exact)
+        for candidates in ([xcode('27.2', '27.2')], [dict(exact, build='OTHER')],
+                           [dict(exact, iphoneSDK='27.1')], [dict(exact, usable=False)]):
+            with self.assertRaisesRegex(ValueError, 'No upgrade attempted'):
+                resolver.resolve(lane, candidates)
+
+    def test_incomplete_inventory_never_plans_lanes(self):
+        result = planner.plan([dict(MACOS_14, complete=False)])
+        self.assertEqual(result['include'], [])
+        self.assertIn('inventory incomplete', result['skipped'][0]['reason'])
+
+    @patch.object(inventory.time, 'sleep')
+    @patch.object(inventory.subprocess, 'run')
+    def test_timeout_retry_records_diagnostic_without_raw_output(self, run, sleep):
+        inventory.DIAGNOSTICS.clear()
+        run.side_effect = [subprocess.TimeoutExpired('xcrun', 120),
+                           subprocess.CompletedProcess([], 0, stdout='ok')]
+        self.assertEqual(inventory.command('xcrun', 'simctl'), 'ok')
+        self.assertEqual(run.call_count, 2)
+        self.assertEqual(inventory.DIAGNOSTICS[0]['reason'], 'timeout after 120 seconds')
+
+    @patch.object(inventory.time, 'sleep')
+    @patch.object(inventory.subprocess, 'run')
+    def test_failure_is_bounded_and_retains_report(self, run, sleep):
+        run.return_value = subprocess.CompletedProcess([], 1, stdout='private', stderr='private')
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'inventory.json'
+            with patch.object(sys, 'argv', ['inventory', '--output', str(output)]):
+                with self.assertRaises(SystemExit):
+                    inventory.main()
+            report = json.loads(output.read_text())
+            self.assertFalse(report['complete'])
+            self.assertEqual(len(report['diagnostics']), 2)
+            self.assertNotIn('private', output.read_text())
+        self.assertEqual(run.call_count, 2)
 
 
 class ReportTests(unittest.TestCase):
