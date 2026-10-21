@@ -73,19 +73,18 @@ final class StarterAppUITests: XCTestCase {
         let skip = app.buttons["onboarding.skip"]
 
         // The page style keeps neighbouring pages in the hierarchy, so existence alone proves nothing;
-        // a step is on screen when it is hittable.
-        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.step.welcome")),
+        // a step is on screen when one of its leaf elements is hittable. Not the `onboarding.step.<id>`
+        // container: XCUITest hit-tests a container at its centre, which on the choice step is empty
+        // scroll view, and on the iOS 27 runner that check stayed false with the step fully on screen.
+        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.feature.Make it yours")),
                       "The welcome sheet should be the first step")
-        XCTAssertTrue(element(app, "onboarding.feature.Make it yours").isHittable, "Welcome rows should be visible")
         XCTAssertTrue(skip.isHittable, "Skip should be offered on the welcome sheet")
         attach(name: "onboarding-welcome")
         next.tap()
 
-        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.step.build")),
-                      "The choice step should follow the welcome sheet")
         let tool = app.buttons["onboarding.choice.build.A tool for myself"]
         let product = app.buttons["onboarding.choice.build.A product to sell"]
-        XCTAssertTrue(tool.isHittable, "Each answer should be a button")
+        XCTAssertTrue(waitUntilHittable(tool), "The choice step should follow the welcome sheet, its answers as buttons")
         tool.tap()
         product.tap()
         XCTAssertTrue(tool.isSelected && product.isSelected, "A multiple choice keeps every picked answer")
@@ -95,17 +94,14 @@ final class StarterAppUITests: XCTestCase {
         XCTAssertTrue(skip.isHittable, "Skip should still be offered on a choice step")
         next.tap()
 
-        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.step.tour")),
+        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.page.tour")),
                       "The tour card should follow the choice step")
-        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.step.build"), expected: false),
-                      "The choice step should have moved off")
+        XCTAssertTrue(waitUntilHittable(tool, expected: false), "The choice step should have moved off")
         attach(name: "onboarding-tour")
         next.tap()
 
-        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.step.notifications")),
-                      "The notifications primer should be the last step")
-        XCTAssertTrue(element(app, "onboarding.permission.notifications.footnote").isHittable,
-                      "The primer should show its footnote")
+        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.permission.notifications.footnote")),
+                      "The notifications primer, with its footnote, should be the last step")
         XCTAssertTrue(waitUntilHittable(skip, expected: false), "A permission primer has exactly one button")
         XCTAssertEqual(next.label, "Continue", "The primer's button is Continue, never Allow")
         attach(name: "onboarding-permission")
@@ -134,8 +130,13 @@ final class StarterAppUITests: XCTestCase {
     }
 
     private func waitUntilGone(_ element: XCUIElement, timeout: TimeInterval = 15) -> Bool {
-        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: element)
-        return XCTWaiter().wait(for: [gone], timeout: timeout) == .completed
+        waitUntil(element, "exists == false", timeout: timeout)
+    }
+
+    /// Waits for the element to match a predicate format, such as `isSelected == true`.
+    private func waitUntil(_ element: XCUIElement, _ format: String, timeout: TimeInterval = 15) -> Bool {
+        let matched = XCTNSPredicateExpectation(predicate: NSPredicate(format: format), object: element)
+        return XCTWaiter().wait(for: [matched], timeout: timeout) == .completed
     }
 
     /// Waits for the element to become hittable (or not), which outlasts the flow's short transitions.
@@ -247,17 +248,20 @@ final class StarterAppUITests: XCTestCase {
     }
 
     /// Gives a text field keyboard focus. On the iOS 27 simulator a single tap on a `SecureField` in a
-    /// `Form` row sometimes selects the row without focusing the field, and `typeText` then fails with
-    /// "Neither element nor any descendant has keyboard focus"; tapping again focuses it.
-    private func focus(_ field: XCUIElement, attempts: Int = 4) throws {
+    /// `Form` row sometimes selects the row without focusing the field; tapping again focuses it.
+    /// Focus is read from the keyboard, not the field: on the hosted runner the field's
+    /// `hasKeyboardFocus` stayed false through four taps while the recording showed its cursor and
+    /// keyboard, and one snapshot there takes over a second. Type with `app.typeText` afterwards.
+    private func focus(_ field: XCUIElement, in app: XCUIApplication, attempts: Int = 3) throws {
+        let keyboard = app.keyboards.firstMatch
         for attempt in 1...attempts {
             field.tap()
-            let focused = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hasKeyboardFocus == true"), object: field)
-            if XCTWaiter().wait(for: [focused], timeout: 2) == .completed { return }
-            XCTContext.runActivity(named: "Field not focused after tap \(attempt)") { _ in }
+            let shown = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == true"), object: keyboard)
+            if XCTWaiter().wait(for: [shown], timeout: 10) == .completed { return }
+            XCTContext.runActivity(named: "No keyboard after tap \(attempt)") { _ in }
         }
-        XCTFail("\(field.identifier) did not take keyboard focus after \(attempts) taps")
-        throw ModuleUIMissing(description: "no keyboard focus on \(field.identifier)")
+        XCTFail("\(field.identifier) did not bring up the keyboard after \(attempts) taps")
+        throw ModuleUIMissing(description: "no keyboard for \(field.identifier)")
     }
 
     /// Modules the lane built the app with, from `scripts/test-ios.sh` (`TEST_RUNNER_IOS_ENABLED_MODULES`);
@@ -297,7 +301,8 @@ final class StarterAppUITests: XCTestCase {
         let picker = app.descendants(matching: .any).matching(identifier: "settings.appearance").firstMatch
         XCTAssertTrue(picker.waitForExistence(timeout: 10), "Settings should show the appearance picker")
         picker.buttons["Dark"].tap()
-        XCTAssertTrue(picker.buttons["Dark"].isSelected, "Picking Dark should select it")
+        // The app can report idle before a tap's state change lands, so state is waited for, not read once.
+        XCTAssertTrue(waitUntil(picker.buttons["Dark"], "isSelected == true"), "Picking Dark should select it")
 
         let key = "example.apiKey"
         let field = app.secureTextFields["settings.secure.\(key).field"]
@@ -306,11 +311,12 @@ final class StarterAppUITests: XCTestCase {
         XCTAssertTrue(field.waitForExistence(timeout: 5), "Settings should show the example secret row")
         if clear.exists { clear.tap() } // A previous run on this simulator may have left a value.
         XCTAssertTrue(status.label.hasPrefix("Not set"), "Secret should start empty, got: \(status.label)")
-        try focus(field)
-        field.typeText("ui-test-secret")
+        try focus(field, in: app)
+        app.typeText("ui-test-secret")
         app.buttons["settings.secure.\(key).save"].tap()
         XCTAssertTrue(clear.waitForExistence(timeout: 5), "Saving should store the secret and offer Clear")
-        XCTAssertTrue(status.label.hasPrefix("Stored"), "Status should report the stored secret, got: \(status.label)")
+        XCTAssertTrue(waitUntil(status, "label BEGINSWITH 'Stored'"),
+                      "Status should report the stored secret, got: \(status.label)")
 
         let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         screenshot.name = "settings-screen"
@@ -318,10 +324,11 @@ final class StarterAppUITests: XCTestCase {
         add(screenshot)
 
         clear.tap()
-        XCTAssertTrue(status.label.hasPrefix("Not set"), "Clearing should forget the secret, got: \(status.label)")
-        XCTAssertFalse(clear.exists, "Clear should disappear once nothing is stored")
+        XCTAssertTrue(waitUntil(status, "label BEGINSWITH 'Not set'"),
+                      "Clearing should forget the secret, got: \(status.label)")
+        XCTAssertTrue(waitUntilGone(clear), "Clear should disappear once nothing is stored")
         picker.buttons["System"].tap() // Leave the simulator's stored appearance as it was.
-        XCTAssertTrue(picker.buttons["System"].isSelected)
+        XCTAssertTrue(waitUntil(picker.buttons["System"], "isSelected == true"))
     }
 
     @MainActor
