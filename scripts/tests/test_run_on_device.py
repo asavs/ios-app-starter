@@ -164,7 +164,7 @@ class DryRunScriptTests(unittest.TestCase):
                if not key.startswith("IOS_")}
         env.update({"IOS_RUN_ON_DEVICE_DRY_RUN": "1", "IOS_DEVICE_LIST_JSON": str(devices_json),
                     "IOS_RUN_ON_DEVICE_OUTPUT_DIR": str(Path(directory) / "out"),
-                    "IOS_DEVELOPMENT_TEAM": "ABCDE12345"})
+                    "IOS_DEVELOPMENT_TEAM": "ABCDE12345", "IOS_XCODE_VERSION": "27.0"})
         env.update(env_overrides)
         return subprocess.run(["bash", str(SCRIPT)], env=env, text=True, capture_output=True)
 
@@ -250,6 +250,23 @@ class DryRunScriptTests(unittest.TestCase):
         self.assertNotEqual(bad_config.returncode, 0)
         self.assertIn("Unsupported IOS_CONFIGURATION", bad_config.stderr)
         self.assertNotIn("+", bad_config.stdout)
+
+    def test_refraction_icon_with_xcode_26_fails_before_any_command(self):
+        result = self.run_script(payload(PHONE), IOS_XCODE_VERSION="26.6")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("needs Xcode 27", result.stderr)
+        self.assertIn("Xcode 26.6", result.stderr)
+        self.assertNotIn("+", result.stdout)
+
+    def test_icon_without_refraction_builds_with_xcode_26(self):
+        directory = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, directory)
+        icon = directory / "StarterApp/AppIcon.icon"
+        icon.mkdir(parents=True)
+        (icon / "icon.json").write_text('{"groups": []}', encoding="utf-8")
+        result = self.run_script(payload(PHONE), IOS_XCODE_VERSION="26.6", IOS_PROJECT_DIR=str(directory))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("xcodebuild", result.stdout)
 
 
 if __name__ == "__main__":

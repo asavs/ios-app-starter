@@ -17,6 +17,7 @@ set -euo pipefail
 #   IOS_RUN_ON_DEVICE_DRY_RUN=1  print the commands that would run instead of running them
 #   IOS_DEVICE_LIST_JSON    reuse a saved `devicectl list devices --json-output` file (tests, previews)
 #   IOS_RUN_ON_DEVICE_OUTPUT_DIR  where logs and DerivedData go (default build/run-on-device, gitignored)
+#   IOS_XCODE_VERSION       Xcode version to assume instead of asking xcodebuild (tests)
 #
 # Signing: a physical device needs a development team. With CODE_SIGN_STYLE=Automatic
 # and -allowProvisioningUpdates, xcodebuild signs in with the Apple account already
@@ -61,6 +62,16 @@ command -v python3 >/dev/null || fail "python3 is required."
 if [[ -z "${IOS_DEVICE_LIST_JSON:-}" ]]; then
   xcrun devicectl --version >/dev/null 2>&1 \
     || fail "xcrun devicectl is unavailable; install Xcode 15 or later and select it with xcode-select."
+fi
+
+# Refraction in the app icon is an iOS 27 setting: Xcode 26's actool crashes on it
+# ("attempt to insert nil object") long after the build starts, so stop here instead.
+icon_json="$project_dir/StarterApp/AppIcon.icon/icon.json"
+xcode_version="${IOS_XCODE_VERSION:-$(xcodebuild -version 2>/dev/null | awk 'NR == 1 { print $2 }')}"
+if [[ "$xcode_version" =~ ^[0-9]+ ]] && (( ${xcode_version%%.*} < 27 )) \
+  && [[ -f "$icon_json" ]] && grep -q '"refractivity"' "$icon_json"; then
+  fail "AppIcon.icon uses refraction, which needs Xcode 27; Xcode $xcode_version is selected. \
+Install Xcode 27 and select it with xcode-select, or remove refractivity from icon.json (docs/app-icon.md)."
 fi
 
 # 1. Manifest selection, matching the workflows' IOS_CONFIGURATION mapping.

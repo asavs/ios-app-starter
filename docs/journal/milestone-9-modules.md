@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-20 — Xcode 26.6 cannot compile the refraction icon locally
+
+- **Context:** Mac inner loop (`run-on-device.sh`, local simulator builds) after the icon changes in #76/#78. Xcode 26.6 (17F113), macOS 26.2. CI selects Xcode 27 and is unaffected.
+- **Symptom:** `actool` fails on `AppIcon.icon` with "Exception while running actool: attempt to insert nil object from objects[0]"; the pre-#76 icon compiles.
+- **Cause (confirmed by bisection):** the top-level `"features": ["refractivity"]`. Removing only that key, or that key and every group's `refractivity`, compiles; dropping `fill`, `lighting`, `blur-material`, `blend-mode-specializations` or `image-name-specializations`, or keeping any single group with the feature list, still crashes.
+- **Decision:** keep Apple's demo icon unchanged and make Xcode 27 the local minimum while an icon uses refraction. `run-on-device.sh` now checks the selected Xcode and stops before building with a message naming the fix (install Xcode 27, or remove refraction); dry-run tests cover both branches. Installing Xcode 27 on a Mac is a human step in `docs/human-steps.md`.
+- **Remaining uncertainty:** whether Xcode 27 still renders refraction if only the `features` key is removed was not tested, so stripping it is not offered as a silent fallback.
+
 ## 2026-10-20 — UI tests still flaked after #77: container hittability and field focus never turned true
 
 - **Context:** Task `ios-lwl`, reopened. After #77, `test (starter)` failed on PRs that changed no app or test code: PR #79 run [39508238953](https://github.com/asavs/ios-app-starter/actions/runs/39508238953) attempt 1 (`testOnboardingSteps` "The choice step should follow the welcome sheet", then `testSettingsScreen` "Failed to terminate"), and PR #78 run [39495442564](https://github.com/asavs/ios-app-starter/actions/runs/39495442564) attempt 1 (`testSettingsScreen` "did not take keyboard focus after 4 taps"). CI: Xcode 27.0, iOS 27.0. Locally: Xcode 26.6, iOS 26.5.
