@@ -20,3 +20,5 @@ mkdir -p "${IOS_PROJECT_DIR:-$repo_dir/StarterApp}"
 "$generator_dir/xcodegen/bin/xcodegen" generate \
   --spec "${IOS_PROJECT_SPEC:-$repo_dir/project.yml}" \
   --project "${IOS_PROJECT_DIR:-$repo_dir/StarterApp}"
+# XcodeGen also opens each local package as a folder, which Xcode 27.2 rejects.
+python3 "$repo_dir/scripts/drop-package-folder-refs.py" "${IOS_PROJECT_DIR:-$repo_dir/StarterApp}/StarterApp.xcodeproj"
