@@ -59,6 +59,9 @@ def plan(inventories, selection='one-per-major', min_xcode_major=MIN_SWIFT6_XCOD
     lanes, skipped = {}, []
     for inventory in inventories:
         label = inventory.get('runnerLabel') or 'unknown'
+        if inventory.get('complete') is False:
+            skipped.append({'runner': label, 'runtime': 'unknown', 'reason': 'inventory incomplete; inspect diagnostics'})
+            continue
         candidates = toolchains(inventory, min_xcode_major)
         for runtime in inventory.get('runtimes', []):
             version = runtime['version']

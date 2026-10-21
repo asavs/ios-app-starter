@@ -6,13 +6,27 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import time
+
+DIAGNOSTICS = []
 
 
 def command(*args, env=None):
-    result = subprocess.run(args, capture_output=True, text=True, timeout=60, env=env)
-    if result.returncode:
-        raise ValueError('Native inventory command failed; inspect tool installation/services.')
-    return result.stdout.strip()
+    # Allow cold CoreSimulator startup more time, then retry once.
+    for attempt in range(1, 3):
+        try:
+            result = subprocess.run(args, capture_output=True, text=True, timeout=120, env=env)
+        except subprocess.TimeoutExpired:
+            reason = 'timeout after 120 seconds'
+        else:
+            if result.returncode == 0:
+                return result.stdout.strip()
+            reason = f'exit {result.returncode}'
+        # Keep command identity/status, never raw upstream output.
+        DIAGNOSTICS.append({'command': list(args), 'attempt': attempt, 'reason': reason})
+        if attempt < 2:
+            time.sleep(3)
+    raise ValueError('Native inventory command failed: ' + ' '.join(args) + '; ' + reason)
 
 
 def xcode_details():
@@ -41,15 +55,10 @@ def xcode_details():
     return sorted(seen.values(), key=lambda item: item['path'])
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--runner-label', default=os.environ.get('IOS_RUNNER_LABEL', 'local'),
-                        help='Hosted runner label this inventory describes, e.g. macos-14')
-    args = parser.parse_args()
+def collect(args):
     runtimes = json.loads(command('xcrun', 'simctl', 'list', 'runtimes', '--json'))['runtimes']
     devices = json.loads(command('xcrun', 'simctl', 'list', 'devices', 'available', '--json'))['devices']
-    report = {'schemaVersion': 2, 'commit': os.environ.get('GITHUB_SHA', 'local'),
+    report = {'schemaVersion': 2, 'complete': True, 'diagnostics': DIAGNOSTICS, 'commit': os.environ.get('GITHUB_SHA', 'local'),
               'runner': os.environ.get('RUNNER_OS', 'local'),
               'runnerLabel': args.runner_label,
               'architecture': command('uname', '-m'),
@@ -83,8 +92,22 @@ def main():
             output.write(content)
 
 
-if __name__ == '__main__':
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--runner-label', default=os.environ.get('IOS_RUNNER_LABEL', 'local'),
+                        help='Hosted runner label this inventory describes, e.g. macos-14')
+    args = parser.parse_args()
+    DIAGNOSTICS.clear()
     try:
-        main()
-    except (OSError, ValueError, KeyError, subprocess.TimeoutExpired):
-        raise SystemExit('Native inventory incomplete; no coverage claim established.')
+        collect(args)
+    except (OSError, ValueError, KeyError, subprocess.TimeoutExpired) as error:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps({'schemaVersion': 2, 'runnerLabel': args.runner_label,
+                                          'complete': False, 'diagnostics': DIAGNOSTICS,
+                                          'failureType': type(error).__name__}, indent=2) + '\n', encoding='utf-8')
+        raise SystemExit('Native inventory incomplete; inspect retained diagnostics; no coverage claim established.')
+
+
+if __name__ == '__main__':
+    main()

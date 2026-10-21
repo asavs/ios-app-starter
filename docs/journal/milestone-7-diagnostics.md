@@ -2,6 +2,14 @@
 
 Device failure diagnostics, consolidated CI evidence, targeted iteration, tester feedback, the OS runtime inventory and the status reconciliation and master plan records, 2026-10-12 onward. Newest entries first; the index is [docs/setup-experience.md](../setup-experience.md).
 
+## 2026-10-21 ? Compatibility runner drift and inventory diagnostics
+
+- **Context:** [Compatibility run 39644462624](https://github.com/asavs/ios-app-starter/actions/runs/39644462624), commit `734fa21`, planned an Xcode 27.2 beta path absent on its executing hosted runner. The iOS 26 lane stopped at native inventory after about one minute; a timeout is suspected, not confirmed. Its artifact contained only the lane outcome.
+- **Fix:** Resolve the exact planned Xcode version, build and SDK on the executing runner, allowing a relocated path but rejecting upgrades or replacements. Retain `toolchain-resolution.json` on failure. Required Xcode 27.0 checks are unchanged. Native inventory retries failed commands once with a 120-second allowance and retains command/status diagnostics without upstream output. Failed inventories are uploaded and excluded from planning.
+- **Verification:** The full portable suite passed 174 tests (10 platform skips); seventeen compatibility tests pass on Windows, covering path relocation, identity drift, timeout recovery, bounded failure, retained diagnostics and incomplete inventories. Required PR checks remain the merge gate.
+- **Remaining:** A fresh hosted matrix is needed to establish current runtime coverage. Portable tests establish no new runtime coverage; a missing exact toolchain fails with a request to rerun inventory and planning.
+
+
 ## 2026-10-16 — Compatibility matrix passes on iOS 17.0.1 through 27.0; milestone 7 complete
 
 - **Run:** First `main` dispatch of `ios-compatibility.yml` after PR #28 merged, [run 38974328806](https://github.com/asavs/ios-app-starter/actions/runs/38974328806), `configuration=starter`, `selection=one-per-major`. Inventories on `xcode-27` (18s), `macos-15` (1m22s) and `macos-14` (51s); plan 6s; lanes iOS 17.0.1 (7m24s) and 18.1 (4m50s) on `macos-14`, 26.0.1 (6m43s) on `macos-15`, 27.0 (9m02s) on `xcode-27`; report 9s. Wall clock 21m01s, most of it runner queueing between stages.
