@@ -8,7 +8,7 @@ Entries for the module library mechanism, the first-round modules, their lanes a
 - **Symptom (confirmed):** All six UI tests passed in both lanes, then `check-built-app.py` failed because `ITSAppUsesNonExemptEncryption` was absent from the generated app `Info.plist`, even though `project.yml` declares it.
 - **Cause (observed):** Xcode 16.2's generated plist omitted the setting. The reason it does not propagate was not independently confirmed.
 - **Fix:** The compatibility workflow passes its planned Xcode version to the checker. Only when Xcode 16.2 omits the key, the identity/minimum-OS check continues and explicitly records the encryption value as unverified. A present value must still be `false`; all other toolchains still require it. The report does not claim a value that the built app did not contain.
-- **Verification:** Pending hosted compatibility workflow execution. No Xcode build was run on Windows.
+- **Verification (confirmed):** PR [#91](https://github.com/asavs/ios-app-starter/pull/91) merged. Hosted compatibility run [39816682112](https://github.com/asavs/ios-app-starter/actions/runs/39816682112) passed the iOS 17.0.1 lane on `macos-14` with Xcode 16.2 / SDK 18.2: 6/6 tests passed and built-app identity/minimum-OS verification passed. As designed, the report omitted the absent encryption key and did not claim it was verified. No Xcode build was run on Windows.
 - **Remaining uncertainty:** Confirm whether a source `Info.plist` can make Xcode 16.2 include the key without disrupting XcodeGen settings; the narrow exception keeps those runtime lanes usable while preserving strict verification elsewhere.
 
 ## 2026-10-21 — Xcode 27.2 rejects XcodeGen's folder reference beside the local module package
