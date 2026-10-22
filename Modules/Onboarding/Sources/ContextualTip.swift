@@ -36,8 +36,17 @@ public struct ContextualTip: Tip {
 
     public var image: Image? { systemImage.map { Image(systemName: $0) } }
 
+    /// Never true: the rule that keeps `placeholder` hidden.
+    @Parameter(.transient) static var showsPlaceholder: Bool = false
+
+    /// Anchors a popover modifier while no real tip is current; it never shows.
+    static let placeholder = ContextualTip(id: "contextualTip.placeholder", title: "")
+
     public var rules: [Rule] {
-        #Rule(Self.$isEligible) { $0 == true }
+        if id == Self.placeholder.id {
+            return [#Rule(Self.$showsPlaceholder) { $0 == true }]
+        }
+        return [#Rule(Self.$isEligible) { $0 == true }]
     }
 
     public var options: [any TipOption] {
@@ -50,12 +59,12 @@ public extension View {
     @ViewBuilder func contextualTip(_ tip: ContextualTip?, arrowEdge: Edge = .top) -> some View {
         if #available(iOS 26, macOS 26, *) {
             popoverTip(tip, arrowEdge: arrowEdge)
-        } else if let tip {
+        } else {
             // Before iOS 26 the SDK's optional-tip overloads are gated per release, and the compiler
             // picks the iOS 26 one; the generic overload for a concrete tip covers iOS 17 onward.
-            popoverTip(tip, arrowEdge: arrowEdge)
-        } else {
-            self
+            // A placeholder that never shows stands in for `nil`, so the view keeps its identity
+            // and its popover anchor when a sequence moves on to this tip.
+            popoverTip(tip ?? .placeholder, arrowEdge: arrowEdge)
         }
     }
 

@@ -289,6 +289,14 @@ struct OnboardingTests {
         #expect(sequence.currentTip(id: "missing") == nil)
     }
 
+    @Test func tipSequenceWithoutGroupShowsTheFirstTipNotYetClosed() {
+        let tips = ["first", "second", "third"].map { ContextualTip(id: $0, title: $0) }
+        #expect(ContextualTipSequence.firstTip(of: tips, skipping: [])?.id == "first")
+        #expect(ContextualTipSequence.firstTip(of: tips, skipping: ["first"])?.id == "second")
+        #expect(ContextualTipSequence.firstTip(of: tips, skipping: ["first", "third"])?.id == "second")
+        #expect(ContextualTipSequence.firstTip(of: tips, skipping: ["first", "second", "third"]) == nil)
+    }
+
     @Test func tipResetIsRequestedForTheNextLaunch() throws {
         let defaults = try isolatedDefaults()
         #expect(ContextualTips.resetKey == "tips.reset")
