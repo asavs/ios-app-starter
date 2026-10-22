@@ -13,6 +13,12 @@ def verified(result, status):
 
 
 def lane_outcome(lane, report_root):
+    resolution = report_root / 'toolchain-resolution.json'
+    if resolution.is_file():
+        resolved = json.loads(resolution.read_text(encoding='utf-8'))
+        actual = resolved.get('executing_plan')
+        if actual and actual['lane'] == lane['lane'] and actual['runtime_version'] == lane['runtime_version']:
+            lane = dict(actual, discovery_plan=lane)
     runs = sorted(report_root.glob('run.*'))
     record = dict(lane, status='unverified', exit_status=None, total=None, passed=None, failed=None, skipped=None)
     if len(runs) != 1:
@@ -60,7 +66,7 @@ def summary(report, run_url=''):
              '| Runtime | Device | Xcode / SDK | Runner | Status | Tests (total/passed/failed/skipped) | Exit |', '|---|---|---|---|---|---|---|']
     for row in report['lanes']:
         counts = '/'.join('-' if row.get(key) is None else str(row[key]) for key in ('total', 'passed', 'failed', 'skipped'))
-        lines.append(f"| {row['runtime_name']} ({row['runtime_version']}) | {row['device']} | {row['xcode_version']} / {row['sdk']} | "
+        lines.append(f"| {row['runtime_name']} ({row['runtime_version']}) | {row['device']} | {row['xcode_version']} ({row.get('xcode_build', 'unknown')}) / {row['sdk']} | "
                      f"`{row['runner']}` | **{row['status']}** | {counts} | {'-' if row.get('exit_status') is None else row['exit_status']} |")
     lines += ['', 'Simulator results verify UI and logic on the named runtime and toolchain, not physical devices. '
               'A lane marked unverified or missing establishes nothing.']

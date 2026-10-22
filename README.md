@@ -157,7 +157,7 @@ Required pull-request checks test iOS 27.0 only. The manual and weekly **iOS com
 gh workflow run ios-compatibility.yml --ref main --field configuration=starter --field selection=one-per-major
 ```
 
-Use `selection=all` for every available runtime or `minimum` for the lowest one. Download **compatibility-report** for the table, or an individual **ios-compat-starter-ios-17-0-1** style artifact for that lane's logs. Compatibility is claimed only for runtimes whose lane passed; a passing simulator lane verifies the smoke test on that runtime and toolchain, not physical-device behavior.
+Use `selection=all` for every available runtime or `minimum` for the lowest one. Download **compatibility-report** for the table, or an individual **ios-compat-starter-ios-17-0-1** style artifact for that lane's logs. Each test job inventories its own runner and replans the requested runtime there before resolving an exact Xcode version/build/SDK. Reports preserve the discovery plan and record the executing toolchain, so mixed hosted-image rollouts do not require identical builds across jobs. Compatibility is claimed only for runtimes whose lane passed; a passing simulator lane verifies the smoke test on that runtime and toolchain, not physical-device behavior.
 
 ## Recommended repository settings
 

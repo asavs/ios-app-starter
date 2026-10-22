@@ -2,6 +2,14 @@
 
 Device failure diagnostics, consolidated CI evidence, targeted iteration, tester feedback, the OS runtime inventory and the status reconciliation and master plan records, 2026-10-12 onward. Newest entries first; the index is [docs/setup-experience.md](../setup-experience.md).
 
+## 2026-10-21 - Plan compatibility toolchains on the executing runner
+
+- **Symptom:** Hosted compatibility inventories and tests can land on different image revisions during a rollout. Discovery of one Xcode beta build then prevents an exact match on a test runner with another beta of the same version.
+- **Fix:** Keep cross-image discovery for runtime scheduling, then inventory and plan the requested runtime again inside its executing test job. Resolve that local plan by exact Xcode version/build/SDK before generation and testing. Missing runtimes, incomplete inventories and unusable toolchains still stop the lane; no runtime substitution occurs.
+- **Evidence:** Nineteen compatibility tests pass on Windows/Python 3.13, including a simulated beta-build rollout through resolution, environment export and coverage aggregation. Reports retain both discovery and executing plans, show the actual build, and upload the executing inventory even on failure.
+- **Remaining:** Portable regression tests establish no new simulator coverage. The next hosted matrix must establish current runtime/toolchain coverage; required Xcode 27.0 checks retain their separate pin.
+
+
 ## 2026-10-21 ? Compatibility runner drift and inventory diagnostics
 
 - **Context:** [Compatibility run 39644462624](https://github.com/asavs/ios-app-starter/actions/runs/39644462624), commit `734fa21`, planned an Xcode 27.2 beta path absent on its executing hosted runner. The iOS 26 lane stopped at native inventory after about one minute; a timeout is suspected, not confirmed. Its artifact contained only the lane outcome.

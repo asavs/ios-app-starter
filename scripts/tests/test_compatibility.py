@@ -119,6 +119,44 @@ class PlanTests(unittest.TestCase):
 
 
 class RunnerDriftTests(unittest.TestCase):
+    def test_local_plan_uses_executing_beta_and_records_actual_identity(self):
+        native = dict(MACOS_15, runnerLabel='xcode-27',
+                      xcodes=[dict(xcode('27.2', '27.2'), build='BETA2')],
+                      runtimes=[runtime('iOS 27.0', '27.0', ['iPhone 17'])])
+        requested = planner.plan([native])['include'][0]
+        requested = dict(requested, xcode_build='BETA3', xcode_path='/absent')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            reports = root / 'ios-test-results'
+            reports.mkdir()
+            (reports / 'executing-inventory.json').write_text(json.dumps(native))
+            env = dict(os.environ, RUNNER_TEMP=str(root), LANE_JSON=json.dumps(requested),
+                       GITHUB_ENV=str(root / 'env'))
+            with patch.dict(os.environ, env):
+                resolver.main()
+            resolution = json.loads((reports / 'toolchain-resolution.json').read_text())
+            self.assertEqual(resolution['planned']['xcode_build'], 'BETA3')
+            self.assertEqual(resolution['selected']['build'], 'BETA2')
+            self.assertIn('IOS_TEST_DESTINATION=' + requested['destination'], (root / 'env').read_text())
+            run = reports / 'run.test'
+            run.mkdir()
+            (run / 'exit-status.txt').write_text('0')
+            (run / 'results.json').write_text(json.dumps(dict(result='Passed', totalTestCount=1,
+                                                           passedTests=1, failedTests=0, skippedTests=0)))
+            record = reporter.lane_outcome(requested, reports)
+            self.assertEqual(record['xcode_build'], 'BETA2')
+            self.assertEqual(record['discovery_plan']['xcode_build'], 'BETA3')
+            self.assertEqual(record['status'], 'passed')
+            self.assertIn('BETA2', reporter.summary(reporter.aggregate({'include': [requested]}, [record])))
+
+    def test_local_plan_never_substitutes_runtime_or_incomplete_inventory(self):
+        requested = planner.plan([MACOS_15])['include'][0]
+        for native in (dict(MACOS_15, complete=False), dict(MACOS_15, runtimes=[]),
+                       dict(MACOS_15, runnerLabel='other'), dict(MACOS_15, xcodes=[])):
+            with self.assertRaises(ValueError):
+                resolver.local_lane(requested, native)
+
+
     def test_relocated_exact_toolchain_and_reject_upgrade_or_build_drift(self):
         lane = dict(xcode_path='/removed', xcode_version='27.0', xcode_build='TEST', sdk='27.0')
         exact = xcode('27.0', '27.0')
