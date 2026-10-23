@@ -164,7 +164,7 @@ class DryRunScriptTests(unittest.TestCase):
                if not key.startswith("IOS_")}
         env.update({"IOS_RUN_ON_DEVICE_DRY_RUN": "1", "IOS_DEVICE_LIST_JSON": str(devices_json),
                     "IOS_RUN_ON_DEVICE_OUTPUT_DIR": str(Path(directory) / "out"),
-                    "IOS_DEVELOPMENT_TEAM": "ABCDE12345"})
+                    "IOS_DEVELOPMENT_TEAM": "ABCDE12345", "IOS_XCODE_MAJOR": "27"})
         env.update(env_overrides)
         return subprocess.run(["bash", str(SCRIPT)], env=env, text=True, capture_output=True)
 
@@ -195,6 +195,12 @@ class DryRunScriptTests(unittest.TestCase):
         self.assertIn("project.yml", out)
         # Without a console the summary follows the launch command.
         self.assertLess(launch, out.index("run-on-device summary"))
+
+    def test_xcode_26_builds_without_the_app_icon(self):
+        result = self.run_script(payload(PHONE), IOS_XCODE_MAJOR="26")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("building without an app icon", result.stdout + result.stderr)
+        self.assertIn("DEVELOPMENT_TEAM=ABCDE12345 ASSETCATALOG_COMPILER_APPICON_NAME= build", result.stdout)
 
     def test_dry_run_console_and_registration_flags(self):
         result = self.run_script(payload(PHONE), IOS_DEVICE_CONSOLE="1", IOS_REGISTER_DEVICE="1",

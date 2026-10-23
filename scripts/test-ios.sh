@@ -23,13 +23,15 @@ PYMOD
 printf 'Enabled modules: %s\n' "${enabled_modules:-(unknown)}"
 export TEST_RUNNER_IOS_ENABLED_MODULES="$enabled_modules"
 
-# Xcode 16, which the compatibility lanes need for iOS 17 and 18 simulators, cannot read an Icon
-# Composer document and fails with "None of the input catalogs contained a matching ... app icon
-# set named AppIcon". Those lanes test behaviour, not the icon, so build them without one; the
-# iOS 17 fallback PNGs that users get come from Xcode 27's actool.
+# Only Xcode 27 compiles AppIcon.icon as Icon Composer 27 saves it: Xcode 16, which the lanes for
+# iOS 17 and 18 simulators need, cannot read an Icon Composer document at all ("None of the input
+# catalogs contained a matching ... app icon set named AppIcon"), and Xcode 26's actool crashes on its
+# top-level "features" list ("attempt to insert nil object"). Those lanes test behaviour, not the
+# icon, so build them without one; the icon users get, including the iOS 17 fallback PNGs, comes from
+# Xcode 27's actool.
 icon_settings=()
 xcode_major="$(xcodebuild -version 2>/dev/null | awk 'NR == 1 { split($2, v, "."); print v[1] }')"
-if [[ "$xcode_major" =~ ^[0-9]+$ ]] && (( xcode_major < 26 )); then
+if [[ "$xcode_major" =~ ^[0-9]+$ ]] && (( xcode_major < 27 )); then
   printf 'Xcode %s cannot compile AppIcon.icon; building without an app icon.\n' "$xcode_major"
   icon_settings=(ASSETCATALOG_COMPILER_APPICON_NAME=)
 fi
