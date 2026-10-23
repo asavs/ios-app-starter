@@ -196,6 +196,34 @@ class DryRunScriptTests(unittest.TestCase):
         # Without a console the summary follows the launch command.
         self.assertLess(launch, out.index("run-on-device summary"))
 
+    def test_device_tests_run_the_suite_and_remove_only_the_runner(self):
+        result = self.run_script(payload(PHONE), IOS_DEVICE_TESTS="1")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = result.stdout
+        self.assertIn("-skip-testing:StarterAppUITests/StarterAppUITestsLaunchTests", out)
+        self.assertIn("-resultBundlePath", out)
+        self.assertRegex(out, r"DEVELOPMENT_TEAM=ABCDE12345 .*test\n")
+        self.assertLess(out.index("xcodebuild"), out.index("devicectl device uninstall app"))
+        self.assertIn("StarterAppUITests-Runner", out)
+        # The Debug app stays: no install, launch or uninstall of the app itself.
+        self.assertNotIn("devicectl device install app", out)
+        self.assertNotIn("devicectl device process launch", out)
+        self.assertIn("run-on-device tests passed", out)
+
+    def test_test_on_device_wrapper_selects_the_test_mode(self):
+        directory = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, directory)
+        devices_json = Path(directory) / "devices.json"
+        devices_json.write_text(json.dumps(payload(PHONE)), encoding="utf-8")
+        env = {key: value for key, value in os.environ.items() if not key.startswith("IOS_")}
+        env.update({"IOS_RUN_ON_DEVICE_DRY_RUN": "1", "IOS_DEVICE_LIST_JSON": str(devices_json),
+                    "IOS_RUN_ON_DEVICE_OUTPUT_DIR": str(Path(directory) / "out"),
+                    "IOS_DEVELOPMENT_TEAM": "ABCDE12345", "IOS_XCODE_MAJOR": "27"})
+        result = subprocess.run(["bash", str(ROOT / "scripts/test-on-device.sh")], env=env,
+                                text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("run-on-device tests passed", result.stdout)
+
     def test_xcode_26_builds_without_the_app_icon(self):
         result = self.run_script(payload(PHONE), IOS_XCODE_MAJOR="26")
         self.assertEqual(result.returncode, 0, result.stderr)
