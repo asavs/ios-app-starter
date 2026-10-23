@@ -21,7 +21,8 @@ def read_config(path):
             raise ValueError("Exported display name is missing or contains control characters.")
         if not re.fullmatch(r"\d+(?:\.\d+)*", str(item.get("minimumIOS", ""))):
             raise ValueError("Exported deployment minimum is invalid.")
-    for key in ("bundleIdentifier", "teamIdentifier", "displayName", "minimumIOS"):
+    # The display name may differ: Debug builds carry DEV_DISPLAY_NAME, and signing uses Release.
+    for key in ("bundleIdentifier", "teamIdentifier", "minimumIOS"):
         if len({str(item[key]) for item in records}) != 1:
             raise ValueError(f"Debug and Release {key} values differ.")
     return next(item for item in records if item["configuration"] == "Release")

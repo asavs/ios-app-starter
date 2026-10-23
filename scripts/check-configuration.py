@@ -99,9 +99,15 @@ def check_manifest(manifest):
                           values.get(root_settings + ("DEVELOPMENT_TEAM",), "")))
     records = []
     for configuration in ("Debug", "Release"):
+        name = str(values.get(("targets", "StarterApp", "settings", "configs", configuration,
+                               "INFOPLIST_KEY_CFBundleDisplayName"), display_name))
+        # A per-configuration name may refer to another target setting, as Debug does with $(DEV_DISPLAY_NAME).
+        reference = re.fullmatch(r"\$\((\w+)\)", name)
+        if reference:
+            name = required(reference.group(1))
         records.append({
             "configuration": configuration,
-            "displayName": display_name,
+            "displayName": name,
             "bundleIdentifier": bundle_id,
             "teamIdentifier": team,
             "minimumIOS": str(minimum),

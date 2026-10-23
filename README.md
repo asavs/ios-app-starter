@@ -37,6 +37,7 @@ Edit the marked settings in `project.yml`, commit, and push. Actions regenerates
 | What to change | Location in `project.yml` | Example |
 |---|---|---|
 | Name shown on the Home Screen | `targets.StarterApp.settings.base.INFOPLIST_KEY_CFBundleDisplayName` | `"Pocket Notes"` |
+| Name of development (Debug) builds, so a phone install is told apart from TestFlight's | `targets.StarterApp.settings.base.DEV_DISPLAY_NAME` | `"Notes Dev"` |
 | App identifier | `targets.StarterApp.settings.base.PRODUCT_BUNDLE_IDENTIFIER` | `org.example.pocketnotes` |
 | Unit-test identifier | Same setting under `StarterAppTests` | `org.example.pocketnotes.tests` |
 | UI-test identifier | Same setting under `StarterAppUITests` | `org.example.pocketnotes.uitests` |
