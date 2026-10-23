@@ -17,20 +17,21 @@ SIGNING_SPEC.loader.exec_module(signing)
 
 class ManifestConfigurationTests(unittest.TestCase):
     def test_checked_in_manifests_export_the_selected_app_identity(self):
+        # (bundle identifier, Release display name, Debug display name, team)
         cases = {
-            "project.yml": ("com.example.StarterApp", "Starter App", ""),
-            "examples/pocket-notes.yml": ("org.example.pocketnotes", "Pocket Notes", ""),
+            "project.yml": ("com.example.StarterApp", "Starter App", "Starter Dev", ""),
+            "examples/pocket-notes.yml": ("org.example.pocketnotes", "Pocket Notes", "Notes Dev", ""),
             "examples/starter-app-demo.yml": (
-                "com.asaschaeffer.starterappdemo", "Starter App", "9L6Y9T3PPW"),
+                "com.asaschaeffer.starterappdemo", "Starter App", "Starter Dev", "9L6Y9T3PPW"),
         }
-        for manifest, expected in cases.items():
+        for manifest, (bundle, release_name, debug_name, team) in cases.items():
             with self.subTest(manifest=manifest):
                 records = configuration.check_manifest(ROOT / manifest)
                 self.assertEqual(len(records), 2)
-                self.assertEqual({record["configuration"] for record in records}, {"Debug", "Release"})
+                names = {record["configuration"]: record["displayName"] for record in records}
+                self.assertEqual(names, {"Debug": debug_name, "Release": release_name})
                 for record in records:
-                    self.assertEqual((record["bundleIdentifier"], record["displayName"],
-                                      record["teamIdentifier"]), expected)
+                    self.assertEqual((record["bundleIdentifier"], record["teamIdentifier"]), (bundle, team))
                     self.assertEqual(record["minimumIOS"], "17.0")
 
     def test_rejects_include_cycles(self):
@@ -61,6 +62,7 @@ class ManifestConfigurationTests(unittest.TestCase):
             app = signing.read_config(output)
         self.assertEqual(app["bundleIdentifier"], "com.asaschaeffer.starterappdemo")
         self.assertEqual(app["teamIdentifier"], "9L6Y9T3PPW")
+        self.assertEqual(app["displayName"], "Starter App", "Signing reads the Release name, not Debug's")
 
 
 if __name__ == "__main__":

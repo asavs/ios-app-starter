@@ -12,6 +12,7 @@ targets:
     settings:
       base:
         INFOPLIST_KEY_CFBundleDisplayName: "Pocket Notes"
+        DEV_DISPLAY_NAME: "Notes Dev"
         PRODUCT_BUNDLE_IDENTIFIER: org.example.pocketnotes
   StarterAppTests:
     settings:
