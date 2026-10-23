@@ -4,6 +4,9 @@ set -euo pipefail
 # Inner loop for a Mac with a phone attached: regenerate the project, build a
 # Debug app for one connected iPhone/iPad, install it with devicectl, launch
 # it, and optionally stream its console. No commit, no upload, no TestFlight.
+# With IOS_DEVICE_TESTS=1 (scripts/test-on-device.sh) it runs the unit and UI tests on the
+# phone instead, then uninstalls the UI test runner; the Debug app stays installed. Keep the
+# phone unlocked: a locked one fails with "Timed out while enabling automation mode".
 #
 # Environment:
 #   IOS_CONFIGURATION       starter | pocket-notes | starter-app-demo (manifest shortcut)
@@ -11,6 +14,7 @@ set -euo pipefail
 #   IOS_DEVICE              device name, identifier, or UDID when more than one phone is connected
 #   IOS_DEVELOPMENT_TEAM    10-character Apple Team ID; otherwise read from the generated project
 #   IOS_DEVICE_CONSOLE=1    attach the app's standard streams to this terminal until it exits
+#   IOS_DEVICE_TESTS=1      run the tests on the device instead of installing and launching
 #   IOS_REGISTER_DEVICE=1   also let xcodebuild register this device in the team's portal
 #   IOS_SIGNING_KEYCHAIN    keychain file whose certificates alone may sign this build; the user
 #                           keychain search list is narrowed to it for xcodebuild and restored after
@@ -46,6 +50,8 @@ project_dir="${IOS_PROJECT_DIR:-$repo_dir/StarterApp}"
 project="$project_dir/StarterApp.xcodeproj"
 derived="$out_dir/DerivedData"
 build_log="$out_dir/xcodebuild.log"
+device_tests="${IOS_DEVICE_TESTS:-0}"
+result_bundle="$out_dir/Tests.xcresult"
 mkdir -p "$out_dir"
 
 log() { printf 'run-on-device: %s\n' "$*"; }
@@ -137,8 +143,31 @@ build_cmd=(xcodebuild
   "${provisioning_args[@]}"
   CODE_SIGN_STYLE=Automatic
   "DEVELOPMENT_TEAM=$team"
-  ${icon_args[@]+"${icon_args[@]}"}
-  build)
+  ${icon_args[@]+"${icon_args[@]}"})
+if [[ "$device_tests" == "1" ]]; then
+  # Same exclusions as scripts/test-ios.sh: the launch measurements are not behaviour tests.
+  [[ "$dry_run" == "1" ]] || rm -rf "$result_bundle"
+  build_cmd+=(-resultBundlePath "$result_bundle"
+    -skip-testing:StarterAppUITests/StarterAppUITests/testLaunchPerformance
+    -skip-testing:StarterAppUITests/StarterAppUITestsLaunchTests
+    -parallel-testing-enabled NO
+    test)
+else
+  build_cmd+=(build)
+fi
+# The UI test runner (StarterAppUITests-Runner, a blank icon on the Home Screen) is only needed
+# while the tests run: remove it on every exit once a test run has started.
+runner="$derived/Build/Products/Debug-iphoneos/StarterAppUITests-Runner.app"
+remove_runner() {
+  if [[ "$device_tests" == "1" ]]; then
+    if [[ -d "$runner" ]]; then
+      run xcrun devicectl device uninstall app --device "$device_id" "$(python3 "$helper" bundle-id "$runner")" \
+        >/dev/null || log "warning: could not uninstall the UI test runner"
+    elif [[ "$dry_run" == "1" ]]; then
+      run xcrun devicectl device uninstall app --device "$device_id" '<StarterAppUITests-Runner bundle identifier>'
+    fi
+  fi
+}
 # Optionally narrow the user keychain search list to one keychain while xcodebuild signs, so
 # automatic signing cannot pick a same-team certificate whose key lives in another keychain.
 # The previous list is restored on every exit path, including a failed build.
@@ -161,9 +190,9 @@ if [[ -n "${IOS_SIGNING_KEYCHAIN:-}" ]]; then
     (( ${#saved_keychains[@]} )) || fail "could not read the user keychain search list"
   fi
   log "signing keychain: $IOS_SIGNING_KEYCHAIN (search list restored after the build)"
-  trap restore_keychains EXIT
   run security list-keychains -d user -s "$IOS_SIGNING_KEYCHAIN"
 fi
+trap 'restore_keychains; remove_runner' EXIT
 if [[ "$dry_run" == "1" ]]; then
   run "${build_cmd[@]}"
   log "build log would be written to $build_log"
@@ -177,6 +206,9 @@ else
   if [[ "$build_status" -eq 0 && "${pipeline_status[1]}" -ne 0 ]]; then
     build_status="${pipeline_status[1]}"
   fi
+  if [[ "$build_status" -ne 0 && "$device_tests" == "1" && -d "$result_bundle" ]]; then
+    fail "tests failed on $device_name (exit $build_status); results: $result_bundle, log: $build_log"
+  fi
   if [[ "$build_status" -ne 0 ]]; then
     fail "build failed (exit $build_status). Signing errors usually mean the team cannot provision \
 this bundle identifier or device, or that codesign cannot use the key from this session; see the \
@@ -184,7 +216,19 @@ header of this script and $build_log"
   fi
 fi
 restore_keychains
+remove_runner
 trap - EXIT
+if [[ "$device_tests" == "1" ]]; then
+  cat <<SUMMARY
+
+run-on-device tests passed
+  device:   $device_name ($device_model, iOS $device_os) $device_id
+  results:  $result_bundle
+  log:      $build_log
+  The Debug app stays installed; the UI test runner was removed.
+SUMMARY
+  exit 0
+fi
 
 # 6. Locate the device (.app) product and read its bundle identifier.
 app="$derived/Build/Products/Debug-iphoneos/StarterApp.app"
