@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-23 — The icon keeps Icon Composer's `features` list now that the Mac has Xcode 27
+
+- **Context:** Follow-up to "The icon's top-level `features` key is not needed on Xcode 27" below. The Mac moved to macOS Tahoe 26.7.1 and Xcode 27.1 (27A9275) from the App Store; Xcode 27 needs macOS 26.6 or later. CI still pins Xcode 27.0.
+- **Decision:** Keep `AppIcon.icon` exactly as Apple ships it and as Icon Composer 27 saves it, including the top-level `"features": ["refractivity"]`, instead of deleting the list after every save. `check-app-icon.py` no longer rejects it. Only Xcode 27 compiles the document as saved: `scripts/test-ios.sh` (the Xcode 16.2 and 26.2 compatibility lanes) and `scripts/run-on-device.sh` now build without an app icon on Xcode older than 27, and say so.
+- **Simulator runtimes (observed):** Xcode 27.1 installed two iOS runtimes. iOS 27.1 (24A94425) supports only the iPhone Duo, and `simctl create` refuses an iPhone 17 on it ("Incompatible device"). iOS 27.0 (24A434) supports every iPhone from 11 to 18 Pro Max. Use iOS 27.0 with an iPhone 17 locally, which matches CI's required lane.
+- **Verification:** On the Mac, Xcode 27.1 with iPhone 17 and iOS 27.0: `scripts/test-ios.sh` passed 5 of 5 UI tests and the unit tests. The built app has `CFBundleIconName = AppIcon`, an `Assets.car` and the fallback PNGs, and `actool` did not crash. `check-app-icon.py --require-render` rendered the icon with `ictool` 27.1.
+- **Remaining:** The iOS 26.0.1 compatibility lane (Xcode 26.2) now builds without an icon. That lane checks behaviour, not the icon.
+
 ## 2026-10-22 — Xcode 16.2 compatibility lanes omit the export-compliance plist key
 
 - **Context:** Compatibility run 39809923665; iOS 17.0.1 and 18.1 on Xcode 16.2 / iOS 18.2 SDK, `macos-14`.

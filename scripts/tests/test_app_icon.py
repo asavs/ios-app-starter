@@ -86,10 +86,10 @@ class AppIconTests(unittest.TestCase):
         with self.assertRaisesRegex(check_app_icon.IconError, '"appearance": "dark"'):
             check_app_icon.check_document(self.icon)
 
-    def test_top_level_features_list_is_reported(self):
+    def test_top_level_features_list_is_accepted(self):
+        # Icon Composer 27 writes it when a group uses refraction; Xcode 27 compiles the document as saved.
         self.write({**document(), "features": ["refractivity"]})
-        with self.assertRaisesRegex(check_app_icon.IconError, "remove the top-level \"features\" list \\(refractivity\\)"):
-            check_app_icon.check_document(self.icon)
+        check_app_icon.check_document(self.icon)
 
     def test_invalid_json_and_missing_groups_are_reported(self):
         (self.icon / "icon.json").write_text("{\"groups\": [}")

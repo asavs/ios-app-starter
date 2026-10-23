@@ -17,6 +17,7 @@ set -euo pipefail
 #   IOS_RUN_ON_DEVICE_DRY_RUN=1  print the commands that would run instead of running them
 #   IOS_DEVICE_LIST_JSON    reuse a saved `devicectl list devices --json-output` file (tests, previews)
 #   IOS_RUN_ON_DEVICE_OUTPUT_DIR  where logs and DerivedData go (default build/run-on-device, gitignored)
+#   IOS_XCODE_MAJOR         Xcode major version to assume instead of asking xcodebuild (tests)
 #
 # Signing: a physical device needs a development team. With CODE_SIGN_STYLE=Automatic
 # and -allowProvisioningUpdates, xcodebuild signs in with the Apple account already
@@ -119,6 +120,14 @@ log "team: $team (from $team_source)"
 #    physical device by UDID (see -showdestinations); devicectl uses its own identifier.
 provisioning_args=(-allowProvisioningUpdates)
 [[ "${IOS_REGISTER_DEVICE:-0}" == "1" ]] && provisioning_args+=(-allowProvisioningDeviceRegistration)
+# Only Xcode 27 compiles AppIcon.icon as Icon Composer 27 saves it; Xcode 26's actool crashes on
+# its "features" list long after the build starts. Older Xcodes build the app without an icon.
+icon_args=()
+xcode_major="${IOS_XCODE_MAJOR:-$(xcodebuild -version 2>/dev/null | awk 'NR == 1 { split($2, v, "."); print v[1] }')}"
+if [[ "$xcode_major" =~ ^[0-9]+$ ]] && (( xcode_major < 27 )); then
+  log "Xcode $xcode_major cannot compile AppIcon.icon; building without an app icon (install Xcode 27 for it)"
+  icon_args=(ASSETCATALOG_COMPILER_APPICON_NAME=)
+fi
 build_cmd=(xcodebuild
   -project "$project"
   -scheme StarterApp
@@ -128,6 +137,7 @@ build_cmd=(xcodebuild
   "${provisioning_args[@]}"
   CODE_SIGN_STYLE=Automatic
   "DEVELOPMENT_TEAM=$team"
+  ${icon_args[@]+"${icon_args[@]}"}
   build)
 # Optionally narrow the user keychain search list to one keychain while xcodebuild signs, so
 # automatic signing cannot pick a same-team certificate whose key lives in another keychain.
