@@ -6,7 +6,7 @@ Agreed 2026-10-16. This is the ordered list of everything the repository should 
 
 The repository is an iOS starter app. Someone building an app should start with onboarding, sign-in, database design and UX affordances already scaffolded and prunable, and spend their time on what makes the app different, without handling builds, signing or delivery. The owner builds apps from the template, then backpropagates the quintessential pieces into it as modules: onboarding, authentication, database design, UX elements, and later chat and AI features and the iMessage bridge.
 
-Builds on GitHub's runners, development from Windows, AI-automated setup, the iMessage bridge and AI model support are what make that possible from anywhere; they serve the app scaffold, not the other way round. Milestones 1–7 are that delivery plumbing. Optional Apple platforms matter because they are testable in GitHub-hosted runners, but they are not needed until the module library exists.
+Builds on GitHub's runners, development from Windows, AI-automated setup, the iMessage bridge and AI model support are what make that possible from anywhere, and they exist to serve the app scaffold. Milestones 1–7 are that delivery plumbing. Optional Apple platforms matter because they are testable in GitHub-hosted runners, but they are not needed until the module library exists.
 
 The test for that plumbing: a fresh agent on a fresh machine, Mac or Windows, takes a fresh clone to a template app on a phone, asking the human only for the steps Apple and GitHub force on humans. Every commit should make that run shorter, more reliable, or more useful to the agents who iterate afterwards: reading logs and bug reports, compiling the next build, and getting it onto the phone.
 
@@ -14,13 +14,13 @@ The test for that plumbing: a fresh agent on a fresh machine, Mac or Windows, ta
 
 ### 1. Put the multiagent board on a diet
 
-The coordination records had become a tax: multi-paragraph acceptance entries duplicated between two documents, a stale "current task" section, and open pull requests nobody tracked. The board exists so two agents on two machines can hand work to each other without re-reading everything.
+The coordination records had become costly to maintain: multi-paragraph acceptance entries duplicated between two documents, a stale "current task" section, and open pull requests nobody tracked. The board exists so two agents on two machines can hand work to each other without re-reading everything.
 
-- The status table at the top of the coordination document is the board. Each task gets one bullet per side: what was done, the run or artifact link, what remains. Not a page.
+- The status table at the top of the coordination document is the board. Each task gets one bullet per side, a line rather than a page, with what was done, the run or artifact link, and what remains.
 - Split the setup journal into `docs/journal/` by milestone, one file each, newest entries first. Keep the entry format from `AGENTS.md`; cut text that duplicates the board.
 - Windows acts as onboarding tester at step 7 and at milestone boundaries. Between those, the Mac side moves without waiting for cross-machine acceptance of documentation changes.
 - Every "done" claim links a run or an artifact. Keep that discipline, drop the paragraphs around it.
-- A handoff is complete when the other side can start without asking a question. Measure by whether it did.
+- A handoff is complete when the other side can start without asking a question; judge it by whether the other side did.
 
 ### 2. Clear the board this week
 
@@ -62,9 +62,9 @@ The development loop this produces, and what is required where:
 4. **On the phone when wanted:** a Mac uses `run-on-device`; Windows uses screenshots, then the ad hoc channel, then one TestFlight dispatch from `main` when a human or tester should step through it. The `apple-credentials` environment's main-only deployment rule is the gate; template users can add a required reviewer if they want per-run approval. Simulator and automated UI tests have passed by construction before any device step.
 5. **Back from the phone:** TestFlight feedback through the fixed reader becomes a sanitized issue draft.
 
-A scratch branch that is amended and force-pushed, then squash-merged, leaves no trace in history; the push is the unit GitHub understands, and the commit costs nothing.
+A scratch branch that is amended, force-pushed and then squash-merged leaves no trace in history. GitHub acts on pushes, so extra commits cost nothing.
 
-Nobody waits on CI, not even a small model. Auto-merge lets GitHub merge when required checks pass; `gh pr checks <n> --watch` or a background shell loop blocks for free when a result is needed in-session; the review command reads outcomes afterwards. The `main` ruleset with required checks is what makes auto-merge possible, so it is the first setting to add.
+Nobody waits on CI, including a small model. Auto-merge lets GitHub merge when required checks pass; `gh pr checks <n> --watch` or a background shell loop blocks for free when a result is needed in-session; the review command reads outcomes afterwards. The `main` ruleset with required checks is what makes auto-merge possible, so it is the first setting to add.
 
 ### 5. Module boundaries and app essentials, round one
 

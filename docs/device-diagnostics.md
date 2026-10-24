@@ -18,7 +18,7 @@ The manifest does not explicitly set `DEBUG_INFORMATION_FORMAT`. Confirm that th
 
 ### Pinned App Store Connect CLI
 
-The ignored `App-Store-Connect-CLI/` reference checkout is version **5.14.0**. Its documentation describes reads for TestFlight crash submissions/logs (`asc testflight crashes list|view|log`), tester feedback including screenshot URLs (`asc testflight feedback list|view`), and App Store Connect performance data (`asc performance overview|metrics list|view`). The documented crash filters include device model and OS version.
+The ignored `App-Store-Connect-CLI/` reference checkout is version 5.14.0. Its documentation describes reads for TestFlight crash submissions/logs (`asc testflight crashes list|view|log`), tester feedback including screenshot URLs (`asc testflight feedback list|view`), and App Store Connect performance data (`asc performance overview|metrics list|view`). The documented crash filters include device model and OS version.
 
 The reference checkout is not an integrated dependency. The starter uses a pinned release binary through reviewed wrappers; `scripts/apple-doctor.py` allows only narrow Apple setup reads. No crash, feedback or performance API call was made during the original command-documentation review. That review alone established no account access, role permissions, endpoint behavior, available data or supported template command. The fixed feedback reader was implemented and verified separately; see [tester feedback](tester-feedback.md).
 
