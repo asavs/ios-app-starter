@@ -49,7 +49,7 @@ The module follows Apple's onboarding guidance (fast, optional, skippable, never
 
 - `.welcome(WelcomeContent)`: the Stocks/Journal-style sheet, an icon (`.system` symbol or `.asset` image), a large title, an optional line and `WelcomeFeature` rows (symbol, title, detail), laid out by `WelcomeStepView`.
 - `.page(OnboardingPage)`: the classic tour card (symbol, title, message) laid out by `OnboardingPageView`. `OnboardingStep.pages(_:)` wraps an array, and the `pages:` initializers of the view and the gate still work.
-- `.choice(OnboardingChoice)`: one question with fixed answers, `.single` (a checkmark on the picked answer, as in a Settings list) or `.multiple` (a circle on every row that fills when picked, as in Mail and Photos selection), laid out by `ChoiceStepView`. Ask only what changes the product. `onAnswer` receives the answer, as option identifiers in option order (an option's identifier defaults to its title), every time it changes, so the host has it whether the user continues, swipes on or skips. `requiresAnswer: true` disables Continue and stops swiping at the step until something is picked; `initialSelection` preselects.
+- `.choice(OnboardingChoice)`: one question with fixed answers, `.single` (a checkmark on the picked answer, as in a Settings list) or `.multiple` (a circle on every row that fills when picked, as in Mail and Photos selection), laid out by `ChoiceStepView`. Ask only what changes the product. `onAnswer` receives the answer, as option identifiers in option order, every time it changes. Identifiers are required and never shown, so translating a title never changes a stored answer; `titles(for:)` turns an answer back into the options' titles for display, so the host has it whether the user continues, swipes on or skips. `requiresAnswer: true` disables Continue and stops swiping at the step until something is picked; `initialSelection` preselects.
 - `.permission(PermissionPrimer)`: the HIG pre-permission screen. It has exactly one button, labelled Continue (never Allow) and no Cancel, so Skip is hidden on it by default (`allowsSkip: false`); tapping Continue runs the primer's `PermissionRequesting` requester and moves on whatever the `PermissionOutcome`. `NotificationPermission` is the shipped requester; add your own for location, camera and the like. `PermissionOverride.resolve(real:)` swaps in a `FakePermission` when the launch argument `-onboarding.permissions granted` (or `denied`, `unavailable`) is present, which is how UI tests on the simulator avoid the system alert.
 - `.custom(id:content:)`: any SwiftUI view, with the flow's Skip and Continue around it. The sign-in module plugs in here; onboarding itself knows nothing about accounts.
 
@@ -65,8 +65,8 @@ The module follows Apple's onboarding guidance (fast, optional, skippable, never
         WindowGroup {
             ContentView().onboardingGate(steps: [
                 .welcome(WelcomeContent(icon: .asset("AppIconPreview"), title: "Welcome to Notes", features: [
-                    WelcomeFeature(systemImage: "square.and.pencil", title: "Write anywhere", detail: "Notes sync to every device."),
-                    WelcomeFeature(systemImage: "lock", title: "Private by default", detail: "Nothing leaves the device unless you share it."),
+                    WelcomeFeature(id: "write", systemImage: "square.and.pencil", title: "Write anywhere", detail: "Notes sync to every device."),
+                    WelcomeFeature(id: "private", systemImage: "lock", title: "Private by default", detail: "Nothing leaves the device unless you share it."),
                 ])),
                 .permission(PermissionPrimer(id: "notifications", systemImage: "bell.badge", title: "Reminders",
                                              message: "Get a nudge when a note is due.",
@@ -105,12 +105,23 @@ The template's welcome screen gains a gear button (`settings.open`) under `#if c
 
 **Keychain and signing in tests.** The simulator Keychain answers `errSecMissingEntitlement` (-34018) to a process without an `application-identifier` entitlement. An app built with `CODE_SIGNING_ALLOWED=NO` has none, so `scripts/test-ios.sh` signs the app ad hoc (`CODE_SIGN_IDENTITY=-`, no certificate or team needed) with `scripts/simulator-tests.entitlements`, which declares only that identifier; the UI test `testSettingsScreen` then stores and clears a secret in the real simulator Keychain. Xcode's package test host has no identifier either, so the module's three Keychain tests are `.enabled(if:)` a probe write succeeds and are reported as skipped on the package lane with that reason; the in-memory tests and the preference tests run everywhere, and the real Keychain path is the app UI test's job. Release and device builds are untouched: they get the identifier from the provisioning profile.
 
+## Localization
+
+Every piece of text a module shows can be translated.
+
+- **Text an app passes in** (onboarding titles and messages, tips, `SecureSettingRow`'s title, `EmptyStateView`) is a `LocalizedStringResource`. A string literal is looked up in the app's own string catalog (`StarterApp/StarterApp/Localizable.xcstrings` in the template), so `title: "Write anywhere"` needs no change; Xcode adds such literals to the app's catalog when it builds. Text held in a variable must be wrapped: `LocalizedStringResource(stringLiteral: name)` shows it as written, `LocalizedStringResource(String.LocalizationValue(key))` looks it up.
+- **Text a module owns** ("Skip", "Continue", "Choose one", "Save", "Appearance", the template's onboarding copy, …) is looked up in that module's `Modules/<Name>/Sources/Resources/Localizable.xcstrings` (`Package.swift` sets `defaultLocalization: "en"`). Module code always writes it as a literal directly followed by `bundle: .module`: `Text("Choose one", bundle: .module)`, `String(localized: "Not set.", bundle: .module)` or `LocalizedStringResource("Skip", bundle: .module)`. Public defaults are constants such as `OnboardingView.defaultSkipTitle`, because a public default argument cannot reference the internal `Bundle.module`.
+- **Identifiers are never text.** `OnboardingPage`, `WelcomeFeature` and `OnboardingChoice.Option` take a required `id`, so translations never change identity, accessibility identifiers or stored answers.
+- `python3 scripts/check-module-strings.py` fails when a module looks up a key its catalog lacks, or the catalog holds a key no source uses; `--update` rewrites the catalogs, adding new keys with their English value (an entry without one compiles to nothing). The required iOS lane runs the check. To translate, open a catalog in Xcode and add a language, or add `localizations.<language>` entries by hand.
+
+This changed the public API after 0.2.0 (`String` parameters became `LocalizedStringResource`; `id` became required), so it ships as 0.3.0.
+
 ## Add a module
 
 1. Create `Modules/<Name>/Sources/<Name>.swift` and `Modules/<Name>/Tests/<Name>Tests.swift` (Swift Testing).
 2. Add the product and both targets to `Package.swift`, with explicit `path:` values as the existing entries show.
 3. Enable it in `project.yml` under `targets.StarterApp.dependencies`, then `bash scripts/generate-project.sh` and commit the regenerated project.
-4. Use it in template sources only under `#if canImport(<Name>)`.
+4. Use it in template sources only under `#if canImport(<Name>)`. Show text as described under Localization: parameters as `LocalizedStringResource`, module text from `Sources/Resources/Localizable.xcstrings` (declare `resources: [.process("Resources")]`), then `python3 scripts/check-module-strings.py --update`.
 5. Run `python3 scripts/check-modules.py`, `bash scripts/test-module.sh <Name>` (simulator) and `bash scripts/test-ios.sh` (every UI test in `StarterAppUITests`; a module that adds something visible adds a UI test of its main path in the same pull request). Gate the test with `requireModuleUI("<Name>", appeared:_:)`: it skips when the module is disabled and fails when `test-ios.sh` reports the module enabled (`TEST_RUNNER_IOS_ENABLED_MODULES`, read from the generated project) but its UI did not appear, so a stale launch argument cannot hide behind a skip. `swift test` from the repository root is a fast host-side check when the module compiles on macOS.
 6. Open the pull request; the required iOS lane checks the layout and builds the app with the module.
 

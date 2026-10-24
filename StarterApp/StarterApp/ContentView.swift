@@ -29,7 +29,7 @@ struct ContentView: View {
 #endif
 #if canImport(Onboarding)
     @State private var isReplayingTour = false
-    /// The onboarding choice step's answer, joined for display.
+    /// The onboarding choice step's answer: option identifiers, comma separated.
     @AppStorage(ContentView.buildGoalsKey) private var buildGoals = ""
     /// Contextual tips in the order they show: one at a time, each next to its control, after onboarding.
     @State private var tips = ContextualTipSequence(ContentView.tips)
@@ -112,8 +112,17 @@ struct ContentView: View {
     static let buildGoalsKey = "starter.buildGoals"
 
     /// Stores the choice step's answer where the welcome screen reads it; an app would adapt its content instead.
+    /// The identifiers are stored, never the titles, so the answer survives a change of language.
     static func rememberBuildGoals(_ goals: [String]) {
-        UserDefaults.standard.set(goals.joined(separator: ", "), forKey: buildGoalsKey)
+        UserDefaults.standard.set(goals.joined(separator: ","), forKey: buildGoalsKey)
+    }
+
+    /// The stored answer as the picked options' titles in the current language, as a list ("A and B").
+    private var buildGoalTitles: String {
+        OnboardingStep.templateChoice()
+            .titles(for: buildGoals.split(separator: ",").map(String.init))
+            .map { String(localized: $0) }
+            .formatted(.list(type: .and))
     }
 
     /// The template's tips. The Settings tip comes first when that module is enabled.
@@ -158,15 +167,15 @@ struct ContentView: View {
 
 #if canImport(Settings) && canImport(Onboarding)
     /// A button whose effect only shows after a relaunch: once tapped it says so and turns inactive.
-    private func resetButton(_ title: String, done: String, isDone: Binding<Bool>,
+    private func resetButton(_ title: LocalizedStringResource, done: LocalizedStringResource, isDone: Binding<Bool>,
                              action: @escaping () -> Void) -> some View {
         Button {
             action()
             isDone.wrappedValue = true
-            AccessibilityNotification.Announcement(done).post()
+            AccessibilityNotification.Announcement(String(localized: done)).post()
         } label: {
             if isDone.wrappedValue {
-                Label(done, systemImage: "checkmark")
+                Label { Text(done) } icon: { Image(systemName: "checkmark") }
             } else {
                 Text(title)
             }
@@ -198,8 +207,8 @@ struct ContentView: View {
                 .accessibilityIdentifier("welcome.modulesVersion")
 #endif
 #if canImport(Onboarding)
-            if !buildGoals.isEmpty {
-                Text("Building: \(buildGoals)")
+            if !buildGoalTitles.isEmpty {
+                Text("Building: \(buildGoalTitles)")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("welcome.buildGoals")

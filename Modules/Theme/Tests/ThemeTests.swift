@@ -43,7 +43,7 @@ struct ThemeTests {
             let data = try JSONEncoder().encode(preference)
             #expect(try JSONDecoder().decode(AppearancePreference.self, from: data) == preference)
             #expect(preference.id == preference.rawValue)
-            #expect(!preference.title.isEmpty)
+            #expect(!String(localized: preference.title).isEmpty)
         }
     }
 

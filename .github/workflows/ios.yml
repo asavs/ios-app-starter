@@ -124,6 +124,9 @@ jobs:
           IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
         run: python3 scripts/check-modules.py --output "$IOS_TEST_OUTPUT_DIR/modules.json"
 
+      - name: Check module string catalogs
+        run: python3 scripts/check-module-strings.py
+
       - name: Check app icon document and render previews
         if: matrix.configuration == 'starter'
         env:

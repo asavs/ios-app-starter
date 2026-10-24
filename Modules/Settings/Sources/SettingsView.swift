@@ -31,25 +31,35 @@ public struct SettingsView<Extra: View>: View {
 
     public var body: some View {
         Form {
-            Section("Appearance") {
-                Picker("Appearance", selection: $appearance) {
+            Section {
+                Picker(selection: $appearance) {
                     ForEach(AppearancePreference.allCases) { preference in
                         Text(preference.title).tag(preference)
                     }
+                } label: {
+                    Text("Appearance", bundle: .module)
                 }
                 .pickerStyle(.segmented)
                 .accessibilityIdentifier("settings.appearance")
+            } header: {
+                Text("Appearance", bundle: .module)
             }
             extra
             if let version {
-                Section("About") {
-                    LabeledContent("Version", value: version)
-                        .font(theme.typography.body)
-                        .accessibilityIdentifier("settings.version")
+                Section {
+                    LabeledContent {
+                        Text(verbatim: version)
+                    } label: {
+                        Text("Version", bundle: .module)
+                    }
+                    .font(theme.typography.body)
+                    .accessibilityIdentifier("settings.version")
+                } header: {
+                    Text("About", bundle: .module)
                 }
             }
         }
-        .navigationTitle("Settings")
+        .navigationTitle(Text("Settings", bundle: .module))
     }
 }
 

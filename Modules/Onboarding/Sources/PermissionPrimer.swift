@@ -6,17 +6,20 @@ import Foundation
 public struct PermissionPrimer: Identifiable, Sendable {
     public var id: String
     public var systemImage: String
-    public var title: String
-    public var message: String
+    public var title: LocalizedStringResource
+    public var message: LocalizedStringResource
     /// Small print under the message; `nil` hides it.
-    public var footnote: String?
+    public var footnote: LocalizedStringResource?
     /// Label of the single button. Keep it "Continue" or "Next".
-    public var continueTitle: String
+    public var continueTitle: LocalizedStringResource
     public var requester: any PermissionRequesting
 
-    public init(id: String, systemImage: String, title: String, message: String,
-                footnote: String? = "You can change this anytime in Settings.",
-                continueTitle: String = "Continue", requester: any PermissionRequesting) {
+    /// Text parameters written as literals are looked up in the app's string catalog; the defaults
+    /// come from this module's.
+    public init(id: String, systemImage: String, title: LocalizedStringResource, message: LocalizedStringResource,
+                footnote: LocalizedStringResource? = PermissionPrimer.defaultFootnote,
+                continueTitle: LocalizedStringResource = PermissionPrimer.defaultContinueTitle,
+                requester: any PermissionRequesting) {
         self.id = id
         self.systemImage = systemImage
         self.title = title
@@ -25,6 +28,11 @@ public struct PermissionPrimer: Identifiable, Sendable {
         self.continueTitle = continueTitle
         self.requester = requester
     }
+
+    /// "You can change this anytime in Settings.", from this module's string catalog.
+    public static let defaultFootnote = LocalizedStringResource("You can change this anytime in Settings.", bundle: .module)
+    /// "Continue", from this module's string catalog.
+    public static let defaultContinueTitle = LocalizedStringResource("Continue", bundle: .module)
 
     /// The primer as a tour card, which is how `PermissionStepView` lays it out.
     public var page: OnboardingPage {

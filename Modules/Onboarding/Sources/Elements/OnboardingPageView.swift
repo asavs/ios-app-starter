@@ -11,7 +11,7 @@ public struct OnboardingPageView: View {
 
     /// A line under the card, such as a permission primer's "You can change this in Settings".
     struct Footnote {
-        let text: String
+        let text: LocalizedStringResource
         let identifier: String
     }
 

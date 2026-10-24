@@ -4,7 +4,7 @@ import Theme
 /// The flow's single call to action in the theme's prominent style (Liquid Glass on iOS 26 and later).
 /// While `isBusy` (a permission request in flight) it shows a spinner and ignores taps.
 struct OnboardingContinueButton: View {
-    let title: String
+    let title: LocalizedStringResource
     let isBusy: Bool
     let action: @MainActor () -> Void
 
@@ -22,8 +22,8 @@ struct OnboardingContinueButton: View {
         .prominentButtonStyle()
         .disabled(isBusy)
         .accessibilityIdentifier("onboarding.next")
-        .accessibilityLabel(title)
-        .accessibilityValue(isBusy ? "Waiting" : "") // Otherwise VoiceOver says only "dimmed" mid-request.
+        .accessibilityLabel(Text(title))
+        .accessibilityValue(isBusy ? Text("Waiting", bundle: .module) : Text(verbatim: "")) // Otherwise VoiceOver says only "dimmed" mid-request.
     }
 }
 

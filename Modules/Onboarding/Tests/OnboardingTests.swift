@@ -12,10 +12,22 @@ struct OnboardingTests {
         return defaults
     }
 
-    @Test func pagesDefaultTheirIdentityToTheTitle() {
-        let page = OnboardingPage(systemImage: "star", title: "Hello", message: "World")
-        #expect(page.id == "Hello")
-        #expect(OnboardingPage(id: "custom", systemImage: "star", title: "Hello", message: "World").id == "custom")
+    @Test func identityNeverDependsOnTheText() {
+        // Translating a title must not change identity, so identifiers are always explicit.
+        let page = OnboardingPage(id: "custom", systemImage: "star", title: "Hello", message: "World")
+        #expect(page.id == "custom")
+        #expect(page == OnboardingPage(id: "custom", systemImage: "star", title: "Hello", message: "World"))
+        #expect(page.hashValue == OnboardingPage(id: "custom", systemImage: "star", title: "Hi", message: "World").hashValue)
+    }
+
+    @Test func moduleTextComesFromTheModuleCatalog() {
+        // The catalog is compiled into the module's bundle and every built-in string resolves from it.
+        let missing = "__missing__"
+        for key in ["Skip", "Continue", "Get started", "Choose one", "Welcome to Starter App"] {
+            #expect(Bundle.module.localizedString(forKey: key, value: missing, table: nil) == key)
+        }
+        #expect(String(localized: OnboardingView.defaultSkipTitle) == "Skip")
+        #expect(String(localized: PermissionPrimer.defaultFootnote) == "You can change this anytime in Settings.")
     }
 
     @Test func templateDefaultsAreDistinctAndComplete() {
@@ -24,8 +36,8 @@ struct OnboardingTests {
         #expect(Set(pages.map(\.id)).count == pages.count)
         for page in pages {
             #expect(!page.systemImage.isEmpty)
-            #expect(!page.title.isEmpty)
-            #expect(!page.message.isEmpty)
+            #expect(!String(localized: page.title).isEmpty)
+            #expect(!String(localized: page.message).isEmpty)
         }
     }
 
@@ -110,12 +122,12 @@ struct OnboardingTests {
         #expect(Set(choice.options.map(\.id)).count == choice.options.count)
         guard case .page = steps[2].kind else { Issue.record("third step should be a tour card"); return }
         guard case .permission(let primer) = steps[3].kind else { Issue.record("last step should be the permission primer"); return }
-        #expect(primer.continueTitle == "Continue")
+        #expect(primer.continueTitle == PermissionPrimer.defaultContinueTitle)
         #expect(primer.page.id == primer.id)
     }
 
     @Test func skipShowsExceptOnPermissionStepsAndTheLastStep() {
-        let page = OnboardingStep.page(OnboardingPage(systemImage: "star", title: "Tour", message: "..."))
+        let page = OnboardingStep.page(OnboardingPage(id: "Tour", systemImage: "star", title: "Tour", message: "..."))
         let primer = PermissionPrimer(id: "notifications", systemImage: "bell", title: "Alerts", message: "...",
                                       requester: FakePermission())
         let permission = OnboardingStep.permission(primer)
@@ -140,14 +152,14 @@ struct OnboardingTests {
     }
 
     @Test func continueTitleComesFromTheStepThenThePrimerThenTheFlow() {
-        let page = OnboardingStep.page(OnboardingPage(systemImage: "star", title: "Tour", message: "..."))
-        let named = OnboardingStep.page(OnboardingPage(systemImage: "star", title: "Named", message: "..."),
+        let page = OnboardingStep.page(OnboardingPage(id: "Tour", systemImage: "star", title: "Tour", message: "..."))
+        let named = OnboardingStep.page(OnboardingPage(id: "Named", systemImage: "star", title: "Named", message: "..."),
                                         continueTitle: "Let's go")
         let primer = PermissionPrimer(id: "n", systemImage: "bell", title: "Alerts", message: "...",
                                       continueTitle: "Next", requester: FakePermission())
         let permission = OnboardingStep.permission(primer)
         func title(_ step: OnboardingStep?, isLast: Bool) -> String {
-            OnboardingView.buttonTitle(for: step, isLast: isLast, continueTitle: "Continue", finishTitle: "Done")
+            String(localized: OnboardingView.buttonTitle(for: step, isLast: isLast, continueTitle: "Continue", finishTitle: "Done"))
         }
         #expect(title(page, isLast: false) == "Continue")
         #expect(title(page, isLast: true) == "Done")
@@ -208,7 +220,7 @@ struct OnboardingTests {
     private func choice(_ mode: OnboardingChoice.Mode, requiresAnswer: Bool = false,
                         initialSelection: Set<String> = []) -> OnboardingChoice {
         OnboardingChoice(id: "goal", title: "Goal?", options: [.init(id: "a", title: "A"), .init(id: "b", title: "B"),
-                                                              .init(title: "Cee")],
+                                                              .init(id: "c", title: "Cee")],
                          mode: mode, requiresAnswer: requiresAnswer, initialSelection: initialSelection)
     }
 
@@ -225,13 +237,13 @@ struct OnboardingTests {
 
     @Test func multipleChoiceTogglesAndReportsInOptionOrder() {
         let multiple = choice(.multiple)
-        var selection = multiple.selection([], tapping: "Cee")
+        var selection = multiple.selection([], tapping: "c")
         selection = multiple.selection(selection, tapping: "a")
-        #expect(multiple.answer(for: selection) == ["a", "Cee"])
-        selection = multiple.selection(selection, tapping: "Cee")
+        #expect(multiple.answer(for: selection) == ["a", "c"])
+        #expect(multiple.titles(for: ["c", "a"]).map { String(localized: $0) } == ["A", "Cee"])
+        selection = multiple.selection(selection, tapping: "c")
         #expect(multiple.answer(for: selection) == ["a"])
         #expect(multiple.answer(for: ["stale", "a"]) == ["a"])
-        #expect(multiple.options[2].id == "Cee") // Option identity defaults to the title.
     }
 
     @Test func initialSelectionDropsUnknownOptionsAndKeepsOneForSingle() {
@@ -241,7 +253,7 @@ struct OnboardingTests {
 
     @Test func requiredChoiceBlocksContinueAndSwipesUntilAnswered() {
         let required = OnboardingStep.choice(choice(.single, requiresAnswer: true))
-        let tour = OnboardingStep.page(OnboardingPage(systemImage: "star", title: "Tour", message: "..."))
+        let tour = OnboardingStep.page(OnboardingPage(id: "Tour", systemImage: "star", title: "Tour", message: "..."))
         let steps = [tour, required, tour]
         #expect(!OnboardingView.canLeave(required, answers: [:]))
         #expect(OnboardingView.canLeave(required, answers: ["goal": ["a"]]))
@@ -255,7 +267,7 @@ struct OnboardingTests {
 
     @Test func initialAnswersComeFromEachChoiceStep() {
         let steps = [OnboardingStep.choice(choice(.multiple, initialSelection: ["b"])),
-                     OnboardingStep.page(OnboardingPage(systemImage: "star", title: "Tour", message: "..."))]
+                     OnboardingStep.page(OnboardingPage(id: "Tour", systemImage: "star", title: "Tour", message: "..."))]
         #expect(OnboardingView.initialAnswers(for: steps) == ["goal": ["b"]])
     }
 
@@ -264,8 +276,9 @@ struct OnboardingTests {
         let box = Box()
         let steps = OnboardingStep.template { box.answers.append($0) }
         guard case .choice(let choice) = steps[1].kind else { Issue.record("expected the choice step"); return }
-        choice.onAnswer(choice.answer(for: ["A product to sell"]))
-        #expect(box.answers == [["A product to sell"]])
+        choice.onAnswer(choice.answer(for: ["product"]))
+        #expect(box.answers == [["product"]])
+        #expect(choice.titles(for: ["product"]).map { String(localized: $0) } == ["A product to sell"])
     }
 
     @Test func contextualTipCarriesItsContent() {
@@ -290,7 +303,7 @@ struct OnboardingTests {
     }
 
     @Test func tipSequenceWithoutGroupShowsTheFirstTipNotYetClosed() {
-        let tips = ["first", "second", "third"].map { ContextualTip(id: $0, title: $0) }
+        let tips = ["first", "second", "third"].map { ContextualTip(id: $0, title: LocalizedStringResource(stringLiteral: $0)) }
         #expect(ContextualTipSequence.firstTip(of: tips, skipping: [])?.id == "first")
         #expect(ContextualTipSequence.firstTip(of: tips, skipping: ["first"])?.id == "second")
         #expect(ContextualTipSequence.firstTip(of: tips, skipping: ["first", "third"])?.id == "second")

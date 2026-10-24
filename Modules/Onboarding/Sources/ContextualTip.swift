@@ -15,13 +15,14 @@ public struct ContextualTip: Tip {
     @Parameter(.transient) static var isEligible: Bool = true
 
     public let id: String
-    public let titleText: String
-    public let messageText: String?
+    public let titleText: LocalizedStringResource
+    public let messageText: LocalizedStringResource?
     public let systemImage: String?
     /// How many times TipKit shows the tip before treating it as seen.
     public let maxDisplayCount: Int
 
-    public init(id: String, title: String, message: String? = nil, systemImage: String? = nil,
+    /// Text parameters written as literals are looked up in the app's string catalog.
+    public init(id: String, title: LocalizedStringResource, message: LocalizedStringResource? = nil, systemImage: String? = nil,
                 maxDisplayCount: Int = 3) {
         self.id = id
         self.titleText = title

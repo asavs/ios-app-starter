@@ -72,14 +72,14 @@ final class StarterAppUITests: XCTestCase {
         // a step is on screen when one of its leaf elements is hittable. Not the `onboarding.step.<id>`
         // container: XCUITest hit-tests a container at its centre, which on the choice step is empty
         // scroll view, and on the iOS 27 runner that check stayed false with the step fully on screen.
-        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.feature.Built for your phone")),
+        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.feature.phone")),
                       "The welcome sheet should be the first step")
         XCTAssertTrue(waitUntilHittable(skip), "Skip should be offered on the welcome sheet")
         attach(name: "onboarding-welcome")
         next.tap()
 
-        let tool = app.buttons["onboarding.choice.build.A tool for myself"]
-        let product = app.buttons["onboarding.choice.build.A product to sell"]
+        let tool = app.buttons["onboarding.choice.build.tool"]
+        let product = app.buttons["onboarding.choice.build.product"]
         XCTAssertTrue(waitUntilHittable(tool), "The choice step should follow the welcome sheet, its answers as buttons")
         tool.tap()
         product.tap()
@@ -140,15 +140,15 @@ final class StarterAppUITests: XCTestCase {
 
         let next = app.buttons["onboarding.next"]
         try requireModuleUI("Onboarding", appeared: next.waitForExistence(timeout: 10), "no Continue button on launch")
-        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.feature.Built for your phone")),
+        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.feature.phone")),
                       "The welcome sheet should start with its first row")
         attach(name: "large-welcome")
-        XCTAssertTrue(scroll(app, to: element(app, "onboarding.feature.Make it yours")),
+        XCTAssertTrue(scroll(app, to: element(app, "onboarding.feature.yours")),
                       "The welcome sheet should scroll to its last row")
         next.tap()
 
         attach(name: "large-choice")
-        XCTAssertTrue(scroll(app, to: app.buttons["onboarding.choice.build.A product to sell"]),
+        XCTAssertTrue(scroll(app, to: app.buttons["onboarding.choice.build.product"]),
                       "The choice step should follow and scroll to its last answer")
         next.tap()
 

@@ -9,16 +9,25 @@ import Foundation
 /// Continue button stays disabled, and the flow will not page past, until something is picked.
 public struct OnboardingChoice: Identifiable, Sendable {
     public struct Option: Identifiable, Hashable, Sendable {
+        /// Stable identity reported to the host and stored by it; never shown, so translating the
+        /// title never changes an answer.
         public var id: String
-        public var title: String
+        public var title: LocalizedStringResource
         /// SF Symbol name shown before the title; `nil` shows none.
         public var systemImage: String?
 
-        /// - Parameter id: Stable identity reported to the host; defaults to the title.
-        public init(id: String? = nil, title: String, systemImage: String? = nil) {
-            self.id = id ?? title
+        public init(id: String, title: LocalizedStringResource, systemImage: String? = nil) {
+            self.id = id
             self.title = title
             self.systemImage = systemImage
+        }
+
+        public static func == (lhs: Option, rhs: Option) -> Bool {
+            lhs.id == rhs.id && lhs.title == rhs.title && lhs.systemImage == rhs.systemImage
+        }
+
+        public func hash(into hasher: inout Hasher) {
+            hasher.combine(id) // Localized text is not Hashable.
         }
     }
 
@@ -30,9 +39,9 @@ public struct OnboardingChoice: Identifiable, Sendable {
     }
 
     public var id: String
-    public var title: String
+    public var title: LocalizedStringResource
     /// A line under the question; `nil` hides it.
-    public var message: String?
+    public var message: LocalizedStringResource?
     public var options: [Option]
     public var mode: Mode
     public var requiresAnswer: Bool
@@ -41,7 +50,9 @@ public struct OnboardingChoice: Identifiable, Sendable {
     /// Receives the answer, as option identifiers in option order, each time it changes.
     public var onAnswer: @MainActor @Sendable ([String]) -> Void
 
-    public init(id: String, title: String, message: String? = nil, options: [Option], mode: Mode = .single,
+    /// Text parameters written as literals are looked up in the app's string catalog.
+    public init(id: String, title: LocalizedStringResource, message: LocalizedStringResource? = nil,
+                options: [Option], mode: Mode = .single,
                 requiresAnswer: Bool = false, initialSelection: Set<String> = [],
                 onAnswer: @escaping @MainActor @Sendable ([String]) -> Void = { _ in }) {
         self.id = id
@@ -70,6 +81,11 @@ public struct OnboardingChoice: Identifiable, Sendable {
     /// The selection as reported to the host: known identifiers only, in option order.
     public func answer(for selection: Set<String>) -> [String] {
         options.map(\.id).filter(selection.contains)
+    }
+
+    /// The titles of an answer's options, in option order, for showing what the user picked.
+    public func titles(for answer: [String]) -> [LocalizedStringResource] {
+        options.filter { answer.contains($0.id) }.map(\.title)
     }
 
     /// Whether the flow may move past this step with `selection`.

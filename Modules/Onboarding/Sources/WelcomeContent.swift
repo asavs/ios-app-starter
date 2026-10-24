@@ -11,15 +11,21 @@ public struct WelcomeContent: Sendable, Equatable, Hashable {
     }
 
     public var icon: Icon
-    public var title: String
-    public var message: String?
+    public var title: LocalizedStringResource
+    public var message: LocalizedStringResource?
     public var features: [WelcomeFeature]
 
-    public init(icon: Icon = .system("sparkles"), title: String, message: String? = nil,
+    /// Text parameters written as literals are looked up in the app's string catalog.
+    public init(icon: Icon = .system("sparkles"), title: LocalizedStringResource, message: LocalizedStringResource? = nil,
                 features: [WelcomeFeature] = []) {
         self.icon = icon
         self.title = title
         self.message = message
         self.features = features
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(icon) // Localized text is not Hashable.
+        hasher.combine(features)
     }
 }

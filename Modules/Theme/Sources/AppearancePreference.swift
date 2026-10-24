@@ -21,12 +21,12 @@ public enum AppearancePreference: String, CaseIterable, Codable, Sendable, Ident
         }
     }
 
-    /// Short label for a picker row.
-    public var title: String {
+    /// Short label for a picker row, from this module's string catalog.
+    public var title: LocalizedStringResource {
         switch self {
-        case .system: "System"
-        case .light: "Light"
-        case .dark: "Dark"
+        case .system: LocalizedStringResource("System", bundle: .module)
+        case .light: LocalizedStringResource("Light", bundle: .module)
+        case .dark: LocalizedStringResource("Dark", bundle: .module)
         }
     }
 }
