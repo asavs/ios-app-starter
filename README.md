@@ -103,10 +103,10 @@ When XCTest produces a screen recording, the iOS and compatibility artifacts als
 For an intermittent terminate/relaunch failure, run **UI lifecycle diagnostics** with an app commit or tag and either `starter` or `pocket-notes`:
 
 ```bash
-gh workflow run ui-lifecycle-diagnostics.yml --ref main --field app_ref=main --field configuration=pocket-notes --field attempts=5
+gh workflow run ui-lifecycle-diagnostics.yml --ref main --field app_ref=main --field configuration=pocket-notes --field attempts=1
 ```
 
-This manual probe builds once on Xcode 27.0, then runs only the onboarding persistence UI test on a freshly erased CI simulator up to 3, 5 or 10 times. It stops at the first failure and stays red. Its artifact records separate app and tooling commits, per-attempt results, exported attachments, failure diagnostics and a host process timeline containing timestamps, load, and app PIDs/state/CPU without command arguments. Use a fixed app SHA to compare unchanged sources. Process absence is meaningful only if the timeline first observed that app running; a Home Screen recording alone cannot establish process exit. Passing repetitions show that the failure was not reproduced in that batch, rather than establishing a fix.
+This manual probe builds once on Xcode 27.0, then runs only the onboarding persistence UI test on a freshly erased CI simulator, once by default or up to 3, 5 or 10 times. It stops at the first failure and stays red. Start with one attempt: the build has an eight-minute limit, the test step twelve minutes, and simulator reset operations their own deadlines, so a slow batch may stop before reaching its maximum attempt count. Its `ui-lifecycle-<configuration>` artifact records separate app and tooling commits, phase markers, per-attempt results, exported attachments and a host process timeline containing timestamps, load, and app PIDs/state/CPU without command arguments. Lightweight evidence uploads first; complete result bundles upload separately as `ui-lifecycle-bundles-<configuration>`. Heavy native diagnostics are off by default: select `collect_diagnostics=true` for a dedicated follow-up after inspecting the lightweight evidence. Use a fixed app SHA to compare unchanged sources. Process absence is meaningful only if the timeline first observed that app running; a Home Screen recording alone cannot establish process exit. Passing repetitions show that the failure was not reproduced in that batch, rather than establishing a fix.
 
 ## Review CI evidence from Windows
 

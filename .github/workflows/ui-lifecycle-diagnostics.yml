@@ -16,8 +16,12 @@ on:
       attempts:
         description: Maximum cold runs; stop at the first failure
         type: choice
-        options: ['3', '5', '10']
-        default: '5'
+        options: ['1', '3', '5', '10']
+        default: '1'
+      collect_diagnostics:
+        description: Collect expensive native diagnostics on failure, after checking the lightweight evidence
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -25,13 +29,14 @@ permissions:
 jobs:
   diagnose:
     runs-on: xcode-27
-    timeout-minutes: 25
+    timeout-minutes: 30
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
       IOS_TEST_DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=27.0
       TEST_RUNNER_IOS_ENABLED_MODULES: Onboarding,Settings,TemplateVersion,Theme
       DIAG_CONFIGURATION: ${{ inputs.configuration }}
       DIAG_ATTEMPTS: ${{ inputs.attempts }}
+      DIAG_COLLECTION: ${{ inputs.collect_diagnostics && 'on-failure' || 'never' }}
       IOS_TEST_ARTIFACT_NAME: ui-lifecycle-${{ inputs.configuration }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -50,7 +55,7 @@ jobs:
           def output(*args):
               return subprocess.check_output(args, text=True).strip()
           assert os.environ['DIAG_CONFIGURATION'] in ('starter', 'pocket-notes')
-          assert os.environ['DIAG_ATTEMPTS'] in ('3', '5', '10')
+          assert os.environ['DIAG_ATTEMPTS'] in ('1', '3', '5', '10')
           version = output('xcodebuild', '-version')
           assert version.splitlines()[0] == 'Xcode 27.0', version
           sdk = output('xcrun', '--sdk', 'iphonesimulator', '--show-sdk-version')
@@ -65,6 +70,7 @@ jobs:
           context = {'appCommit': output('git', '-C', 'app', 'rev-parse', 'HEAD'),
                      'toolingCommit': output('git', '-C', 'tooling', 'rev-parse', 'HEAD'),
                      'configuration': os.environ['DIAG_CONFIGURATION'], 'maximumAttempts': int(os.environ['DIAG_ATTEMPTS']),
+                     'diagnosticCollection': os.environ['DIAG_COLLECTION'],
                      'xcode': version, 'simulatorSDK': sdk, 'runtime': '27.0',
                      'hostOS': output('sw_vers', '-productVersion'), 'hostBuild': output('sw_vers', '-buildVersion'),
                      'runnerImage': os.environ.get('ImageVersion')}
@@ -81,6 +87,7 @@ jobs:
           esac
           bash scripts/generate-project.sh
       - name: Build for testing without Apple credentials
+        timeout-minutes: 8
         shell: bash
         run: |
           xcrun simctl bootstatus "$LIFECYCLE_DEVICE" -b
@@ -90,6 +97,7 @@ jobs:
             CODE_SIGN_ENTITLEMENTS="$GITHUB_WORKSPACE/app/scripts/simulator-tests.entitlements" \
             build-for-testing 2>&1 | tee "$LIFECYCLE_REPORT_DIR/build.log"
       - name: Run isolated cold cases with process observations
+        timeout-minutes: 12
         shell: bash
         run: |
           test_run_files=("$RUNNER_TEMP/lifecycle-derived/Build/Products/"*.xctestrun)
@@ -105,37 +113,85 @@ jobs:
           ) > "$LIFECYCLE_REPORT_DIR/process-timeline.log" &
           monitor_pid=$!
           trap 'kill "$monitor_pid" 2>/dev/null || true' EXIT
+          bounded_simctl() {
+            python3 - "$@" <<'PY'
+          import subprocess, sys
+          try:
+              status = subprocess.run(['xcrun', 'simctl', *sys.argv[2:]], timeout=int(sys.argv[1])).returncode
+          except subprocess.TimeoutExpired:
+              print('Simulator operation exceeded its time limit', flush=True)
+              status = 124
+          sys.exit(status)
+          PY
+          }
           for ((attempt=1; attempt<=DIAG_ATTEMPTS; attempt++)); do
             report="$LIFECYCLE_REPORT_DIR/attempt-$attempt"
             mkdir -p "$report"
             date -u '+%Y-%m-%dT%H:%M:%SZ' > "$report/start.txt"
+            echo "Cold attempt $attempt/$DIAG_ATTEMPTS: resetting simulator"
+            echo simulator-reset > "$report/phase.txt"
             # This device exists only on the ephemeral CI runner. Reset it between cold cases.
-            xcrun simctl shutdown "$LIFECYCLE_DEVICE" 2>/dev/null || true
-            xcrun simctl erase "$LIFECYCLE_DEVICE"
-            xcrun simctl boot "$LIFECYCLE_DEVICE"
-            xcrun simctl bootstatus "$LIFECYCLE_DEVICE" -b
+            bounded_simctl 30 shutdown "$LIFECYCLE_DEVICE" >> "$report/simulator.log" 2>&1 || true
+            set +e
+            (
+              set -e
+              bounded_simctl 60 erase "$LIFECYCLE_DEVICE"
+              bounded_simctl 60 boot "$LIFECYCLE_DEVICE"
+              bounded_simctl 180 bootstatus "$LIFECYCLE_DEVICE" -b
+            ) >> "$report/simulator.log" 2>&1
+            reset_status=$?
+            set -e
+            if [ "$reset_status" -ne 0 ]; then
+              printf '%s\n' "$reset_status" > "$report/exit-status.txt"
+              cp "$report/simulator.log" "$report/xcodebuild.log"
+              python3 tooling/scripts/report-tests.py "$report" "$reset_status" "$IOS_TEST_DESTINATION"
+              exit "$reset_status"
+            fi
+            echo "Cold attempt $attempt/$DIAG_ATTEMPTS: starting XCTest"
+            echo testing > "$report/phase.txt"
             set +e
             xcodebuild -xctestrun "${test_run_files[0]}" -destination "id=$LIFECYCLE_DEVICE" \
               -only-testing:StarterAppUITests/StarterAppUITests/testOnboardingNotShownAgainAfterCompletion \
               -parallel-testing-enabled NO -test-timeouts-enabled YES \
               -default-test-execution-time-allowance 300 -maximum-test-execution-time-allowance 300 \
-              -collect-test-diagnostics on-failure -resultBundlePath "$report/Tests.xcresult" \
+              -collect-test-diagnostics "$DIAG_COLLECTION" -resultBundlePath "$report/Tests.xcresult" \
               test-without-building 2>&1 | tee "$report/xcodebuild.log"
             statuses=("${PIPESTATUS[@]}")
             set -e
             status="${statuses[0]}"
             if [ "$status" -eq 0 ] && [ "${statuses[1]}" -ne 0 ]; then status="${statuses[1]}"; fi
             printf '%s\n' "$status" > "$report/exit-status.txt"
+            echo exporting-results > "$report/phase.txt"
             xcrun xcresulttool get test-results summary --path "$report/Tests.xcresult" > "$report/results.json" 2> "$report/xcresulttool.log" || true
             xcrun xcresulttool get test-results tests --path "$report/Tests.xcresult" > "$report/tests.json" 2>> "$report/xcresulttool.log" || true
             xcrun xcresulttool export attachments --path "$report/Tests.xcresult" --output-path "$report/attachments" >> "$report/xcresulttool.log" 2>&1 || true
             # A failed case stops the probe and keeps the job red. It is never retried into a pass.
             python3 tooling/scripts/report-tests.py "$report" "$status" "$IOS_TEST_DESTINATION"
+            echo completed > "$report/phase.txt"
           done
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         if: always()
+        timeout-minutes: 3
         with:
           name: ui-lifecycle-${{ inputs.configuration }}
-          path: ${{ runner.temp }}/lifecycle-results
+          path: |
+            ${{ runner.temp }}/lifecycle-results/context.json
+            ${{ runner.temp }}/lifecycle-results/*.log
+            ${{ runner.temp }}/lifecycle-results/attempt-*/*.txt
+            ${{ runner.temp }}/lifecycle-results/attempt-*/*.log
+            ${{ runner.temp }}/lifecycle-results/attempt-*/*.json
+            ${{ runner.temp }}/lifecycle-results/attempt-*/*.md
+            ${{ runner.temp }}/lifecycle-results/attempt-*/attachments/*.json
+            ${{ runner.temp }}/lifecycle-results/attempt-*/attachments/*.png
+            ${{ runner.temp }}/lifecycle-results/attempt-*/attachments/*.mp4
+          retention-days: 14
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: always()
+        timeout-minutes: 3
+        with:
+          name: ui-lifecycle-bundles-${{ inputs.configuration }}
+          path: ${{ runner.temp }}/lifecycle-results/attempt-*/Tests.xcresult
+          compression-level: 0
           retention-days: 14
           if-no-files-found: warn
