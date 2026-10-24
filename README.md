@@ -100,6 +100,14 @@ Every test artifact contains `summary.md` and `failures.json` with the same fact
 
 When XCTest produces a screen recording, the iOS and compatibility artifacts also retain its exported `.mp4` under `attachments/`, viewable on Windows. Use controlled sample data in recorded UI tests, as with screenshots. If xcresult omits a failed XCTest's source location, the report recovers it from `xcodebuild.log` only when the test identity and failure message match one unambiguous location; existing locations and the run's failure status are preserved.
 
+For an intermittent terminate/relaunch failure, run **UI lifecycle diagnostics** with an app commit or tag and either `starter` or `pocket-notes`:
+
+```bash
+gh workflow run ui-lifecycle-diagnostics.yml --ref main --field app_ref=main --field configuration=pocket-notes --field attempts=5
+```
+
+This manual probe builds once on Xcode 27.0, then runs only the onboarding persistence UI test on a freshly erased CI simulator up to 3, 5 or 10 times. It stops at the first failure and stays red. Its artifact records separate app and tooling commits, per-attempt results, exported attachments, failure diagnostics and a host process timeline containing timestamps, load, and app PIDs/state/CPU without command arguments. Use a fixed app SHA to compare unchanged sources. Process absence is meaningful only if the timeline first observed that app running; a Home Screen recording alone cannot establish process exit. Passing repetitions show that the failure was not reproduced in that batch, rather than establishing a fix.
+
 ## Review CI evidence from Windows
 
 With GitHub CLI authenticated and the repository checked out, review a pull request's hosted checks and sanitized artifacts together:
