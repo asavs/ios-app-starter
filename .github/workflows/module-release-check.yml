@@ -1,0 +1,94 @@
+name: Module release check
+
+on:
+  push:
+    tags: ['[0-9]*.[0-9]*.[0-9]*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Published module version to consume from this repository
+        type: string
+        required: true
+        default: '0.2.0'
+
+permissions:
+  contents: read
+
+jobs:
+  consumer:
+    runs-on: xcode-27
+    timeout-minutes: 10
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
+      MODULE_VERSION: ${{ inputs.version || github.ref_name }}
+      MODULE_URL: https://github.com/${{ github.repository }}
+      MODULE_IDENTITY: ${{ github.event.repository.name }}
+    steps:
+      - name: Verify selected toolchain
+        run: |
+          xcodebuild -version
+          test "$(xcodebuild -version | head -n 1)" = 'Xcode 27.0'
+          test "$(xcrun --sdk iphoneos --show-sdk-version)" = '27.0'
+      - name: Create an isolated URL consumer
+        shell: python
+        run: |
+          import json, os, pathlib, re
+          version = os.environ['MODULE_VERSION']
+          if not re.fullmatch(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', version):
+              raise SystemExit('Choose a published semantic version without a v prefix.')
+          consumer = pathlib.Path(os.environ['RUNNER_TEMP']) / 'module-release-consumer'
+          sources = consumer / 'Sources' / 'ModuleReleaseConsumer'
+          sources.mkdir(parents=True)
+          products = ['TemplateVersion', 'Theme', 'Onboarding', 'Settings']
+          identity = json.dumps(os.environ['MODULE_IDENTITY'].lower())
+          dependencies = ',\n'.join(f'            .product(name: "{name}", package: {identity})' for name in products)
+          manifest = '''// swift-tools-version: 6.0
+          import PackageDescription
+          let package = Package(
+              name: "ModuleReleaseConsumer",
+              platforms: [.iOS(.v17)],
+              products: [.library(name: "ModuleReleaseConsumer", targets: ["ModuleReleaseConsumer"])],
+              dependencies: [.package(url: URL, exact: VERSION)],
+              targets: [.target(name: "ModuleReleaseConsumer", dependencies: [
+          DEPENDENCIES
+              ])]
+          )
+          '''.replace('URL', json.dumps(os.environ['MODULE_URL'])).replace('VERSION', json.dumps(version)).replace('DEPENDENCIES', dependencies)
+          (consumer / 'Package.swift').write_text(manifest)
+          (sources / 'Consumer.swift').write_text('\n'.join(f'import {name}' for name in products) + '\npublic let releasedVersion = TemplateVersion.modules\n')
+          with open(os.environ['GITHUB_ENV'], 'a') as env:
+              env.write(f'CONSUMER_DIR={consumer}\n')
+      - name: Resolve and build the published products for iOS
+        shell: bash
+        run: |
+          cd "$CONSUMER_DIR"
+          swift package resolve
+          xcodebuild -scheme ModuleReleaseConsumer -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/module-release-derived" CODE_SIGNING_ALLOWED=NO build
+      - name: Verify resolved version and report evidence
+        shell: python
+        run: |
+          import json, os, pathlib, re
+          consumer = pathlib.Path(os.environ['CONSUMER_DIR'])
+          resolved = json.loads((consumer / 'Package.resolved').read_text())
+          identity = os.environ['MODULE_IDENTITY'].lower()
+          pin, = [pin for pin in resolved['pins'] if pin['identity'] == identity]
+          assert pin['state']['version'] == os.environ['MODULE_VERSION'], 'Resolved the wrong version'
+          source = consumer / '.build' / 'checkouts' / os.environ['MODULE_IDENTITY'] / 'Modules/TemplateVersion/Sources/TemplateVersion.swift'
+          declared, = re.findall(r'public static let modules = "([^"]+)"', source.read_text())
+          assert declared == os.environ['MODULE_VERSION'], 'The tag and displayed module version differ'
+          report = {'status': 'passed', 'version': declared, 'revision': pin['state']['revision'],
+                    'products': ['TemplateVersion', 'Theme', 'Onboarding', 'Settings'],
+                    'destination': 'generic/platform=iOS Simulator', 'xcode': '27.0', 'sdk': '27.0'}
+          (consumer / 'release-check.json').write_text(json.dumps(report, indent=2) + '\n')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write(f"## Module release {declared}: passed\n\nAll four products built from URL revision `{pin['state']['revision']}` for the iOS 27 simulator SDK.\n")
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: always()
+        with:
+          name: module-release-check
+          path: |
+            ${{ runner.temp }}/module-release-consumer/Package.swift
+            ${{ runner.temp }}/module-release-consumer/Package.resolved
+            ${{ runner.temp }}/module-release-consumer/release-check.json
+          retention-days: 14
+          if-no-files-found: warn

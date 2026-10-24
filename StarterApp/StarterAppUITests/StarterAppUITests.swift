@@ -47,6 +47,11 @@ final class StarterAppUITests: XCTestCase {
         add(screenshot)
 
         XCTAssertTrue(visible, "Welcome text should be visible")
+        let moduleVersion = app.staticTexts["welcome.modulesVersion"]
+        if Self.enabledModules?.contains("TemplateVersion") == true || moduleVersion.exists {
+            XCTAssertTrue(moduleVersion.waitForExistence(timeout: 10), "The enabled module should report its version")
+            XCTAssertEqual(moduleVersion.label, "Modules 0.2.0", "The welcome screen should identify this module release")
+        }
     }
 
     /// The Onboarding module's main path: welcome sheet, the choice step (multiple select, answer shown on the

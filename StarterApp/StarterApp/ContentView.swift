@@ -195,6 +195,7 @@ struct ContentView: View {
             Text("Modules \(TemplateVersion.modules)")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+                .accessibilityIdentifier("welcome.modulesVersion")
 #endif
 #if canImport(Onboarding)
             if !buildGoals.isEmpty {
