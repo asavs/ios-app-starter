@@ -165,6 +165,9 @@ jobs:
             xcrun xcresulttool get test-results summary --path "$report/Tests.xcresult" > "$report/results.json" 2> "$report/xcresulttool.log" || true
             xcrun xcresulttool get test-results tests --path "$report/Tests.xcresult" > "$report/tests.json" 2>> "$report/xcresulttool.log" || true
             xcrun xcresulttool export attachments --path "$report/Tests.xcresult" --output-path "$report/attachments" >> "$report/xcresulttool.log" 2>&1 || true
+            if [ "$status" -ne 0 ]; then
+              xcrun xcresulttool export diagnostics --path "$report/Tests.xcresult" --output-path "$report/diagnostics" >> "$report/xcresulttool.log" 2>&1 || true
+            fi
             # A failed case stops the probe and keeps the job red. It is never retried into a pass.
             python3 tooling/scripts/report-tests.py "$report" "$status" "$IOS_TEST_DESTINATION"
             echo completed > "$report/phase.txt"
@@ -181,9 +184,8 @@ jobs:
             ${{ runner.temp }}/lifecycle-results/attempt-*/*.log
             ${{ runner.temp }}/lifecycle-results/attempt-*/*.json
             ${{ runner.temp }}/lifecycle-results/attempt-*/*.md
-            ${{ runner.temp }}/lifecycle-results/attempt-*/attachments/*.json
-            ${{ runner.temp }}/lifecycle-results/attempt-*/attachments/*.png
-            ${{ runner.temp }}/lifecycle-results/attempt-*/attachments/*.mp4
+            ${{ runner.temp }}/lifecycle-results/attempt-*/attachments/**
+            ${{ runner.temp }}/lifecycle-results/attempt-*/diagnostics/**/*.log
           retention-days: 14
           if-no-files-found: warn
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6

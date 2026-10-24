@@ -87,6 +87,14 @@ if ! xcrun xcresulttool export attachments \
   printf 'Attachment export unavailable; continuing.\n'
 fi
 
+# Export existing session logs after a failure; this does not enable expensive diagnostics collection.
+if [[ "$test_status" -ne 0 ]]; then
+  if ! xcrun xcresulttool export diagnostics --path "$report_dir/Tests.xcresult" \
+    --output-path "$report_dir/diagnostics" >> "$report_dir/xcresulttool.log" 2>&1; then
+    printf 'Diagnostic log export unavailable; preserving the failed result.\n'
+  fi
+fi
+
 report_status=0
 python3 "$repo_dir/scripts/report-tests.py" "$report_dir" "$test_status" "$destination" \
   || report_status=$?
