@@ -1,8 +1,10 @@
 # Agent onboarding runbook
 
-Follow this document in order to take a repository created from this template to the app running on the owner's iPhone through TestFlight. It assumes the default user: Windows, GitHub and an iPhone, with all Xcode work on GitHub-hosted macOS runners. A Mac works too; where a Mac changes a step, the step says so.
+Use this runbook to set up an app created from the starter and install it on the owner's iPhone through TestFlight. Follow the stages in order, keeping the app features the owner needs and removing the rest.
 
-Every command below exists on `main`. The file that implements it is named next to it. Where a step is still manual or a tool is not built yet, the step says so and names the master plan item or issue that will change it. Do not invent a replacement command.
+The steps work from Windows with GitHub and an iPhone. GitHub-hosted macOS runners handle Xcode builds, signing and uploads. A local Mac is optional; each step explains where it changes the process. You can build and test the app before setting up an Apple account.
+
+Every command below exists on `main`, with a link to its implementation. Manual steps and missing tools are marked with their tracking issue or plan. Do not invent a replacement command.
 
 Related references, read when a step points at them: [Apple setup](apple-setup.md), [TestFlight delivery](testflight-delivery.md), [tester feedback](tester-feedback.md), the [human-step ledger](human-steps.md), and the [setup journal](setup-experience.md).
 
@@ -42,7 +44,9 @@ Never ask for, or accept, passwords, two-factor codes typed into chat, private-k
 
 ## 2. Agent-runnable stages
 
-Each stage ends at a check you can read without opening the Actions UI. For any workflow run, `python scripts/review_ci.py --run <id>` (or `--latest`, `--pr <n>`) reports jobs and recognized sanitized evidence ([scripts/review_ci.py](../scripts/review_ci.py)). It downloads iOS test, compatibility, signing-preflight and TestFlight artifacts. Download the signed-archive validation report separately in Stage E; for Apple diagnostics, use [Reading Apple diagnostics artifacts](#reading-apple-diagnostics-artifacts). Do not poll CI from a model loop. Block in the shell with `gh run watch <id>` or `gh pr checks <n> --watch` (see AGENTS.md, "Do not wait on CI").
+Each stage ends at a check you can read without opening the Actions UI. For any workflow run, `python scripts/review_ci.py --run <id>` (or `--latest`, `--pr <n>`) reports jobs and recognized sanitized evidence ([scripts/review_ci.py](../scripts/review_ci.py)). It downloads iOS test, compatibility, signing-preflight and TestFlight artifacts. Download the signed-archive validation report separately in Stage E; for Apple diagnostics, use [Reading Apple diagnostics artifacts](#reading-apple-diagnostics-artifacts).
+
+See [the CI guide](ci.md#review-ci-evidence-from-any-machine) for how to read build and test evidence. Do not poll CI from a model loop. Block in the shell with `gh run watch <id>` or `gh pr checks <n> --watch` (see AGENTS.md, "Do not wait on CI").
 
 `python scripts/setup.py` records the setup's consent choices and completed stage checkpoints in the ignored `build/setup-state.json`. It resumes at the first unfinished stage, stops when consent is declined, and never stores credential values. Run `python scripts/setup.py --status` to inspect progress, `--grant <category>` or `--decline <category>` to update one consent choice, and `--complete <stage>` only after that stage's runbook checks pass. Use `--reset` to remove the checkpoint. The script guides and records progress; follow the stage instructions below to perform and verify the work.
 
@@ -57,7 +61,7 @@ Each stage ends at a check you can read without opening the Actions UI. For any 
    ```
 
    This enables auto-merge, secret scanning and push protection, restricts actions, and adds the `main` ruleset requiring `ios-gate` and `portable (...)`. After this, direct pushes to `main` are blocked for everyone.
-3. Set the app identity in `project.yml`: `INFOPLIST_KEY_CFBundleDisplayName`, `DEV_DISPLAY_NAME` (the shorter name Debug builds show, such as "Notes Dev"), and `PRODUCT_BUNDLE_IDENTIFIER` for the app and both test targets (README, "Customize the app"). Choose a reverse-DNS identifier the owner controls. `com.example.*` is fine for unsigned checks but cannot be signed. Leave `starter-app-demo` alone; it is the template's own registered app. Then give the app its own placeholder icon with `python scripts/personalize-icon.py` (random disc colours and arrangement on Apple's guide grid; [app icon](app-icon.md)) and commit `StarterApp/StarterApp/AppIcon.icon/icon.json` with the identity change.
+3. Set the app identity in `project.yml`: `INFOPLIST_KEY_CFBundleDisplayName`, `DEV_DISPLAY_NAME` (the shorter name Debug builds show, such as "Notes Dev"), and `PRODUCT_BUNDLE_IDENTIFIER` for the app and both test targets (see the [README](../README.md)). Choose a reverse-DNS identifier the owner controls. `com.example.*` is fine for unsigned checks but cannot be signed. Leave `starter-app-demo` alone; it is the template's own registered app. Then give the app its own placeholder icon with `python scripts/personalize-icon.py` (random disc colours and arrangement on Apple's guide grid; [app icon](app-icon.md)) and commit `StarterApp/StarterApp/AppIcon.icon/icon.json` with the identity change.
 4. Choose the enabled modules under `targets.StarterApp.dependencies` in `project.yml`: `TemplateVersion`, `Theme`, `Onboarding` and `Settings` are enabled initially. Onboarding and Settings require Theme. Keep only the products the app needs, following [Modules](modules.md); the app icon is a document and scripts, not a Swift package product. The initial unsigned check can use the copied local library. Before switching to a tagged URL dependency, verify that the selected release contains every enabled product: the initial `0.1.0` tag contains only TemplateVersion. Follow [Use the library from an app](modules.md#use-the-library-from-an-app) within the app's first release.
 5. Commit on a branch, open a pull request and enable auto-merge: `gh pr merge <n> --auto --merge`. The pull-request lane builds and tests `starter` on the simulator with no secrets ([.github/workflows/ios.yml](../.github/workflows/ios.yml)). Windows users edit the manifest; Actions regenerates the Xcode project before building.
 6. When a result is needed: `python scripts/review_ci.py --pr <n>`. Inspect the counts and reports for the enabled features; the lane runs the app's UI suite, including onboarding, theme and settings checks. The `ios-test-results-starter` artifact includes test screenshots and `failures.json` with the named failure and source location when available. The review command summarizes counts; download the artifact to read individual failures.
@@ -163,7 +167,7 @@ Ask the owner to install that exact version and build from TestFlight and descri
 - **What happened on my last run:** `python scripts/review_ci.py --latest` ([scripts/review_ci.py](../scripts/review_ci.py)).
 - **Mac with a phone attached:** `IOS_CONFIGURATION=starter IOS_DEVELOPMENT_TEAM=<team> bash scripts/run-on-device.sh`. Preview it first with `IOS_RUN_ON_DEVICE_DRY_RUN=1`. Works with Xcode 26 or 27 (only 27 shows the icon's refraction; see [app icon pitfalls](app-icon.md#pitfalls-we-hit)) and needs `device-install` and `apple-provisioning` ([scripts/run-on-device.sh](../scripts/run-on-device.sh)).
 - **Next build to the phone from any OS:** Stage G again from `main`.
-- **Tester feedback:** with `apple-read` consent, `python scripts/install-asc.py`, then `python scripts/read-testflight-feedback.py --account --asc build/tools/asc.exe --app-id <app-id> --private-report <path outside checkout>` ([scripts/read-testflight-feedback.py](../scripts/read-testflight-feedback.py)). Comments go only to the private report. Triage them with [tester-feedback.md](tester-feedback.md), and sanitize before filing an issue with that guide's issue template. Automatic generation of a sanitized issue draft is planned (master plan step 4). An ad hoc install channel that skips TestFlight is under evaluation in the same step.
+- **Tester feedback:** with `apple-read` consent, `python scripts/install-asc.py`, then `python scripts/read-testflight-feedback.py --account --asc build/tools/asc.exe --app-id <app-id> --private-report <path outside checkout>` ([scripts/read-testflight-feedback.py](../scripts/read-testflight-feedback.py)). Comments go only to the private report. Use [tester-feedback.md](tester-feedback.md) to review them and generate a sanitized issue draft. Review the draft privately before filing it. An ad hoc install channel that skips TestFlight is still under evaluation in the [master plan](master-plan.md).
 
 ### Reading Apple diagnostics artifacts
 
@@ -225,7 +229,7 @@ The agent never does any of the following, even with consent:
 
 ## 4. Failure table
 
-Mined from [the journal](setup-experience.md). Check here before diagnosing from scratch.
+Check these observed failures from [the journal](setup-experience.md) before starting a new investigation.
 
 | Symptom | Cause | What to do | Source |
 | --- | --- | --- | --- |
@@ -247,13 +251,13 @@ Mined from [the journal](setup-experience.md). Check here before diagnosing from
 | PowerShell prints replacement characters in diagnostic output. | Confirmed: Windows default stream encoding. | `$env:PYTHONUTF8='1'` and `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()`. | [milestone 5](journal/milestone-5-signing.md), 2026-10-09 PR #8 |
 | Diagnostics pass but membership and agreements stay "unverified". | Confirmed: the API diagnostics cannot check them. | Ask the Account Holder to confirm both in App Store Connect before the first upload. | [milestone 5](journal/milestone-5-signing.md), 2026-10-10 |
 
-## 5. Not built yet
+## 5. Setup limits and follow-ups
 
 | Gap | Today | Tracked by |
 | --- | --- | --- |
 | Consent choices and stage progress survive interruptions | `python scripts/setup.py` stores consent booleans and completed stages in ignored `build/setup-state.json`; individual tools still require their own action approval | Implemented for guided setup checkpoints; broader consent integration is not built |
 | Guided resumable setup | `python scripts/setup.py`; stage actions remain in this runbook | Master plan step 6, `scripts/setup.py`; issues #2, #3, #4, #17 |
 | Stored key role record | Stage C notes; role must be confirmed separately from secret-name checks | Issue #1 |
-| Feedback to sanitized issue draft | Manual triage with the issue template | Master plan step 4 |
+| Feedback to sanitized issue draft | The feedback reader can write a redacted draft; review it privately and confirm its build association before filing | [Tester feedback guide](tester-feedback.md#windows-review-and-triage) |
 | Ad hoc install without TestFlight | TestFlight only (Windows), `run-on-device` (Mac) | Master plan step 4, evaluation pending |
 | App record creation through the API | Human or browser agent | Issue #4 (verify whether the API permits it) |

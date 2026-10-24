@@ -1,10 +1,10 @@
 # Setup experience and troubleshooting journal
 
-This is a living handoff for people and agents setting up the starter. Read it alongside [the roadmap](../roadmap.md). Entries record actual observations; planned improvements are explicitly labeled. Do not paste credentials or unredacted logs here.
+Look here for problems encountered while setting up and developing apps from the starter, the fixes tried, and the evidence checked. Read it alongside [the roadmap](../roadmap.md). Entries distinguish observations from planned improvements. Do not paste credentials or unredacted logs here.
 
 ## How to maintain this journal
 
-Add dated entries as work proceeds. Explain the symptom, confirmed cause or uncertainty, fix, verification, and downstream implication. Keep reusable guidance in the README or focused setup guides and link to it from here. Keep the roadmap status accurate; do not claim completion while required checks are pending.
+Add dated entries as work proceeds. Describe the symptom, confirmed or suspected cause, fix, verification result, and what it means for future setup. Keep reusable instructions in the README or focused guides and link to them here. Keep the roadmap status accurate; do not claim completion while required checks are pending.
 
 ## Where the entries live
 

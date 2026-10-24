@@ -1,6 +1,6 @@
-# Tester feedback loop
+# Collect and act on tester feedback
 
-Use TestFlight for submission and the pinned CLI for repeatable agent review. Use the App Store Connect browser for visual inspection or API gaps. This starter needs no feedback SDK, backend or custom portal. This guide implements the agreed milestone 7 instructions; a controlled real submission and review are still pending.
+Ask testers to report what happened in your app through TestFlight. Review their comments with the pinned CLI or use App Store Connect for visual inspection and API gaps. Turn actionable reports into issues, then ask for a focused retest. The starter needs no feedback SDK, backend or custom portal. A real submission and review are recorded in the [diagnostics journal](journal/milestone-7-diagnostics.md).
 
 ## Prepare the test
 
@@ -10,9 +10,9 @@ Draft app-level Beta App Description and build-specific What to Test before ente
 
 Sample beta description:
 
-> A minimal native iPhone and iPad app demonstrating development from Windows, GitHub-hosted builds, and TestFlight delivery.
+> A starter app for iPhone and iPad with a welcome tour, appearance settings and reusable interface elements.
 
-Sample What to Test for the existing demo:
+Sample What to Test for a build with the demo's greeting and build caption:
 
 > Open the app and check that “Hello, world!” and “Built on GitHub Actions.” are visible. Tell us if either is missing or difficult to read. Include what you expected, what happened, steps to repeat it, and your TestFlight version/build, device model and iOS version. Use sample data in screenshots.
 
@@ -23,7 +23,7 @@ For future builds, replace these checks with the actual changed behavior and a f
 1. In TestFlight, select the installed app and note its version/build.
 2. Open the beta, perform the requested check, and use TestFlight's Send Beta Feedback route. TestFlight also supports feedback from a screenshot taken in the beta app. Follow the controls shown by the installed TestFlight/iOS version.
 3. For this acceptance exercise, submit a non-sensitive comment such as `Feedback loop check: both captions are visible.` Add the installed version/build and device OS. A screenshot is optional; crop unrelated personal information before sending.
-4. Tell the Windows reviewer when it was submitted and which build was used. Do not deliberately crash the app or invent a defect.
+4. Tell the reviewer when it was submitted and which build was used. Do not deliberately crash the app or invent a defect.
 
 TestFlight sends feedback to Apple and the app developer. Feedback can include comments, screenshots and crash context; see [Apple's TestFlight overview](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview/).
 
@@ -37,7 +37,11 @@ python scripts/read-testflight-feedback.py --app-id <existing-app-id>
 python scripts/read-testflight-feedback.py --account --asc build/tools/asc.exe --app-id <existing-app-id> --private-report "$env:TEMP\starter-feedback.json" --issue-draft "$env:TEMP\starter-feedback-issues.txt"
 ```
 
-The first read command is offline; the authenticated command retrieves paginated feedback and requests each item's related build. Use new output filenames in an existing controlled local directory. Console output contains only status/count/scope. Comments are saved only to the explicitly requested private report outside the checkout; email, screenshots/URLs and raw upstream output are excluded. `--issue-draft` writes one body per feedback item using the template below, with common emails, links, credential patterns, UUIDs and phone-like numbers redacted. It omits tester identities and marks version/build as unverified; confirm the build association and review the body privately for other identifying or sensitive details before filing. The draft is not sent to GitHub. Windows file ACLs remain the user's responsibility. `--build-id` accepts Apple's resource ID, not `1.9.1`; without it the scope is all accessible feedback for the app. No result proves installed-build identity unless its build association is verified. Denied/unknown/skipped reads are not empty-success results. The command performs no metadata edits, deletes, invitations or notifications.
+The first read command is offline. The authenticated command retrieves paginated feedback and requests each item's related build. Use new output filenames in an existing controlled local directory. Console output contains only status/count/scope. Comments are saved only to the requested private report outside the checkout; email, screenshots/URLs and raw upstream output are excluded.
+
+`--issue-draft` writes one body per feedback item using the template below. It redacts common emails, links, credential patterns, UUIDs and phone-like numbers. It omits tester identities and marks version/build as unverified. Confirm the build association and review the body privately for other identifying or sensitive details before filing. The draft is not sent to GitHub. Windows file ACLs remain the user's responsibility.
+
+`--build-id` accepts Apple's resource ID, not `1.9.1`. Without it, the command reads all accessible feedback for the app. No result proves installed-build identity unless its build association is verified. Denied/unknown/skipped reads are not empty-success results. The command performs no metadata edits, deletes, invitations or notifications.
 
 
 Open the intended app in App Store Connect → TestFlight → Feedback. Inspect the submission for the selected version/build and distinguish screenshot/comment feedback from crash feedback. If it is not visible, record the time checked, filters and access outcome; an empty page does not establish that submission failed. Use [Apple's feedback guide](https://developer.apple.com/help/app-store-connect/test-a-beta-version/view-tester-feedback/).
@@ -63,13 +67,13 @@ Do not include tester names, email addresses, device identifiers, access tokens,
 
 ## Fix and close the loop
 
-Assign the issue to the side best suited to the change: Mac for native implementation/reusable Xcode tooling, Windows for substantial Windows workflow defects. Implement a focused fix, verify with relevant existing checks, and request the specific retest in the next authorized build's What to Test notes. You approve delivery/account effects as required and perform iPhone acceptance. Record the retested version/build and result before closing the issue. A new build or passing CI alone does not prove the tester's defect resolved.
+Assign the issue to someone with the tools to investigate it: a Mac for native implementation or reusable Xcode tooling, Windows for substantial Windows workflow defects. Make a focused fix and run the relevant existing checks. Request a specific retest in the next authorized build's What to Test notes. The owner approves delivery/account effects as required and checks the result on the iPhone. Record the retested version/build and result before closing the issue. A new build or passing CI alone does not prove the tester's defect resolved.
 
 A no-defect acceptance submission can complete collection/review verification without manufacturing a fix. The repair/retest route remains documented until real actionable feedback exercises it. Add CLI automation, independent symbols or performance collection only if the review exposes a concrete need.
 
-## Windows handoff and development experience record
+## Record the review and time spent
 
-Read this guide from the pushed revision. With the owner, verify one controlled submission is visible for the exact installed build. Commit a sanitized journal entry with outcome, version/build, device OS, retrieval route, limitations and the next action; add a reviewed issue only if actionable.
+Use the guide from the revision being tested. With the owner, verify that a controlled submission is visible for the exact installed build. Commit a sanitized journal entry with the outcome, version/build, device OS, retrieval route, limitations and next action. Add a reviewed issue only if actionable.
 
 Alongside this task, track the whole development round:
 
@@ -78,4 +82,4 @@ Alongside this task, track the whole development round:
 - Commands attempted, authentication/browser friction, redundant reruns and repeated downloads.
 - Confirmed cause, suspected cause and remaining unknowns; propose a concrete improvement backed by the observation.
 
-The reporting and targeted-lane features passed functional acceptance. The owner reports approximately an hour per round; acceptable end-to-end development speed has not been established. Track that investigation in parallel without blocking this feedback exercise or claiming individual 7–8 minute runs explain the full wait.
+Earlier checks verified reporting and the single-app test workflow. The owner reported approximately an hour per development round; those checks did not establish acceptable overall speed. Track the full elapsed time without blocking feedback review or treating individual 7–8 minute runs as the whole wait.
