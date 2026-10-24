@@ -2,7 +2,7 @@
 
 The starter is a native iPhone and iPad app with the pieces most apps need already built and prunable: onboarding, theme and UX elements, settings with secure storage, and next sign-in and a database layer. Someone building an app starts from those and spends their time on what makes the app different, without handling builds, signing or delivery.
 
-Those are handled for them. GitHub-hosted macOS runners generate the Xcode project, build, test, sign and upload, so the app can be developed from Windows, from a Mac, or by an AI agent. That has these guarantees:
+GitHub-hosted macOS runners generate the Xcode project, build, test, sign and upload, so the app can be developed from Windows, from a Mac, or by an AI agent. As a result:
 
 - No separately managed Mac is required for development, signing or TestFlight delivery. A local Mac is an optional faster loop.
 - A persistent Mac is needed only for the optional live iMessage bridge.
@@ -10,13 +10,13 @@ Those are handled for them. GitHub-hosted macOS runners generate the Xcode proje
 
 ## Agreed defaults
 
-- Primary CI toolchain: **Xcode 27.0**, explicitly selected and verified on GitHub's **`xcode-27` public-preview runner**.
-- SDK: the selected Xcode's bundled **iOS 27 SDK**. SDK and minimum supported OS are separate settings.
-- Default app: **iPhone and iPad**, with **iOS/iPadOS 17** as the configurable minimum.
+- Primary CI toolchain: Xcode 27.0, explicitly selected and verified on GitHub's `xcode-27` public-preview runner.
+- SDK: the selected Xcode's bundled iOS 27 SDK. SDK and minimum supported OS are separate settings.
+- Default app: iPhone and iPad, with iOS/iPadOS 17 as the configurable minimum.
 - Optional platforms: Watch, native Mac, Apple TV, and Vision Pro, enabled individually with their own build and test checks.
 - Proposed optional-platform minimums: watchOS 10, macOS 14, tvOS 17, and visionOS 2. These become supported configurations only after their checks pass.
-- Simulator lanes: required pull-request and `main` checks run on **iOS 27.0**. The manual and weekly **iOS compatibility matrix** plans one lane per iOS runtime available on the hosted images, paired with a Swift 6-capable Xcode. Verified smoke coverage as of 2026-10-16: iOS 17.0.1, 18.1, 26.0.1 and 27.0 ([run 38974328806](https://github.com/asavs/ios-app-starter/actions/runs/38974328806)). Coverage claims name only runtimes whose lane passed.
-- Device delivery: manually triggered **TestFlight builds**. Apple Developer membership, account agreements, API access, and credential setup are part of onboarding.
+- Simulator lanes: required pull-request and `main` checks run on iOS 27.0. The manual and weekly iOS compatibility matrix plans one lane per iOS runtime available on the hosted images, paired with a Swift 6-capable Xcode. Verified smoke coverage as of 2026-10-16: iOS 17.0.1, 18.1, 26.0.1 and 27.0 ([run 38974328806](https://github.com/asavs/ios-app-starter/actions/runs/38974328806)). Coverage claims name only runtimes whose lane passed.
+- Device delivery: manually triggered TestFlight builds. Apple Developer membership, account agreements, API access, and credential setup are part of onboarding.
 - AI, backend services, authentication, storage, and messaging are independent capabilities. A basic app requires none of them.
 
 Xcode and project-generation tools are pinned and upgraded deliberately. The hosted runner image itself can change; validate required tools and runtimes and fail clearly if they are unavailable.

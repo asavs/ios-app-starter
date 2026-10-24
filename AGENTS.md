@@ -9,7 +9,7 @@ Read `roadmap.md`, `README.md`, `docs/ci.md` (how builds, tests and delivery run
 
 ## What the starter is
 
-An iOS starter app. Onboarding, theme and UX elements, settings with secure storage, and next sign-in and a database layer are scaffolded as modules an app keeps or deletes, so its builder works on what makes the app different. Builds, signing and delivery run on GitHub and are handled for them. Lead docs and decisions with the app; the pipeline serves it.
+An iOS starter app. Onboarding, theme and UX elements, settings with secure storage, and next sign-in and a database layer are scaffolded as modules an app keeps or deletes, so its builder can work on what makes the app different. Builds, signing and delivery run on GitHub without the builder handling them. Lead docs and decisions with the app; the pipeline exists to support it.
 
 ## Product constraints
 
