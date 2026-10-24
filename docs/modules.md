@@ -153,6 +153,8 @@ targets:
 
 Then delete `Package.swift` and `Modules/` from the app, or keep them under a different package name for app-local modules. Xcode writes `StarterApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` for a URL dependency; commit it. To improve a module from inside an app, point the app at a local clone (`path: ../ios-app-starter`) while developing, open the pull request here, tag, and switch back to `url:` with the new version.
 
+The example above uses only TemplateVersion: the initial `0.1.0` tag predates Theme, Onboarding and Settings. An app enabling those products must select a release that includes them and keep their product dependencies in the manifest. Inspect `Package.swift` at the chosen tag before changing from `path:` to `url:`; the current contents of `main` and the displayed version constant do not establish what an older tag ships. Keep the copied local library until a suitable release exists, within the one-release limit above; never move an existing tag to add products.
+
 ## XcodeGen include note
 
 `packages.<name>.path` in the top-level spec is written verbatim, relative to the generated project directory (`StarterApp/`), so the template uses `path: ..`. When a spec includes `project.yml`, XcodeGen rebases that value relative to the including file, which lands one directory too high. Every overlay therefore repeats `packages: StarterModules: path: ..` (see `examples/pocket-notes.yml`), the configuration probes pass an absolute path, and `check-modules.py` fails with a named fix when a generated project's package reference does not resolve to this repository.
