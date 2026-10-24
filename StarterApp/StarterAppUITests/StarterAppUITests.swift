@@ -9,16 +9,7 @@ import XCTest
 final class StarterAppUITests: XCTestCase {
 
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
-        continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
-    }
-
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        continueAfterFailure = false // Later steps depend on earlier ones.
     }
 
     @MainActor
@@ -76,9 +67,9 @@ final class StarterAppUITests: XCTestCase {
         // a step is on screen when one of its leaf elements is hittable. Not the `onboarding.step.<id>`
         // container: XCUITest hit-tests a container at its centre, which on the choice step is empty
         // scroll view, and on the iOS 27 runner that check stayed false with the step fully on screen.
-        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.feature.Make it yours")),
+        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.feature.Built for your phone")),
                       "The welcome sheet should be the first step")
-        XCTAssertTrue(skip.isHittable, "Skip should be offered on the welcome sheet")
+        XCTAssertTrue(waitUntilHittable(skip), "Skip should be offered on the welcome sheet")
         attach(name: "onboarding-welcome")
         next.tap()
 
@@ -87,11 +78,13 @@ final class StarterAppUITests: XCTestCase {
         XCTAssertTrue(waitUntilHittable(tool), "The choice step should follow the welcome sheet, its answers as buttons")
         tool.tap()
         product.tap()
-        XCTAssertTrue(tool.isSelected && product.isSelected, "A multiple choice keeps every picked answer")
+        // The app can report idle before a tap's state change lands, so state is waited for, not read once.
+        XCTAssertTrue(waitUntil(tool, "isSelected == true") && waitUntil(product, "isSelected == true"),
+                      "A multiple choice keeps every picked answer")
         attach(name: "onboarding-choice")
         tool.tap()
-        XCTAssertFalse(tool.isSelected, "Tapping a picked answer again clears it")
-        XCTAssertTrue(skip.isHittable, "Skip should still be offered on a choice step")
+        XCTAssertTrue(waitUntil(tool, "isSelected == false"), "Tapping a picked answer again clears it")
+        XCTAssertTrue(waitUntilHittable(skip), "Skip should still be offered on a choice step")
         next.tap()
 
         XCTAssertTrue(waitUntilHittable(element(app, "onboarding.page.tour")),
@@ -109,7 +102,7 @@ final class StarterAppUITests: XCTestCase {
 
         XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 10),
                       "Finishing onboarding should reveal the welcome screen")
-        XCTAssertFalse(next.exists, "The flow should be gone once finished")
+        XCTAssertTrue(waitUntilGone(next), "The flow should be gone once finished") // It fades out first.
         let goals = app.staticTexts["welcome.buildGoals"]
         XCTAssertTrue(goals.waitForExistence(timeout: 5), "The welcome screen should show the choice step's answer")
         XCTAssertEqual(goals.label, "Building: A product to sell", "The host should receive the final answer")
@@ -117,7 +110,7 @@ final class StarterAppUITests: XCTestCase {
         // Contextual tips follow onboarding one at a time: the inline Settings tip when that module is
         // enabled, then, once it is closed, the tour tip as a popover on the replay button.
         let tour = app.staticTexts["See the tour again"]
-        if app.buttons["settings.open"].exists {
+        if app.buttons["settings.open"].waitForExistence(timeout: 5) {
             let settingsTip = app.staticTexts["Settings live here"]
             XCTAssertTrue(settingsTip.waitForExistence(timeout: 10), "The Settings tip should show after onboarding")
             XCTAssertFalse(tour.exists, "Tips show one at a time")
@@ -127,6 +120,67 @@ final class StarterAppUITests: XCTestCase {
         }
         XCTAssertTrue(tour.waitForExistence(timeout: 10), "The tour tip should show next")
         attach(name: "onboarding-tip-tour")
+    }
+
+    /// The largest accessibility text size: onboarding pages scroll to content below the fold instead of
+    /// truncating it, the welcome screen keeps its button reachable, and the Settings secret row moves its
+    /// buttons under the field instead of squeezing them. Skips when the Onboarding module is disabled.
+    @MainActor
+    func testLargestTextSize() throws {
+        let app = XCUIApplication()
+        app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL",
+                                "-onboarding.completedVersion", "0", "-onboarding.permissions", "granted",
+                                "-tips.testing", "hideAll"]
+        app.launch()
+
+        let next = app.buttons["onboarding.next"]
+        try requireModuleUI("Onboarding", appeared: next.waitForExistence(timeout: 10), "no Continue button on launch")
+        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.feature.Built for your phone")),
+                      "The welcome sheet should start with its first row")
+        attach(name: "large-welcome")
+        XCTAssertTrue(scroll(app, to: element(app, "onboarding.feature.Make it yours")),
+                      "The welcome sheet should scroll to its last row")
+        next.tap()
+
+        attach(name: "large-choice")
+        XCTAssertTrue(scroll(app, to: app.buttons["onboarding.choice.build.A product to sell"]),
+                      "The choice step should follow and scroll to its last answer")
+        next.tap()
+
+        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.page.tour")), "The tour card should follow")
+        attach(name: "large-tour")
+        next.tap()
+
+        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.page.notifications")), "The primer should follow")
+        attach(name: "large-permission")
+        XCTAssertTrue(scroll(app, to: element(app, "onboarding.permission.notifications.footnote")),
+                      "The primer's footnote should be reachable by scrolling")
+        next.tap()
+
+        XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 10), "The welcome screen should follow")
+        XCTAssertTrue(scroll(app, to: app.buttons["onboarding.replay"]), "The tour button should be reachable")
+        attach(name: "large-welcome-screen")
+
+        let open = app.buttons["settings.open"]
+        guard open.waitForExistence(timeout: 5) else { return } // Settings module disabled.
+        open.tap()
+        let key = "example.apiKey"
+        let field = app.secureTextFields["settings.secure.\(key).field"]
+        let save = app.buttons["settings.secure.\(key).save"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10) && save.waitForExistence(timeout: 5),
+                      "Settings should show the example secret row")
+        XCTAssertGreaterThanOrEqual(save.frame.minY, field.frame.maxY - 1,
+                                    "At this size Save should sit under the field, not beside it")
+        attach(name: "large-settings")
+    }
+
+    /// Swipes up, a few times at most, until the element is on screen.
+    @MainActor
+    private func scroll(_ app: XCUIApplication, to element: XCUIElement, swipes: Int = 6) -> Bool {
+        for _ in 0..<swipes where !element.isHittable {
+            app.swipeUp()
+        }
+        return waitUntilHittable(element, timeout: 5)
     }
 
     private func waitUntilGone(_ element: XCUIElement, timeout: TimeInterval = 15) -> Bool {
@@ -330,6 +384,14 @@ final class StarterAppUITests: XCTestCase {
         XCTAssertTrue(waitUntil(status, "label BEGINSWITH 'Not set'"),
                       "Clearing should forget the secret, got: \(status.label)")
         XCTAssertTrue(waitUntilGone(clear), "Clear should disappear once nothing is stored")
+
+        // Resetting the tour only takes effect on the next launch, so the button says so and turns inactive.
+        let tourReset = app.buttons["settings.onboarding.reset"]
+        if tourReset.exists {
+            tourReset.tap()
+            XCTAssertTrue(waitUntil(tourReset, "label CONTAINS 'shows on next launch' AND isEnabled == false"),
+                          "The reset button should confirm, got: \(tourReset.label)")
+        }
         picker.buttons["System"].tap() // Leave the simulator's stored appearance as it was.
         XCTAssertTrue(waitUntil(picker.buttons["System"], "isSelected == true"))
     }

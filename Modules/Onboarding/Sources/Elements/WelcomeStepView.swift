@@ -23,6 +23,7 @@ public struct WelcomeStepView: View {
                     Text(content.title)
                         .font(.largeTitle.bold())
                         .foregroundStyle(theme.colors.textPrimary)
+                        .accessibilityAddTraits(.isHeader)
                     if let message = content.message {
                         Text(message)
                             .font(theme.typography.body)

@@ -2,6 +2,15 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-23 — UI quality pass: the largest text size broke three screens
+
+- **Context:** A review of every screen (ios-jy4). The UI suite ran on Xcode 27.1, iPhone 17 / iOS 27.0, in light, dark and the largest accessibility text size, and the code was reviewed with the pinned SwiftUI, accessibility, Swift, concurrency and testing skills.
+- **Symptom (confirmed):** At the largest size (AX5), tour cards and the notifications primer truncated their message because the page had no scroll view, and the primer was fixed at 80% of the height. Settings' Save button wrapped to "Sav / e" beside the key field. The welcome screen could not scroll. Light, dark and default sizes were fine, and the suite never ran at a large size, so none of this showed up in CI.
+- **Fix:** Pages centre their content when it fits and scroll when it does not. The secret row stacks its buttons under the field at accessibility sizes. Skip has a 44 pt target. The outlined button style is tappable across its padding. Both main calls to action share `.prominentButtonStyle()`. Other changes: VoiceOver headings and announcements, Reduce Motion on the onboarding exit, symbols that scale with text, and choice rows with the system's checkmark and circle cues. New `testLargestTextSize` launches with `-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL`. The simulator's own setting is not needed.
+- **Test note:** At AX5 the third welcome row and the choice step's answers are below the fold. A check that an element is hittable fails until the test swipes, so the test scrolls to each element before checking it. The main onboarding test checks the first welcome row, not the third.
+- **Verification:** `scripts/test-ios.sh` passed 6 of 6 UI tests locally on iOS 27.0. `swift test` passed 25 tests. The screenshots were looked at in light, dark and AX5.
+- **Remaining:** Localization (ios-9q9) and moving Keychain calls off the main thread (ios-e5s) are separate tasks.
+
 ## 2026-10-23 — Windows check at the first module-round boundary
 
 - **Context and tools:** Checked template commit `708db4d` from Windows PowerShell 5.1.26100.9711 with Python 3.13.14, Git 2.54.0.windows.1 and GitHub CLI 2.95.0. This checks the existing template's Windows setup path; it is not the timed fresh-repository/second-app proof. No Apple account reads, credential transfers, signing dispatches or uploads were performed.

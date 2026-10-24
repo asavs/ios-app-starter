@@ -52,13 +52,17 @@ public struct OnboardingView: View {
             HStack {
                 Spacer()
                 if !skipTitle.isEmpty {
-                    Button(skipTitle, action: finish)
-                        .font(theme.typography.body)
-                        .foregroundStyle(theme.colors.textSecondary)
-                        .accessibilityIdentifier("onboarding.skip")
-                        .opacity(showsSkip ? 1 : 0)
-                        .disabled(!showsSkip || isRequesting)
-                        .accessibilityHidden(!showsSkip)
+                    Button(action: finish) {
+                        Text(skipTitle)
+                            .frame(minWidth: 44, minHeight: 44) // The text alone is a 22 pt target.
+                            .contentShape(.rect)
+                    }
+                    .font(theme.typography.body)
+                    .foregroundStyle(theme.colors.textSecondary)
+                    .accessibilityIdentifier("onboarding.skip")
+                    .opacity(showsSkip ? 1 : 0)
+                    .disabled(!showsSkip || isRequesting)
+                    .accessibilityHidden(!showsSkip)
                 }
             }
             .padding(.horizontal, theme.spacing.medium)
@@ -98,7 +102,7 @@ public struct OnboardingView: View {
     }
 
     /// The Continue label: the step's own title, else a permission primer's, else continue or finish.
-    static func buttonTitle(for step: OnboardingStep?, isLast: Bool,
+    nonisolated static func buttonTitle(for step: OnboardingStep?, isLast: Bool,
                             continueTitle: String, finishTitle: String) -> String {
         if let title = step?.continueTitle { return title }
         if case .permission(let primer)? = step?.kind { return primer.continueTitle }

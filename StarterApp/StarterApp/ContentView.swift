@@ -23,6 +23,10 @@ struct ContentView: View {
 #if canImport(Settings)
     @State private var isShowingSettings = false
 #endif
+#if canImport(Settings) && canImport(Onboarding)
+    @State private var tourResetPending = false
+    @State private var tipsResetPending = false
+#endif
 #if canImport(Onboarding)
     @State private var isReplayingTour = false
     /// The onboarding choice step's answer, joined for display.
@@ -57,31 +61,43 @@ struct ContentView: View {
 #endif
     }
 
+    /// Centred when it fits; scrolls instead of overflowing when Dynamic Type needs the room.
     private var welcome: some View {
-        VStack(spacing: 16) {
+        GeometryReader { proxy in
+            ScrollView {
+                VStack(spacing: 16) {
 #if canImport(Onboarding) && canImport(Settings)
-            // Inline, because a popover anchored to a toolbar button does not appear on iOS 26.
-            ContextualTipView("settings", in: tips)
+                    // Inline, because a popover anchored to a toolbar button does not appear on iOS 26.
+                    ContextualTipView("settings", in: tips)
 #endif
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-            details
-            replayTour
+                    Image(systemName: "globe")
+                        .imageScale(.large)
+                        .foregroundStyle(.tint)
+                        .accessibilityHidden(true) // Decorative.
+                    Text("Hello, world!")
+                        .accessibilityAddTraits(.isHeader)
+                    details
+                    replayTour
+                }
+                .padding()
+                .frame(maxWidth: .infinity, minHeight: proxy.size.height)
+            }
+            .scrollBounceBehavior(.basedOnSize)
         }
-        .padding()
     }
 
-    /// Replays the onboarding flow in a sheet; the theme's primary button style on the welcome screen.
+    /// Replays the onboarding flow in a sheet; the theme's prominent style, as on onboarding's Continue.
     /// Onboarding depends on Theme, so the style is available whenever the button is.
     @ViewBuilder private var replayTour: some View {
 #if canImport(Onboarding)
-        Button("Take the tour") {
+        Button {
             tips.invalidate("tour") // Done what the tip suggests: retire it.
             isReplayingTour = true
+        } label: {
+            Text("Take the tour")
+                .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.primary)
+        .prominentButtonStyle()
         .accessibilityIdentifier("onboarding.replay")
         .contextualTip("tour", in: tips, arrowEdge: .bottom)
         .sheet(isPresented: $isReplayingTour) {
@@ -124,17 +140,38 @@ struct ContentView: View {
             }
 #if canImport(Onboarding)
             Section("Welcome tour") {
-                Button("Show the welcome tour on next launch") {
+                resetButton("Show the welcome tour on next launch", done: "The welcome tour shows on next launch",
+                            isDone: $tourResetPending) {
                     OnboardingRecord().reset()
                 }
                 .accessibilityIdentifier("settings.onboarding.reset")
-                Button("Show tips again on next launch") {
+                resetButton("Show tips again on next launch", done: "Tips show again on next launch",
+                            isDone: $tipsResetPending) {
                     ContextualTips.resetOnNextLaunch()
                 }
                 .accessibilityIdentifier("settings.tips.reset")
             }
 #endif
         }
+    }
+#endif
+
+#if canImport(Settings) && canImport(Onboarding)
+    /// A button whose effect only shows after a relaunch: once tapped it says so and turns inactive.
+    private func resetButton(_ title: String, done: String, isDone: Binding<Bool>,
+                             action: @escaping () -> Void) -> some View {
+        Button {
+            action()
+            isDone.wrappedValue = true
+            AccessibilityNotification.Announcement(done).post()
+        } label: {
+            if isDone.wrappedValue {
+                Label(done, systemImage: "checkmark")
+            } else {
+                Text(title)
+            }
+        }
+        .disabled(isDone.wrappedValue)
     }
 #endif
 
@@ -168,6 +205,7 @@ struct ContentView: View {
             }
 #endif
         }
+        .multilineTextAlignment(.center) // Wrapped lines stay centred at large text sizes.
     }
 }
 

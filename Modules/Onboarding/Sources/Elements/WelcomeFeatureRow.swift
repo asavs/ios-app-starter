@@ -4,6 +4,7 @@ import Theme
 /// One feature row of the welcome step: accent symbol, title and detail.
 public struct WelcomeFeatureRow: View {
     @Environment(\.appTheme) private var theme
+    @ScaledMetric(relativeTo: .title2) private var symbolWidth: CGFloat = 36
     private let feature: WelcomeFeature
 
     public init(_ feature: WelcomeFeature) {
@@ -15,7 +16,7 @@ public struct WelcomeFeatureRow: View {
             Image(systemName: feature.systemImage)
                 .font(.title2)
                 .foregroundStyle(theme.colors.accent)
-                .frame(minWidth: 36)
+                .frame(minWidth: symbolWidth)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: theme.spacing.extraSmall) {
                 Text(feature.title)

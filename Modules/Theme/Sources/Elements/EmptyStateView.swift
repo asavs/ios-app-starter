@@ -3,6 +3,7 @@ import SwiftUI
 /// Centered symbol, title and message for a screen with nothing to show yet, with an optional action.
 public struct EmptyStateView: View {
     @Environment(\.appTheme) private var theme
+    @ScaledMetric(relativeTo: .title) private var symbolSize: CGFloat = 44
     private let systemImage: String
     private let title: String
     private let message: String
@@ -24,22 +25,26 @@ public struct EmptyStateView: View {
     public var body: some View {
         VStack(spacing: theme.spacing.medium) {
             Image(systemName: systemImage)
-                .font(.system(size: 44))
+                .font(.system(size: symbolSize))
                 .foregroundStyle(theme.colors.accent)
                 .accessibilityHidden(true)
             VStack(spacing: theme.spacing.extraSmall) {
                 Text(title)
                     .font(theme.typography.title)
                     .foregroundStyle(theme.colors.textPrimary)
+                    .accessibilityAddTraits(.isHeader)
                 Text(message)
                     .font(theme.typography.body)
                     .foregroundStyle(theme.colors.textSecondary)
             }
             .multilineTextAlignment(.center)
             if let actionTitle, let action {
-                Button(actionTitle, action: action)
-                    .buttonStyle(.primary)
-                    .padding(.top, theme.spacing.small)
+                Button(action: action) {
+                    Text(actionTitle)
+                        .frame(maxWidth: .infinity)
+                }
+                .prominentButtonStyle()
+                .padding(.top, theme.spacing.small)
             }
         }
         .padding(theme.spacing.extraLarge)
