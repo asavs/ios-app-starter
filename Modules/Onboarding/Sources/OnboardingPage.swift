@@ -32,7 +32,7 @@ public struct OnboardingPage: Identifiable, Equatable, Hashable, Sendable {
                        message: LocalizedStringResource("A short tour of what this app does, one screen at a time.", bundle: .module)),
         OnboardingPage(id: "phone", systemImage: "iphone.gen3",
                        title: LocalizedStringResource("Built for your phone", bundle: .module),
-                       message: LocalizedStringResource("Everything here was built and tested on GitHub Actions before it reached you.", bundle: .module)),
+                       message: LocalizedStringResource("Native SwiftUI for iPhone and iPad, with dark mode, large text and VoiceOver.", bundle: .module)),
         OnboardingPage(id: "yours", systemImage: "slider.horizontal.3",
                        title: LocalizedStringResource("Make it yours", bundle: .module),
                        message: LocalizedStringResource("Replace these pages with your own in a single array of OnboardingPage values.", bundle: .module)),

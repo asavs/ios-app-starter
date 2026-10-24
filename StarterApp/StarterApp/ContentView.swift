@@ -197,7 +197,7 @@ struct ContentView: View {
 
     @ViewBuilder private var detailLines: some View {
         VStack(spacing: 4) {
-            Text("Built on GitHub Actions.")
+            Text("Replace this screen in ContentView.swift.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 #if canImport(TemplateVersion)
