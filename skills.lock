@@ -64,6 +64,13 @@
       "ref": "v1.5.0",
       "commit": "64e5848d371b7774a4c27ffd430c02121d03e371",
       "content_sha256": "396d552d030bc4e70be6c1069b9a07662fa3b8591d4e02b6c7aeef246e335407"
+    },
+    {
+      "name": "humanizer",
+      "repository": "blader/humanizer",
+      "path": ".",
+      "commit": "8c307f367c91bd974002f10f2be2965d642c13df",
+      "content_sha256": "4f87fcd0dc5000383638691ca8144c58f031d8729ba1f82bdca79cda5c08e884"
     }
   ]
 }

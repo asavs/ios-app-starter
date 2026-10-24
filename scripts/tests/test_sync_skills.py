@@ -76,5 +76,28 @@ class SyncSkillsTests(unittest.TestCase):
             self.assertEqual(sync_skills.verify(stored), 0)
 
 
+    def test_update_accepts_a_skill_at_the_repository_root(self):
+        source = self.root / "root-fixture"
+        source.mkdir()
+        subprocess.run(["git", "init", "--initial-branch=main"], cwd=source, check=True, capture_output=True)
+        subprocess.run(["git", "config", "user.name", "Skill Fixture"], cwd=source, check=True)
+        subprocess.run(["git", "config", "user.email", "fixture@example.invalid"], cwd=source, check=True)
+        (source / "LICENSE").write_text("MIT fixture license\n", encoding="utf-8")
+        (source / "SKILL.md").write_text("root fixture\n", encoding="utf-8")
+        subprocess.run(["git", "add", "."], cwd=source, check=True)
+        subprocess.run(["git", "commit", "-m", "fixture"], cwd=source, check=True, capture_output=True)
+        data = {
+            "version": 1,
+            "skills": [{"name": "rooted", "repository": "fixture/rooted", "url": str(source),
+                        "path": ".", "commit": "", "content_sha256": ""}],
+        }
+        with patch.multiple(sync_skills, ROOT=self.root, LOCK=self.lock, LOCATIONS=self.locations):
+            self.lock.write_text(json.dumps(data), encoding="utf-8")
+            self.assertEqual(sync_skills.update(data, "rooted"), 0)
+            for location in self.locations:
+                self.assertEqual((location / "rooted" / "SKILL.md").read_text(encoding="utf-8"), "root fixture\n")
+            self.assertEqual(sync_skills.verify(json.loads(self.lock.read_text(encoding="utf-8"))), 0)
+
+
 if __name__ == "__main__":
     unittest.main()
