@@ -37,7 +37,7 @@ The app and test targets declare **iOS 17.0 minimum**, the selected CI toolchain
 
 ## Conditional diagnostics backlog
 
-The agreed next task is a basic tester feedback loop using App Store Connect in the browser; see [the shared plan](mac-windows-coordination.md). Items below describe possible technical follow-ups. Symbol storage, CLI automation and performance collection wait for a demonstrated need; OS compatibility coverage remains a milestone requirement. Keep any implemented follow-up reviewable and independently verifiable:
+The agreed next task is a basic tester feedback loop using App Store Connect in the browser; see [the shared plan](archive/mac-windows-coordination.md). Items below describe possible technical follow-ups. Symbol storage, CLI automation and performance collection wait for a demonstrated need; OS compatibility coverage remains a milestone requirement. Keep any implemented follow-up reviewable and independently verifiable:
 
 1. **Release symbol production and retention:** inspect current generated Release settings and archive UUIDs; explicitly set DWARF with dSYM if needed; retain exact-build dSYMs/archive under access controls and documented retention; confirm exported/uploaded symbols match.
 2. **Windows-accessible TestFlight feedback export:** add pinned-CLI fixed read commands for crash feedback, logs, and screenshot feedback; explicit opt-in; pagination/filters; safe sanitized artifacts; tests for no credentials, access errors, empty results, malformed responses, timeout, and redaction. First verify the pinned CLI 5.14.0 commands and Apple role/API behavior with an authorized account; never imply current authenticated access is verified.

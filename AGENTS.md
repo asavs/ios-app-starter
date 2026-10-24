@@ -5,12 +5,16 @@
 - **Setting up an app from this template** (fresh repository to the app on the owner's iPhone): follow [`docs/agent-onboarding.md`](docs/agent-onboarding.md) in order. It lists what to ask the owner for, the commands to run, what to say before each account-affecting action, and the known failures.
 - **Changing the template itself:** read the rest of this file first.
 
-Read `roadmap.md`, `README.md`, and `docs/setup-experience.md` (the journal index; entries live in `docs/journal/<milestone>.md`) before changing the template. The roadmap records agreed decisions and milestone gates; the experience journal records observed failures, fixes, and verification evidence.
+Read `roadmap.md`, `README.md`, `docs/ci.md` (how builds, tests and delivery run), and `docs/setup-experience.md` (the journal index; entries live in `docs/journal/<milestone>.md`) before changing the template. The roadmap records agreed decisions and milestone gates; the experience journal records observed failures, fixes, and verification evidence.
+
+## What the starter is
+
+An iOS starter app. Onboarding, theme and UX elements, settings with secure storage, and next sign-in and a database layer are scaffolded as modules an app keeps or deletes, so its builder works on what makes the app different. Builds, signing and delivery run on GitHub and are handled for them. Lead docs and decisions with the app; the pipeline serves it.
 
 ## Product constraints
 
-- The default user has Windows, GitHub, and an iPhone. Xcode work runs on GitHub-hosted macOS runners. Do not require a separately managed Mac for app development, signing, or TestFlight delivery.
-- A persistent owned or rented Mac is required only for the optional live iMessage bridge. Local Mac development is an optional alternative.
+- The pipeline must work for someone with only Windows, GitHub and an iPhone. Xcode work runs on GitHub-hosted macOS runners. Do not require a separately managed Mac for app development, signing, or TestFlight delivery.
+- A persistent owned or rented Mac is required only for the optional live iMessage bridge. Local Mac development is an optional faster loop.
 - Keep iPhone/iPad as the default. Additional platforms and AI/backend capabilities are independently optional.
 - Keep SDK selection separate from minimum supported OS and tested runtime coverage. Do not claim iOS 17 runtime compatibility from an iOS 27 simulator result.
 
