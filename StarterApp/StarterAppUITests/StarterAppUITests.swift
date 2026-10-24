@@ -180,9 +180,12 @@ final class StarterAppUITests: XCTestCase {
     }
 
     /// Swipes up, a few times at most, until the element is on screen.
+    /// Compares frames instead of asking `isHittable`: for an element below the fold, XCTest can fail
+    /// the test with "Failed to determine hittability" rather than answer false.
     @MainActor
     private func scroll(_ app: XCUIApplication, to element: XCUIElement, swipes: Int = 6) -> Bool {
-        for _ in 0..<swipes where !element.isHittable {
+        let window = app.windows.firstMatch
+        for _ in 0..<swipes where !(element.exists && window.frame.contains(element.frame)) {
             app.swipeUp()
         }
         return waitUntilHittable(element, timeout: 5)
