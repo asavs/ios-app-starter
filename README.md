@@ -98,6 +98,8 @@ To check the complete failure-reporting path, manually run **iOS** with **verify
 
 Every test artifact contains `summary.md` and `failures.json` with the same facts: a stage (`passed`, `tests_failed`, `build_failed`, `setup_failed` or `unverified`), each failed test with its file, line and message, compiler errors with file, line and column, and the test-produced screenshots under `attachments/` (the smoke test always attaches `welcome-screen`). Agents read `failures.json`; people read `summary.md`, which is also the job summary. If failure happens before the test command starts, inspect the failed setup step in the Actions logs; test artifacts may not exist yet. `.xcresult` is primarily useful with Xcode, while Markdown, JSON, and text logs can be read on Windows.
 
+When XCTest produces a screen recording, the iOS and compatibility artifacts also retain its exported `.mp4` under `attachments/`, viewable on Windows. Use controlled sample data in recorded UI tests, as with screenshots. If xcresult omits a failed XCTest's source location, the report recovers it from `xcodebuild.log` only when the test identity and failure message match one unambiguous location; existing locations and the run's failure status are preserved.
+
 ## Review CI evidence from Windows
 
 With GitHub CLI authenticated and the repository checked out, review a pull request's hosted checks and sanitized artifacts together:

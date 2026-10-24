@@ -97,7 +97,7 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("### Screenshots", summary)
         self.assertIn("`attachments/A1.png` — welcome-screen", summary)
-        self.assertIn("Other attachments (not uploaded): Screen Recording.mp4", summary)
+        self.assertIn("Other attachments listed in the manifest: Screen Recording.mp4", summary)
         images = [item for item in self.last_failures["attachments"] if item["isImage"]]
         self.assertEqual((images[0]["file"], images[0]["bytes"]), ("A1.png", 3))
 
@@ -122,6 +122,64 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("Stage: `setup_failed`", summary)
         self.assertIn("### Build/test diagnostics", summary)
+
+    LIFECYCLE_MESSAGE = "Failed to terminate org.example.notes:14090: Failed to terminate org.example.notes:0"
+    LIFECYCLE_CASE = "testOnboardingNotShownAgainAfterCompletion"
+    LIFECYCLE_FILE = "/Users/runner/work/app/StarterApp/StarterAppUITests/StarterAppUITests.swift"
+
+    def lifecycle_report(self, log):
+        tests = {"testNodes": [{"nodeType": "UI test bundle", "name": "StarterAppUITests", "children": [
+            {"nodeType": "Test Suite", "name": "StarterAppUITests", "children": [
+            {"nodeType": "Test Case", "name": self.LIFECYCLE_CASE + "()", "result": "Failed",
+             "nodeIdentifier": "StarterAppUITests/" + self.LIFECYCLE_CASE + "()", "children": [
+                 {"nodeType": "Failure Message", "name": self.LIFECYCLE_MESSAGE}]}]}]}]}
+        return self.report(dict(result="Failed", totalTestCount=1, passedTests=0, failedTests=1, skippedTests=0),
+                           65, log=log, tests=tests)
+
+    def lifecycle_log(self, line=183, suite="StarterAppUITests.StarterAppUITests", method=None, message=None):
+        return (f"{self.LIFECYCLE_FILE}:{line}: error: -[{suite} {method or self.LIFECYCLE_CASE}] : "
+                f"{message or self.LIFECYCLE_MESSAGE}\n")
+
+    def test_lifecycle_failure_recovers_source_without_becoming_build_error(self):
+        code, summary = self.lifecycle_report(self.lifecycle_log() * 2)
+        self.assertEqual(code, 1, "A recovered location must not turn the failed test green")
+        self.assertIn("Stage: `tests_failed`", summary)
+        self.assertIn(f"{self.LIFECYCLE_FILE}:183", summary)
+        failure, = self.last_failures["failures"]
+        self.assertEqual((failure["file"], failure["line"]), (self.LIFECYCLE_FILE, 183))
+        self.assertEqual(failure["message"], self.LIFECYCLE_MESSAGE)
+        self.assertEqual(self.last_failures["buildErrors"], [])
+
+    def test_source_fallback_requires_both_case_and_message(self):
+        for log in (self.lifecycle_log(suite="AnotherSuite"),
+                    self.lifecycle_log(suite="AnotherBundle.StarterAppUITests"),
+                    self.lifecycle_log(method="testAnotherMethod"),
+                    self.lifecycle_log(message="A different failure")):
+            with self.subTest(log=log):
+                self.lifecycle_report(log)
+                failure, = self.last_failures["failures"]
+                self.assertIsNone(failure["file"])
+                self.assertIsNone(failure["line"])
+
+    def test_ambiguous_log_locations_stay_unknown(self):
+        self.lifecycle_report(self.lifecycle_log(183) + self.lifecycle_log(184))
+        failure, = self.last_failures["failures"]
+        self.assertIsNone(failure["file"])
+        self.assertIsNone(failure["line"])
+
+    def test_log_fallback_preserves_xcresult_location(self):
+        log = (f"{self.LIFECYCLE_FILE}:99: error: -[StarterAppUITests.StarterAppUITests testWelcomeScreen] : "
+               "failed - Deliberate failure probe\n")
+        self.report(dict(result="Failed", totalTestCount=1, passedTests=0, failedTests=1, skippedTests=0),
+                    65, log=log, tests=self.RED_TESTS)
+        failure, = self.last_failures["failures"]
+        self.assertEqual((failure["file"], failure["line"]), ("StarterAppUITests.swift", 31))
+
+    def test_log_echo_does_not_create_a_failure_in_a_passing_result(self):
+        code, _ = self.report(dict(result="Passed", totalTestCount=1, passedTests=1, failedTests=0, skippedTests=0),
+                              0, log=self.lifecycle_log())
+        self.assertEqual(code, 0)
+        self.assertEqual(self.last_failures["failures"], [])
 
 
 if __name__ == "__main__":

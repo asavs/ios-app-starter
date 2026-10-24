@@ -20,6 +20,7 @@ GENERIC_ERROR_RE = re.compile(r"^(?:xcodebuild: )?error: (?P<message>.*)$")
 # xcodebuild echoes XCTest assertion failures as "file:line: error: -[Suite test] : message"; those are
 # test failures (reported from tests.json/results.json), not build errors.
 XCTEST_ASSERTION_RE = re.compile(r"^-\[[^\]]+\] : ")
+XCTEST_DETAIL_RE = re.compile(r"^-\[(?P<suite>[^\]\s]+) (?P<method>[^\]\s]+)\] : (?P<message>.*)$")
 IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".heic")
 
 
@@ -101,6 +102,39 @@ def build_errors(log):
     return errors
 
 
+def fill_test_locations(failures, log):
+    """Recover omitted xcresult locations only from an exact, unambiguous XCTest echo."""
+    locations = {}
+    for raw in log.splitlines():
+        source = BUILD_ERROR_RE.match(raw.strip())
+        if not source:
+            continue
+        detail = XCTEST_DETAIL_RE.match(source.group("message"))
+        if not detail:
+            continue
+        namespace, _, suite = detail.group("suite").rpartition(".")
+        case = f"{suite}/{detail.group('method')}"
+        key = (case, detail.group("message").strip())
+        locations.setdefault(key, set()).add((namespace, source.group("file"), int(source.group("line"))))
+
+    for failure in failures:
+        if failure["file"] is not None or failure["line"] is not None:
+            continue  # Keep the primary xcresult location, including partial locations.
+        identity = failure.get("test")
+        if not isinstance(identity, str):
+            continue
+        parts = identity.removesuffix("()").split("/")
+        if len(parts) != 2:
+            continue  # A bare method name cannot identify its suite reliably.
+        namespace, _, suite = parts[0].rpartition(".")
+        namespace = namespace or failure.get("target")
+        case = f"{suite}/{parts[1]}"
+        candidates = {(file, line) for module, file, line in locations.get((case, failure["message"].strip()), set())
+                      if not namespace or not module or module == namespace}
+        if len(candidates) == 1:
+            failure["file"], failure["line"] = next(iter(candidates))
+
+
 def attachments(manifest, directory):
     items = []
     if not isinstance(manifest, list):
@@ -153,6 +187,7 @@ def main():
     except OSError:
         log = ""
     log = re.sub(r"\x1b\[[0-9;]*m", "", log)
+    fill_test_locations(failures, log)
     errors = build_errors(log)
     media = attachments(load_json(report_dir / "attachments" / "manifest.json"), report_dir / "attachments")
     stage = classify(status, result, failures, errors)
@@ -185,7 +220,7 @@ def main():
         lines.append("")
     other = [item for item in media if not item["isImage"]]
     if other:
-        lines.append("Other attachments (not uploaded): " + ", ".join(f"{item['name']}" for item in other) + ".")
+        lines.append("Other attachments listed in the manifest: " + ", ".join(f"{item['name']}" for item in other) + ".")
         lines.append("")
 
     if not verified:

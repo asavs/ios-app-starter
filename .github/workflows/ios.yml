@@ -188,6 +188,7 @@ jobs:
             ${{ runner.temp }}/ios-test-results/run.*/tests.json
             ${{ runner.temp }}/ios-test-results/run.*/attachments/manifest.json
             ${{ runner.temp }}/ios-test-results/run.*/attachments/*.png
+            ${{ runner.temp }}/ios-test-results/run.*/attachments/*.mp4
             ${{ runner.temp }}/ios-test-results/run.*/exit-status.txt
             ${{ runner.temp }}/ios-test-results/run.*/*.log
             ${{ runner.temp }}/ios-test-results/run.*/Tests.xcresult
