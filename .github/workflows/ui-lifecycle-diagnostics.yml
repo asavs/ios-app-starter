@@ -1,0 +1,141 @@
+name: UI lifecycle diagnostics
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_ref:
+        description: App commit or tag to investigate, separate from the diagnostic tooling
+        type: string
+        default: main
+        required: true
+      configuration:
+        description: App identity to test
+        type: choice
+        options: [starter, pocket-notes]
+        default: pocket-notes
+      attempts:
+        description: Maximum cold runs; stop at the first failure
+        type: choice
+        options: ['3', '5', '10']
+        default: '5'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: xcode-27
+    timeout-minutes: 25
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
+      IOS_TEST_DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=27.0
+      TEST_RUNNER_IOS_ENABLED_MODULES: Onboarding,Settings,TemplateVersion,Theme
+      DIAG_CONFIGURATION: ${{ inputs.configuration }}
+      DIAG_ATTEMPTS: ${{ inputs.attempts }}
+      IOS_TEST_ARTIFACT_NAME: ui-lifecycle-${{ inputs.configuration }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          path: tooling
+          persist-credentials: false
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.app_ref }}
+          path: app
+          persist-credentials: false
+      - name: Validate probe and record its context
+        shell: python3 {0}
+        run: |
+          import json, os, pathlib, subprocess
+          def output(*args):
+              return subprocess.check_output(args, text=True).strip()
+          assert os.environ['DIAG_CONFIGURATION'] in ('starter', 'pocket-notes')
+          assert os.environ['DIAG_ATTEMPTS'] in ('3', '5', '10')
+          version = output('xcodebuild', '-version')
+          assert version.splitlines()[0] == 'Xcode 27.0', version
+          sdk = output('xcrun', '--sdk', 'iphonesimulator', '--show-sdk-version')
+          assert sdk == '27.0', sdk
+          runtimes = json.loads(output('xcrun', 'simctl', 'list', 'runtimes', '--json'))['runtimes']
+          runtime_ids = [r['identifier'] for r in runtimes if r.get('isAvailable') and r['version'] == '27.0' and r['name'].startswith('iOS ')]
+          devices = json.loads(output('xcrun', 'simctl', 'list', 'devices', 'available', '--json'))['devices']
+          matches = [d['udid'] for r in runtime_ids for d in devices.get(r, []) if d['name'] == 'iPhone 17']
+          assert len(matches) == 1, 'Expected one installed iPhone 17 / iOS 27.0 simulator'
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'lifecycle-results'
+          root.mkdir()
+          context = {'appCommit': output('git', '-C', 'app', 'rev-parse', 'HEAD'),
+                     'toolingCommit': output('git', '-C', 'tooling', 'rev-parse', 'HEAD'),
+                     'configuration': os.environ['DIAG_CONFIGURATION'], 'maximumAttempts': int(os.environ['DIAG_ATTEMPTS']),
+                     'xcode': version, 'simulatorSDK': sdk, 'runtime': '27.0',
+                     'hostOS': output('sw_vers', '-productVersion'), 'hostBuild': output('sw_vers', '-buildVersion'),
+                     'runnerImage': os.environ.get('ImageVersion')}
+          (root / 'context.json').write_text(json.dumps(context, indent=2) + '\n')
+          with open(os.environ['GITHUB_ENV'], 'a') as env:
+              env.write(f'LIFECYCLE_REPORT_DIR={root}\nLIFECYCLE_DEVICE={matches[0]}\n')
+      - name: Generate the selected app
+        working-directory: app
+        shell: bash
+        run: |
+          case "$DIAG_CONFIGURATION" in
+            starter) export IOS_PROJECT_SPEC="$PWD/project.yml" ;;
+            pocket-notes) export IOS_PROJECT_SPEC="$PWD/examples/pocket-notes.yml" ;;
+          esac
+          bash scripts/generate-project.sh
+      - name: Build for testing without Apple credentials
+        shell: bash
+        run: |
+          xcrun simctl bootstatus "$LIFECYCLE_DEVICE" -b
+          xcodebuild -project app/StarterApp/StarterApp.xcodeproj -scheme StarterApp \
+            -destination "id=$LIFECYCLE_DEVICE" -derivedDataPath "$RUNNER_TEMP/lifecycle-derived" \
+            CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_ENTITLEMENTS="$GITHUB_WORKSPACE/app/scripts/simulator-tests.entitlements" \
+            build-for-testing 2>&1 | tee "$LIFECYCLE_REPORT_DIR/build.log"
+      - name: Run isolated cold cases with process observations
+        shell: bash
+        run: |
+          test_run_files=("$RUNNER_TEMP/lifecycle-derived/Build/Products/"*.xctestrun)
+          test "${#test_run_files[@]}" -eq 1 && test -f "${test_run_files[0]}"
+          (
+            while :; do
+              date -u '+%Y-%m-%dT%H:%M:%SZ'
+              uptime
+              rows="$(ps -A -o pid=,stat=,pcpu=,comm= | awk '$NF == "StarterApp" || $NF ~ /\/StarterApp\.app\/StarterApp$/ {print $1, $2, $3}')"
+              if [ -n "$rows" ]; then printf 'APP_PROCESS %s\n' "$rows"; else echo APP_PROCESS_ABSENT; fi
+              sleep 2
+            done
+          ) > "$LIFECYCLE_REPORT_DIR/process-timeline.log" &
+          monitor_pid=$!
+          trap 'kill "$monitor_pid" 2>/dev/null || true' EXIT
+          for ((attempt=1; attempt<=DIAG_ATTEMPTS; attempt++)); do
+            report="$LIFECYCLE_REPORT_DIR/attempt-$attempt"
+            mkdir -p "$report"
+            date -u '+%Y-%m-%dT%H:%M:%SZ' > "$report/start.txt"
+            # This device exists only on the ephemeral CI runner. Reset it between cold cases.
+            xcrun simctl shutdown "$LIFECYCLE_DEVICE" 2>/dev/null || true
+            xcrun simctl erase "$LIFECYCLE_DEVICE"
+            xcrun simctl boot "$LIFECYCLE_DEVICE"
+            xcrun simctl bootstatus "$LIFECYCLE_DEVICE" -b
+            set +e
+            xcodebuild -xctestrun "${test_run_files[0]}" -destination "id=$LIFECYCLE_DEVICE" \
+              -only-testing:StarterAppUITests/StarterAppUITests/testOnboardingNotShownAgainAfterCompletion \
+              -parallel-testing-enabled NO -test-timeouts-enabled YES \
+              -default-test-execution-time-allowance 300 -maximum-test-execution-time-allowance 300 \
+              -collect-test-diagnostics on-failure -resultBundlePath "$report/Tests.xcresult" \
+              test-without-building 2>&1 | tee "$report/xcodebuild.log"
+            statuses=("${PIPESTATUS[@]}")
+            set -e
+            status="${statuses[0]}"
+            if [ "$status" -eq 0 ] && [ "${statuses[1]}" -ne 0 ]; then status="${statuses[1]}"; fi
+            printf '%s\n' "$status" > "$report/exit-status.txt"
+            xcrun xcresulttool get test-results summary --path "$report/Tests.xcresult" > "$report/results.json" 2> "$report/xcresulttool.log" || true
+            xcrun xcresulttool get test-results tests --path "$report/Tests.xcresult" > "$report/tests.json" 2>> "$report/xcresulttool.log" || true
+            xcrun xcresulttool export attachments --path "$report/Tests.xcresult" --output-path "$report/attachments" >> "$report/xcresulttool.log" 2>&1 || true
+            # A failed case stops the probe and keeps the job red. It is never retried into a pass.
+            python3 tooling/scripts/report-tests.py "$report" "$status" "$IOS_TEST_DESTINATION"
+          done
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: always()
+        with:
+          name: ui-lifecycle-${{ inputs.configuration }}
+          path: ${{ runner.temp }}/lifecycle-results
+          retention-days: 14
+          if-no-files-found: warn
