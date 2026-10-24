@@ -34,6 +34,17 @@ public extension SecureStore {
     func contains(_ key: String) throws -> Bool {
         try data(for: key) != nil
     }
+
+    /// Runs store calls off the caller's actor: `try await store.perform { try $0.contains("api.token") }`.
+    ///
+    /// Keychain calls block the calling thread, which Apple warns "can cause your app's UI to hang if
+    /// called from the main thread", so views and other main-actor code go through this. A
+    /// nonisolated async function runs on the global concurrent executor in this package's language
+    /// mode. It is a separate name rather than async overloads of the methods above, which would
+    /// make existing calls inside async functions need `await`.
+    nonisolated func perform<Result: Sendable>(_ work: @Sendable (Self) throws -> Result) async throws -> Result {
+        try work(self)
+    }
 }
 
 public enum SecureStoreError: Error, Equatable, Sendable, CustomStringConvertible {

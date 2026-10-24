@@ -84,6 +84,17 @@ struct SettingsTests {
         #expect(SecureStoreError.keychain(status: -25300, operation: "read").description.contains("-25300"))
     }
 
+    @Test @MainActor func performRunsOffTheMainThreadAndPassesErrorsThrough() async throws {
+        let store: any SecureStore = InMemorySecureStore(["blob": Data([0xff])])
+        let ranOnMain = try await store.perform { _ in Thread.isMainThread }
+        #expect(!ranOnMain, "Keychain calls block their thread, so perform must leave the main actor")
+        try await store.perform { try $0.set("value", for: "token") }
+        #expect(try await store.perform { try $0.string(for: "token") } == "value")
+        await #expect(throws: SecureStoreError.invalidEncoding(key: "blob")) {
+            try await store.perform { try $0.string(for: "blob") }
+        }
+    }
+
 #if os(iOS)
     /// Whether this process may use the Keychain. Xcode's package test host has no application
     /// identifier, so the simulator Keychain answers errSecMissingEntitlement (-34018) there and

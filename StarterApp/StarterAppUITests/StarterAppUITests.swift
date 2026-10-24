@@ -371,8 +371,10 @@ final class StarterAppUITests: XCTestCase {
         let status = app.staticTexts["settings.secure.\(key).status"]
         let clear = app.buttons["settings.secure.\(key).clear"]
         XCTAssertTrue(field.waitForExistence(timeout: 5), "Settings should show the example secret row")
+        // The row reads the Keychain off the main actor, so wait for that first answer.
+        XCTAssertTrue(waitUntil(status, "NOT (label BEGINSWITH 'Checking')"), "The row should finish its first read")
         if clear.exists { clear.tap() } // A previous run on this simulator may have left a value.
-        XCTAssertTrue(status.label.hasPrefix("Not set"), "Secret should start empty, got: \(status.label)")
+        XCTAssertTrue(waitUntil(status, "label BEGINSWITH 'Not set'"), "Secret should start empty, got: \(status.label)")
         try focus(field, in: app)
         app.typeText("ui-test-secret")
         app.buttons["settings.secure.\(key).save"].tap()

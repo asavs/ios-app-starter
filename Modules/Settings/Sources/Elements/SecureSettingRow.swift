@@ -10,7 +10,10 @@ public struct SecureSettingRow: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var draft = ""
-    @State private var isStored = false
+    /// Whether the store holds a value; `nil` until the first read returns.
+    @State private var isStored: Bool?
+    /// A save or clear in flight; the buttons wait for it.
+    @State private var isWorking = false
     @State private var failure: String?
 
     private let title: String
@@ -35,10 +38,11 @@ public struct SecureSettingRow: View {
                     .accessibilityIdentifier("settings.secure.\(key).field")
                 HStack(spacing: theme.spacing.medium) {
                     Button("Save", action: save)
-                        .disabled(draft.isEmpty)
+                        .disabled(draft.isEmpty || isWorking)
                         .accessibilityIdentifier("settings.secure.\(key).save")
-                    if isStored {
+                    if isStored == true {
                         Button("Clear", role: .destructive, action: clear)
+                            .disabled(isWorking)
                             .accessibilityIdentifier("settings.secure.\(key).clear")
                     }
                 }
@@ -49,17 +53,24 @@ public struct SecureSettingRow: View {
                 .foregroundStyle(failure == nil ? theme.colors.textSecondary : theme.colors.danger)
                 .accessibilityIdentifier("settings.secure.\(key).status")
         }
-        .onAppear(perform: refresh)
+        .task { await refresh() }
     }
 
     private var status: String {
         if let failure { return failure }
-        return isStored ? "Stored securely on this device." : "Not set."
+        switch isStored {
+        case true?: return "Stored securely on this device."
+        case false?: return "Not set."
+        case nil: return "Checking…"
+        }
     }
 
-    private func refresh() {
+    // Keychain calls block their thread, so every one goes through `perform`, off the main actor.
+
+    private func refresh() async {
+        let key = key
         do {
-            isStored = try store.contains(key)
+            isStored = try await store.perform { try $0.contains(key) }
             failure = nil
         } catch {
             failure = "Could not read: \(error)"
@@ -67,27 +78,37 @@ public struct SecureSettingRow: View {
     }
 
     private func save() {
-        do {
-            try store.set(draft, for: key)
-            draft = ""
-            isStored = true
-            failure = nil
-            announce("\(title) saved.")
-        } catch {
-            failure = "Could not save: \(error)"
-            announce(failure)
+        let (key, value) = (key, draft)
+        isWorking = true
+        Task {
+            defer { isWorking = false }
+            do {
+                try await store.perform { try $0.set(value, for: key) }
+                draft = ""
+                isStored = true
+                failure = nil
+                announce("\(title) saved.")
+            } catch {
+                failure = "Could not save: \(error)"
+                announce(failure)
+            }
         }
     }
 
     private func clear() {
-        do {
-            try store.remove(key)
-            isStored = false
-            failure = nil
-            announce("\(title) cleared.")
-        } catch {
-            failure = "Could not clear: \(error)"
-            announce(failure)
+        let key = key
+        isWorking = true
+        Task {
+            defer { isWorking = false }
+            do {
+                try await store.perform { try $0.remove(key) }
+                isStored = false
+                failure = nil
+                announce("\(title) cleared.")
+            } catch {
+                failure = "Could not clear: \(error)"
+                announce(failure)
+            }
         }
     }
 
