@@ -1,6 +1,8 @@
-# Modules: the versioned library apps are built from
+# Choose and update app features
 
-The template is copied once ("Use this template"), so later improvements reach existing apps only through versioned packages. Modules live in this repository as products of one Swift package; the template app depends on it by path, and an app created from the template depends on a tagged version by URL. Backpropagation is a pull request here, a tag, and a version bump in each app.
+Keep the starter's onboarding, theme and settings features that your app needs, and remove the rest. Each feature is a module you enable in `project.yml`. The available modules are `TemplateVersion`, `Theme`, `Onboarding` and `Settings`; authentication and persistence modules are planned, not shipped.
+
+Creating a repository with "Use this template" copies the app once. Later module improvements reach your app through versioned packages. Modules are products of one Swift package in this repository. The template app uses a local path dependency; apps created from it switch to a tagged version by URL. To share an improvement, open a pull request here, release a tag, then update the version in each app that needs it.
 
 ## Layout
 
@@ -45,7 +47,9 @@ The template's welcome screen puts its build details on a `ThemedCard` under `#i
 
 ### Onboarding
 
-The module follows Apple's onboarding guidance (fast, optional, skippable, never shown again, sign-in and permissions deferred) and ships every well-founded piece as an opt-in step, so an app built from the template keeps the steps it needs and deletes the rest. `OnboardingView(steps:onFinish:)` is a swipeable `TabView` over an ordered `[OnboardingStep]` with a Skip button, a single Continue button and a final call to action (`Get started`); the labels are parameters, `skipTitle: nil` removes Skip everywhere, and a step can set its own `continueTitle`. The Continue button uses the theme's `.prominentButtonStyle()`, as the template's welcome screen does. Every step scrolls instead of truncating at large Dynamic Type sizes. Step kinds:
+Build a short first-launch flow from the steps your app needs. The module follows Apple's guidance: make onboarding optional and skippable, remember completion, and defer sign-in and permission requests.
+
+`OnboardingView(steps:onFinish:)` is a swipeable `TabView` over an ordered `[OnboardingStep]`. It has a Skip button, one Continue button and a final call to action (`Get started`). The labels are parameters: `skipTitle: nil` removes Skip everywhere, and a step can set its own `continueTitle`. Continue uses the theme's `.prominentButtonStyle()`, as the template's welcome screen does. Every step scrolls instead of truncating at large Dynamic Type sizes. Step kinds:
 
 - `.welcome(WelcomeContent)`: the Stocks/Journal-style sheet, an icon (`.system` symbol or `.asset` image), a large title, an optional line and `WelcomeFeature` rows (symbol, title, detail), laid out by `WelcomeStepView`.
 - `.page(OnboardingPage)`: the classic tour card (symbol, title, message) laid out by `OnboardingPageView`. `OnboardingStep.pages(_:)` wraps an array, and the `pages:` initializers of the view and the gate still work.
@@ -140,7 +144,7 @@ The app, module and compatibility lanes cache Xcode's cloned Swift package sourc
 
 ## Release a version
 
-Tags on this repository are module library versions, never app builds. Semantic versions without a `v` prefix, as Swift Package Manager expects.
+Tags on this repository identify module library versions. App builds have separate numbers. Use semantic versions without a `v` prefix, as Swift Package Manager expects.
 
 1. In a pull request, set `TemplateVersion.modules` and the welcome-screen UI test's expected version to the new version and merge after the required app, module and no-modules checks pass.
 2. From a clean `main` checkout at the merged commit: `python3 scripts/tag-modules.py 0.3.0`, then the printed `git push origin 0.3.0` (or add `--push`). The script refuses a version that differs from the constant, a dirty tree, another branch, a stale `main`, or an existing tag.

@@ -1,15 +1,15 @@
-# TestFlight delivery from Windows
+# Install your app through TestFlight
 
-Milestone 6 is complete for the `starter-app-demo` acceptance app (2026-10-12). The approved [GitHub-hosted delivery run](https://github.com/asavs/ios-app-starter/actions/runs/38117486727) accepted build **1.0 (1.9.1)**, and the owner reported opening that TestFlight build on their iPhone and seeing the `Built on GitHub Actions.` caption. This is owner-reported acceptance; no agent device inspection, screenshot or automated device report was collected, and the phone's OS version is unknown. No local Xcode or separately managed Mac was required.
+Use this guide to upload a signed build and install it on an iPhone through internal TestFlight testing. GitHub-hosted macOS runners build, sign and upload the app, so you can start from Windows or a Mac. Uploading, Apple processing and installation are separate steps; check each result.
 
 ## When to test where
 
 | When | What runs | Device delivery |
 | --- | --- | --- |
 | Every pull request | Portable tests and one simulator smoke lane; these are required checks. | None. |
-| Every merge to `main` | All configured simulator lanes plus unsigned signing and TestFlight preflights. | None. |
+| Every merge to `main` | All configured simulator lanes. Signing and TestFlight preflights run on pull requests or manual dispatch, as described in [the CI guide](ci.md#the-pull-request-loop). | None. |
 | Owner's iPhone, internal TestFlight | When merged changes alter what a user sees or does in the app. Batch changes, with at most one delivery per hour, dispatched from `main`. The `apple-credentials` environment accepts deployments from `main` only. | The delivery workflow uploads to internal TestFlight. |
-| Other testers, external TestFlight | At the end of a milestone, at the owner's decision. | External testing is a separate owner decision and workflow; this guide's internal-only upload does not enable it. |
+| Other testers, external TestFlight | When a set of changes is ready for wider testing, at the owner's decision. | External testing is a separate owner decision and workflow; this guide's internal-only upload does not enable it. |
 
 Changes with nothing visible to the user, including scripts, documentation and CI, never trigger a device build.
 
@@ -19,7 +19,9 @@ Read [Apple setup](apple-setup.md), inspect the intended app/team and current Gi
 
 Apple lists Account Holder, Admin, App Manager and Developer as upload roles ([upload builds](https://developer.apple.com/help/app-store-connect/manage-builds/upload-builds)). Signing/provisioning permissions are a separate requirement. Reuse the existing authorized key; do not automatically create, replace or broaden it. Its upload permission is unverified until a live attempt. The Account Holder reviews active membership and outstanding agreements before delivery. Those decisions are not proved by our diagnostics and remain human steps.
 
-The starter includes an original placeholder icon, a blank blueprint sheet, as an Icon Composer document at `StarterApp/StarterApp/AppIcon.icon`: four plain SVG layers in `Assets/`, with background, opacity, Liquid Glass and the dark appearance set in `icon.json`. Xcode compiles it into the iOS 26 layered icon and the PNG fallbacks for older iOS. Replace it with your own `.icon` of the same name (Icon Composer ships with Xcode), or edit the SVGs and `icon.json` by hand on any platform. The native archive/export checks require a compiled AppIcon. See [Apple icon guidance](https://developer.apple.com/design/human-interface-guidelines/app-icons).
+Replace the starter's placeholder icon before shipping. The Icon Composer document at `StarterApp/StarterApp/AppIcon.icon` contains SVG layers in `Assets/`, with the background, opacity, Liquid Glass and dark appearance set in `icon.json`. The placeholder uses Apple's demo circles and guide grid under Apple's Design Resources license; see the [app icon guide](app-icon.md) for its source and replacement steps.
+
+Xcode compiles the document into the iOS 26 layered icon and PNG fallbacks for older iOS. Replace it with your own `.icon` of the same name (Icon Composer ships with Xcode), or edit the SVGs and `icon.json` by hand on any platform. The native archive/export checks require a compiled AppIcon. See [Apple icon guidance](https://developer.apple.com/design/human-interface-guidelines/app-icons).
 
 The initial route is **internal TestFlight testing** using an App Store Connect user with access to the app, normally the existing owner. Check whether the owner can already see and install the build in TestFlight before assuming a missing invitation or zero custom groups blocks installation. The owner reported successful installation without receiving a tester message; no group, invitation or individual assignment was created for this acceptance. This does not establish access for another tester/account. If the owner cannot access the build, inspect the existing account/build access first; creating a tester group or adding/inviting testers is a distinct account action requiring authorization. Managed Apple Accounts have testing restrictions; see [Apple's TestFlight overview](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview/) and [internal testers](https://developer.apple.com/help/app-store-connect/test-a-beta-version/add-internal-testers).
 
@@ -41,7 +43,7 @@ A missing/denied/malformed inventory is unknown and blocks release; it never bec
 
 ## Credential-free preflight
 
-PR/push checks use the demo manifest without accessing Apple credentials. **Actions → TestFlight delivery → Run workflow**, with **perform_upload unchecked**, performs the same unsigned preflight for the selected configured identity. It verifies native settings, reviewed export policy, upload-tool flags, release fixtures and an unsigned archive's actual identity, marketing version and planned build number. It downloads no live Apple inventory and validates no distribution signature.
+Pull-request checks use the demo manifest without accessing Apple credentials. **Actions → TestFlight delivery → Run workflow**, with **perform_upload unchecked**, performs the same unsigned preflight for the selected configured identity. It verifies native settings, reviewed export policy, upload-tool flags, release fixtures and an unsigned archive's actual identity, marketing version and planned build number. It downloads no live Apple inventory and validates no distribution signature.
 
 Download `testflight-preflight` to read `configuration.json`, `release-plan.json` and the generated export options. `offline_preflight` explicitly means the build number has not been checked against Apple. It is not permission to upload. No API private key is needed for this check.
 
@@ -49,7 +51,7 @@ Download `testflight-preflight` to read `configuration.json`, `release-plan.json
 
 After the implementation is reviewed, merged and its required checks pass:
 
-1. Change visible app behavior from Windows, commit/push, and inspect passing smoke-test and compiled-app artifacts for that commit. Use your configured manifest or the existing acceptance demo.
+1. Change visible app behavior, commit/push, and inspect passing smoke-test and compiled-app artifacts for that commit. Use your configured manifest or the existing acceptance demo.
 2. Review/approve the concrete upload plan. Dispatch **TestFlight delivery** on **main**, choose the intended **configuration**, and enable **perform_upload**. With `gh`, the demo command is:
 
    ```powershell
@@ -62,13 +64,19 @@ After the implementation is reviewed, merged and its required checks pass:
 6. In App Store Connect, confirm the exact marketing version/build number finished processing and review compliance questions. Check the existing owner's TestFlight access before deciding a group or assignment is needed. If a group or tester change is required, get authorization and follow [Apple's internal testing instructions](https://developer.apple.com/help/app-store-connect/test-a-beta-version/add-internal-testers); do not automatically invite others. Enter or update Beta App Description/What to Test manually when applicable; the workflow does not automate metadata.
 7. Install/open TestFlight on the iPhone, install that exact build and confirm the visible behavior change. Record the version/build, commit/run link, device OS and observed result without exposing account credentials or unrelated personal data. A physical iPhone checks that device's OS; it does not establish iOS 17 runtime compatibility unless the phone actually runs iOS 17.
 
-Steps 2 to 5 collapse into one command from any machine with `gh`: `python scripts/deliver_testflight.py --configuration <name>` proposes the build (`main` head, its newest iOS push run, deliveries in flight), dispatches with `perform_upload`, waits for preflight and completion, then prints the four stage statuses plus one verdict line. `--approve` remains available for repositories that choose to require a reviewer; if GitHub has no pending deployment, it is ignored and the command continues waiting for the workflow. Exit codes: 0 processed or accepted, 1 failed at a named step, 2 setup problem, 3 still running after `--wait-minutes` (resume with `--run <id>`). It downloads only the sanitized `testflight-delivery-<configuration>` artifact and reads fixed status fields.
+One command handles steps 2 to 5 from any machine with `gh`: `python scripts/deliver_testflight.py --configuration <name>`. It proposes the build, showing the `main` head, its newest iOS push run and any deliveries in flight. It dispatches with `perform_upload`, waits for preflight and completion, then prints the four stage statuses and a result line.
+
+Use `--approve` only for repositories that choose to require a reviewer. If GitHub has no pending deployment, the option is ignored and the command keeps waiting for the workflow. Exit codes: 0 processed or accepted, 1 failed at a named step, 2 setup problem, 3 still running after `--wait-minutes` (resume with `--run <id>`). The command downloads only the sanitized `testflight-delivery-<configuration>` artifact and reads fixed status fields.
 
 Template users who want an extra per-run gate can add a required reviewer in **Settings → Environments → `apple-credentials` → Required reviewers**, or run `python scripts/configure-github-repo.py --repo <owner>/<repository> --require-reviewer --apply`. The normal documented setup leaves reviewers off and retains the `main`-only deployment rule.
 
 To dispatch from an automated caller and return immediately, use `python scripts/deliver_testflight.py --configuration <name> --no-wait`. It prints the workflow run ID and URL plus a `--run <id>` resume command, then exits 0 without waiting for an optional environment approval or workflow completion. `--approve` cannot be combined with `--no-wait`; if a reviewer is configured, approve the run through the normal environment review, then resume it when you want its final report.
 
-The demo's upload/processing/owner-reported installation and behavior loop completed milestone 6. Future app changes still need their own delivery and device acceptance. Keep App Store publication separate. The demo's distribution certificate expires February 8, 2027; the validator must continue rejecting expired assets rather than treating earlier signing evidence as current readiness.
+### Recorded demo result
+
+On 2026-10-12, the approved [GitHub-hosted delivery run](https://github.com/asavs/ios-app-starter/actions/runs/38117486727) accepted `starter-app-demo` build **1.0 (1.9.1)**. The owner reported opening that TestFlight build on their iPhone and seeing the `Built on GitHub Actions.` caption. No agent device inspection, screenshot or automated device report was collected, and the phone's OS version is unknown. No local Xcode or separately managed Mac was required.
+
+Future app changes need their own delivery and device acceptance. Keep App Store publication separate. The demo's distribution certificate expires February 8, 2027; the validator must continue rejecting expired assets rather than treating earlier signing evidence as current readiness.
 
 ## Internal group with automatic distribution
 

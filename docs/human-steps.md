@@ -1,13 +1,13 @@
-# Human-step ledger
+# Setup steps that need a person
 
-Every step that a person currently has to do by hand is a row here, with the path to automating it. The target experience: clone the repository, grant permissions once, sign in to the few windows that require you, then walk away and come back to a template app on your phone. A step stays human only when a law, a payment, an identity check, or a second-factor code makes it so.
+Use this list to see where setting up your app needs your decision or action, and what an agent can do with permission. Each row shows the current process and a path to automation. The goal is to clone the starter, grant permissions once, complete the sign-in and device prompts, and get your app onto your phone. Identity checks, payments, legal decisions, physical device actions and second factors stay with you.
 
-Add a row the same day any agent or document says "only you can do this". Update the status column when a step is automated. The onboarding runbook (master plan step 6) reads this ledger to decide what to ask for and when.
+Add a row the same day an agent or document says "only you can do this". Update its status when the step is automated. The [onboarding runbook](agent-onboarding.md) uses this list to decide what to ask for and when.
 
 ## Automation paths
 
-- **API / CLI:** already scriptable with the pinned tools and GitHub CLI; needs a granted permission category, not a human.
-- **Browser agent:** doable by a computer-use agent in the user's signed-in browser once the user has granted that category. Apple two-factor prompts still reach the user's trusted device, so the agent asks for the code rather than owning the login.
+- **API / CLI:** scriptable with the pinned tools and GitHub CLI once the owner grants the permission category and approves the concrete action where required.
+- **Browser agent:** an agent can use the owner's signed-in browser with permission. Apple two-factor prompts still reach the owner's trusted device; the owner enters the code in the browser, never in chat.
 - **Config:** avoidable entirely by shipping the right configuration in the template.
 - **Human:** identity, payment, legal agreement, physical device action, or a second factor. Ask once, clearly, at the right moment.
 
@@ -22,7 +22,7 @@ Add a row the same day any agent or document says "only you can do this". Update
 | `apple-browser` | Computer-use agent acts in the user's signed-in App Store Connect and developer-portal tabs for steps the API cannot do | app record creation, key creation |
 | `device-install` | Install and launch development builds on the user's registered devices | `run-on-device`, ad hoc channel |
 
-| Setup permission choices | Human choice | `python scripts/setup.py` records the six yes/no choices and completed stages in ignored `build/setup-state.json`; granting a category does not replace action-specific approval |
+The owner chooses which categories to grant. `python scripts/setup.py` records the six yes/no choices and completed stages in ignored `build/setup-state.json`. Granting a category does not replace action-specific approval.
 
 ## Ledger
 
@@ -41,15 +41,17 @@ Add a row the same day any agent or document says "only you can do this". Update
 | Create the TestFlight internal group with automatic distribution | Scripted, awaiting first run | API / CLI (`apple-testflight`) | **Implemented 2026-10-16:** `TestFlight groups` workflow plans on every dispatch and, with `apply=true` from `main` behind the protected environment, runs `asc testflight groups create --internal --access-all-builds` and adds users of a chosen role. Nothing is deleted; the old `dev` group is retired by hand after the new one is verified. |
 | Add the owner as tester to the group | Scripted, awaiting first run | API / CLI (`apple-testflight`) | Same workflow: `asc testflight testers add --email <user> --group <id>` for each App Store Connect user with the selected role (default `ACCOUNT_HOLDER`); identities never appear in logs or reports. |
 | Accept the TestFlight invitation on the phone | Human | Human (once per tester) | Internal testers who are App Store Connect users see builds in the TestFlight app without an email step once in a group with automatic distribution. |
-| Install the build from TestFlight on the phone | Human tap | Human | The distribution tier. For iteration use `run-on-device` (Mac) or the ad hoc channel (any OS). |
+| Install the build from TestFlight on the phone | Human tap | Human | Install the exact version/build being checked. For local iteration, use `run-on-device` on a Mac; an ad hoc channel for any OS is still under evaluation. |
 | Choose whether an ad hoc signed IPA may be publicly hosted | Human decision | Config / API / CLI | Before implementing ad hoc delivery, default to private hosting. A public GitHub Release requires explicit approval for that app's binary; a public template repository alone is not approval. |
 | Enable Developer Mode and trust the computer on the phone | Human | Human (once per device) | Physical device prompts; the runbook names them before the first `run-on-device`. |
 | Unlock the login keychain for the agent's shell after a Mac restart | Human (password) | Human (after each restart) | Signing for the phone (`run-on-device`, UI tests on the device) fails with `errSecInternalComponent` while the login keychain is locked for the agent's session; an unlock in Terminal or Keychain Access does not reach it. Run `! security unlock-keychain /Users/<you>/Library/Keychains/login.keychain-db` in the agent's own prompt (use the full path; `~` was not expanded). Once per Mac, also `security set-key-partition-list -S apple-tool:,apple:,codesign: -s <same path>`. Seen 2026-10-19 and again after the 2026-10-23 macOS update. |
 | Register the device for development | Human in portal | API / CLI (`apple-provisioning`) | `run-on-device` with `IOS_REGISTER_DEVICE=1` lets Xcode do it; the pinned CLI can also create the device record. Preview first. |
 | Merge pull requests | Was human | Done: auto-merge after required checks | Rulesets and `gh pr merge --auto`. |
 | Grant the agent harness permission for `gh pr merge` / `gh pr close` | Human, once | Human, once | Recorded in the runbook as a one-time local setup step. |
-| Apple ID two-factor code when a browser session starts | Human | Human (each new session) | API keys avoid it for everything the API covers; browser-agent steps ask the user for the code. |
+| Apple ID two-factor code when a browser session starts | Human | Human (each new session) | API keys avoid it for everything the API covers. For browser-agent steps, the user enters the code in the browser, never in chat. |
 
 ## Cloud computers
 
-Nothing before the live iMessage bridge (master plan step 10) needs a machine other than GitHub-hosted runners and the user's own devices. The browser agent runs where the user's signed-in browser is, on Windows or Mac; it does not need a cloud Mac. The live bridge needs a persistent Mac signed into Messages. Decide the provider at that milestone against: persistent login and Apple ID on the machine, remote access for the agent, cost per month, and the rule that pull-request CI never runs on it. Candidates to evaluate then: a hosted Mac provider, a cloud vendor's Mac instances, or an owned Mac mini.
+Building and delivering the app needs no machine beyond GitHub-hosted runners and the owner's devices. A browser agent uses the owner's signed-in browser on Windows or Mac; it needs no cloud Mac.
+
+Only the optional live iMessage bridge needs a persistent Mac signed into Messages. When adding that feature, choose an owned Mac mini, a hosted Mac provider or a cloud vendor's Mac instances. Check persistent login and Apple ID support, agent remote access and monthly cost. Pull-request CI must never run on that machine.

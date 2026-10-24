@@ -1,8 +1,20 @@
-# App icon
+# Give your app its own icon
 
-The app icon is one Icon Composer document, `StarterApp/StarterApp/AppIcon.icon`. It is the only icon source: there is no asset catalog icon, no PNG and no generator.
+Replace the starter's placeholder with an icon for your app. Edit `StarterApp/StarterApp/AppIcon.icon` in Icon Composer on a Mac, or change its artwork and settings by hand on any platform. You can review rendered previews from Windows through CI. For a distinct placeholder while you build, use [the personalization command](#for-an-app-created-from-the-template).
 
-The template's placeholder is Apple's own Icon Composer demo icon (three overlapping circles) on Apple's app icon guide grid, the grid with three concentric circles and two diagonals that Xcode shows for a missing icon and Icon Composer overlays while you edit. The demo is copied unchanged from the *Icon Composer Demo Project* in the iOS 27 Icon Templates on [Apple Design Resources](https://developer.apple.com/design/resources/). It is Apple's reference for a correctly built document, so it is kept byte for byte rather than redrawn. The grid, `Assets/0.grid.svg`, is Apple's `appicongrid.ios.svg` from Icon Composer's bundle (`IconComposerKit.framework`), also unchanged. `Assets/0.grid-dark.svg` is the same file with only the stroke colour changed to white, because black lines vanish in the dark, tinted and clear appearances (Apple's Dark Mode guidance: if an asset looks good in only one mode, provide separate light and dark assets). The only other addition is a fourth group at the back of `icon.json` that shows the grid with glass off, choosing the file per appearance with `image-name-specializations`. Keep the grid while you position your own layers on it, then delete it and its group. It is covered by the Apple Design Resources license, kept in [`third_party/apple-icon-composer-demo/`](../third_party/apple-icon-composer-demo/): use it for mock-ups while you build, and replace it with your own icon before you ship. It uses iOS 27 refraction, so it needs Xcode 27 (see the refraction pitfall below). CI builds with Xcode 27. You can edit it on a Mac in Icon Composer, or by hand on any platform, and review it from Windows through the previews that CI renders on each run.
+The `.icon` document is the only icon source. There is no separate asset catalog icon, PNG or icon generator; Xcode creates the compiled icons and PNG fallbacks from the document.
+
+## Placeholder artwork and license
+
+The placeholder is Apple's Icon Composer demo icon: three overlapping circles on Apple's app icon guide grid. The grid has three concentric circles and two diagonals. Xcode shows it for a missing icon, and Icon Composer overlays it while you edit.
+
+The demo is copied unchanged from the *Icon Composer Demo Project* in the iOS 27 Icon Templates on [Apple Design Resources](https://developer.apple.com/design/resources/). It is Apple's reference for a correctly built document, kept byte for byte rather than redrawn.
+
+`Assets/0.grid.svg` is Apple's unchanged `appicongrid.ios.svg` from Icon Composer's bundle (`IconComposerKit.framework`). `Assets/0.grid-dark.svg` changes only the stroke colour to white so the lines remain visible in dark, tinted and clear appearances. This follows Apple's Dark Mode guidance to provide separate light and dark assets when one asset cannot serve both.
+
+The only other addition is a fourth group at the back of `icon.json`. It shows the grid with glass off and chooses the file for each appearance through `image-name-specializations`. Keep the grid while positioning your layers, then delete it and its group.
+
+The artwork is covered by the Apple Design Resources license in [`third_party/apple-icon-composer-demo/`](../third_party/apple-icon-composer-demo/). Use it for mock-ups while building, and replace it with your own icon before shipping. Its iOS 27 refraction needs Xcode 27, which CI uses; see [the refraction pitfall](#pitfalls-we-hit).
 
 ## What is in the document
 
@@ -29,7 +41,7 @@ XcodeGen picks the document up from the target's sources as an icon resource, so
 
 ## From Windows, start to upload
 
-No Mac and nothing extra to install in the repository: draw with a tool you already have, put the files in `AppIcon.icon`, and let CI and TestFlight do the rest.
+Draw with a tool you already have, put the files in `AppIcon.icon`, and use CI to check and render them. These steps need no local Mac or extra repository tools. TestFlight delivery needs the account setup and approval described in [the delivery guide](testflight-delivery.md).
 
 **1. Draw it.** Apple's [App Icon Template for Figma](https://www.figma.com/community/file/1645923469870515372/app-icon-template-ios-ipados-and-watchos-27) runs in the browser and has the grid and canvas; Inkscape, Affinity or Illustrator work too. Use a 1024 × 1024 canvas, keep the main shape centred, and don't draw the rounded corners, shadows or glass: the system adds them.
 
@@ -115,7 +127,7 @@ gh run download <run-id> -n ios-test-results-starter -D build/ci-results
 
 ## Pitfalls we hit
 
-- **A malformed document gives no detail.** `ictool` reports only "The data couldn't be read because it isn't in the correct format" and exit with status 255. Run `check-app-icon.py` first, because it names the problem.
+- **A malformed document gives no detail.** `ictool` reports only "The data couldn't be read because it isn't in the correct format" and exits with status 255. Run `check-app-icon.py` first, because it names the problem.
 - **No dark fill means a black icon.** Without a `"appearance": "dark"` fill specialization, the Dark rendition paints the background black and fills enclosed shapes (such as the inside of a dashed circle) with the light colour. The check requires a dark fill for this reason.
 - **Per-appearance files need the default listed too.** A layer that changes its file by appearance must list the default as an entry without `appearance` inside `image-name-specializations`, with no separate `image-name`. With `image-name` plus dark-only specializations, `ictool` ignores the dark file.
 - **Keep features in every appearance.** Apple's guide asks for the same core features in default, dark, clear and tinted. Render all six (`Default`, `Dark`, `TintedLight`, `TintedDark`, `ClearLight`, `ClearDark`) before committing; a black or very dark layer disappears in all but the first.
