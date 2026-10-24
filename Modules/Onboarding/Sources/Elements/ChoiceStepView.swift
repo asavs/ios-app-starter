@@ -50,6 +50,7 @@ public struct ChoiceStepView: View {
 
     private func row(_ option: OnboardingChoice.Option) -> some View {
         let isSelected = selection.contains(option.id)
+        let symbol = indicator(isSelected: isSelected)
         return Button {
             selection = choice.selection(selection, tapping: option.id)
         } label: {
@@ -65,9 +66,10 @@ public struct ChoiceStepView: View {
                     .font(theme.typography.body)
                     .foregroundStyle(theme.colors.textPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Image(systemName: indicator(isSelected: isSelected))
-                    .font(.title3)
+                Image(systemName: symbol ?? "checkmark")
+                    .font(.title3.weight(choice.mode == .single ? .semibold : .regular))
                     .foregroundStyle(isSelected ? theme.colors.accent : theme.colors.textSecondary)
+                    .opacity(symbol == nil ? 0 : 1) // Keeps the column when empty.
                     .accessibilityHidden(true)
             }
             .padding(theme.spacing.medium)
@@ -85,11 +87,13 @@ public struct ChoiceStepView: View {
         .accessibilityIdentifier("onboarding.choice.\(choice.id).\(option.id)")
     }
 
-    /// A circle for a single choice and a square for a multiple one, the system's radio and checkbox cues.
-    private func indicator(isSelected: Bool) -> String {
+    /// The system's selection cues: a single choice marks its answer with a checkmark, as a Settings
+    /// list does; a multiple one shows a circle on every row that fills when picked, as Mail and
+    /// Photos selection do.
+    private func indicator(isSelected: Bool) -> String? {
         switch choice.mode {
-        case .single: isSelected ? "checkmark.circle.fill" : "circle"
-        case .multiple: isSelected ? "checkmark.square.fill" : "square"
+        case .single: isSelected ? "checkmark" : nil
+        case .multiple: isSelected ? "checkmark.circle.fill" : "circle"
         }
     }
 }

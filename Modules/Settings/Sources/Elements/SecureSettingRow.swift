@@ -8,6 +8,7 @@ import Theme
 /// `.save`, `.clear` and `.status`.
 public struct SecureSettingRow: View {
     @Environment(\.appTheme) private var theme
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var draft = ""
     @State private var isStored = false
     @State private var failure: String?
@@ -24,16 +25,22 @@ public struct SecureSettingRow: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: theme.spacing.small) {
-            HStack(spacing: theme.spacing.small) {
+            // At accessibility text sizes the buttons move under the field instead of squeezing it.
+            let entry = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: theme.spacing.small))
+                : AnyLayout(HStackLayout(spacing: theme.spacing.small))
+            entry {
                 SecureField(title, text: $draft)
                     .autocorrectionDisabled() // No password content type: these are keys and tokens, not credentials AutoFill should offer to save.
                     .accessibilityIdentifier("settings.secure.\(key).field")
-                Button("Save", action: save)
-                    .disabled(draft.isEmpty)
-                    .accessibilityIdentifier("settings.secure.\(key).save")
-                if isStored {
-                    Button("Clear", role: .destructive, action: clear)
-                        .accessibilityIdentifier("settings.secure.\(key).clear")
+                HStack(spacing: theme.spacing.medium) {
+                    Button("Save", action: save)
+                        .disabled(draft.isEmpty)
+                        .accessibilityIdentifier("settings.secure.\(key).save")
+                    if isStored {
+                        Button("Clear", role: .destructive, action: clear)
+                            .accessibilityIdentifier("settings.secure.\(key).clear")
+                    }
                 }
             }
             .buttonStyle(.borderless)
@@ -65,8 +72,10 @@ public struct SecureSettingRow: View {
             draft = ""
             isStored = true
             failure = nil
+            announce("\(title) saved.")
         } catch {
             failure = "Could not save: \(error)"
+            announce(failure)
         }
     }
 
@@ -75,8 +84,16 @@ public struct SecureSettingRow: View {
             try store.remove(key)
             isStored = false
             failure = nil
+            announce("\(title) cleared.")
         } catch {
             failure = "Could not clear: \(error)"
+            announce(failure)
         }
+    }
+
+    /// The field empties and the status changes without moving focus, so VoiceOver says what happened.
+    private func announce(_ message: String?) {
+        guard let message else { return }
+        AccessibilityNotification.Announcement(message).post()
     }
 }

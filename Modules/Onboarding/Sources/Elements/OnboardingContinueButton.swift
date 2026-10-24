@@ -1,8 +1,8 @@
 import SwiftUI
 import Theme
 
-/// The flow's single call to action: Liquid Glass on iOS 26 and later, the theme's primary style
-/// before that. While `isBusy` (a permission request in flight) it shows a spinner and ignores taps.
+/// The flow's single call to action in the theme's prominent style (Liquid Glass on iOS 26 and later).
+/// While `isBusy` (a permission request in flight) it shows a spinner and ignores taps.
 struct OnboardingContinueButton: View {
     let title: String
     let isBusy: Bool
@@ -19,29 +19,11 @@ struct OnboardingContinueButton: View {
             }
             .frame(maxWidth: .infinity)
         }
-        .modifier(ProminentButton())
+        .prominentButtonStyle()
         .disabled(isBusy)
         .accessibilityIdentifier("onboarding.next")
         .accessibilityLabel(title)
-    }
-}
-
-private struct ProminentButton: ViewModifier {
-    func body(content: Content) -> some View {
-        // `#available` does not hide a symbol the SDK lacks: Xcode 16 (Swift 6.0) has no `.glassProminent`.
-        #if compiler(>=6.2)
-        if #available(iOS 26, macOS 26, *) {
-            content
-                .buttonStyle(.glassProminent)
-                .controlSize(.large)
-        } else {
-            content
-                .buttonStyle(.primary)
-        }
-        #else
-        content
-            .buttonStyle(.primary)
-        #endif
+        .accessibilityValue(isBusy ? "Waiting" : "") // Otherwise VoiceOver says only "dimmed" mid-request.
     }
 }
 

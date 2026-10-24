@@ -27,6 +27,7 @@ struct OnboardingGate: ViewModifier {
     let steps: [OnboardingStep]
     let version: Int
     let record: OnboardingRecord
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isComplete: Bool
 
     init(steps: [OnboardingStep], version: Int, record: OnboardingRecord) {
@@ -49,7 +50,8 @@ struct OnboardingGate: ViewModifier {
                         isComplete = true
                     }
                 }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+                // Reduce Motion keeps the cross-fade and drops the slide.
+                .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
             }
         }
         .onAppear {
