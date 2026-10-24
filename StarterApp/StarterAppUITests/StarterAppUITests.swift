@@ -50,7 +50,7 @@ final class StarterAppUITests: XCTestCase {
         let moduleVersion = app.staticTexts["welcome.modulesVersion"]
         if Self.enabledModules?.contains("TemplateVersion") == true || moduleVersion.exists {
             XCTAssertTrue(moduleVersion.waitForExistence(timeout: 10), "The enabled module should report its version")
-            XCTAssertEqual(moduleVersion.label, "Modules 0.3.0", "The welcome screen should identify this module release")
+            XCTAssertEqual(moduleVersion.label, "Modules 0.3.1", "The welcome screen should identify this module release")
         }
     }
 
@@ -282,7 +282,7 @@ final class StarterAppUITests: XCTestCase {
     private func assertThemedWelcome(_ app: XCUIApplication, name: String) throws -> CGFloat {
         let card = element(app, "welcome.card")
         XCTAssertTrue(waitUntilHittable(card), "The themed card should be visible")
-        XCTAssertTrue(app.staticTexts["Built on GitHub Actions."].isHittable, "The card should show its details")
+        XCTAssertTrue(app.staticTexts["Replace this screen in ContentView.swift."].isHittable, "The card should show its details")
         let replay = app.buttons["onboarding.replay"]
         if replay.exists {
             XCTAssertTrue(replay.isHittable, "The primary-styled button should be visible")

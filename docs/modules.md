@@ -147,8 +147,8 @@ The app, module and compatibility lanes cache Xcode's cloned Swift package sourc
 Tags on this repository identify module library versions. App builds have separate numbers. Use semantic versions without a `v` prefix, as Swift Package Manager expects.
 
 1. In a pull request, set `TemplateVersion.modules` and the welcome-screen UI test's expected version to the new version and merge after the required app, module and no-modules checks pass.
-2. From a clean `main` checkout at the merged commit: `python3 scripts/tag-modules.py 0.3.0`, then the printed `git push origin 0.3.0` (or add `--push`). The script refuses a version that differs from the constant, a dirty tree, another branch, a stale `main`, or an existing tag.
-3. The tag push starts **Module release check** ([workflow](../.github/workflows/module-release-check.yml)). It creates a separate consumer with an exact-version GitHub URL dependency, imports all four round-one products, builds for the iOS simulator with Xcode 27.0, and verifies the resolved version against the library's displayed version. Wait with `gh run watch <id> --exit-status`, then download `module-release-check` and inspect `release-check.json` and `Package.resolved`. The report names the version, commit and products actually built. A failed check means the release is not verified; repair in a new version rather than moving the tag. To recheck a published version: `gh workflow run module-release-check.yml --ref main --field version=0.3.0`.
+2. From a clean `main` checkout at the merged commit: `python3 scripts/tag-modules.py 0.3.1`, then the printed `git push origin 0.3.1` (or add `--push`). The script refuses a version that differs from the constant, a dirty tree, another branch, a stale `main`, or an existing tag.
+3. The tag push starts **Module release check** ([workflow](../.github/workflows/module-release-check.yml)). It creates a separate consumer with an exact-version GitHub URL dependency, imports all four round-one products, builds for the iOS simulator with Xcode 27.0, and verifies the resolved version against the library's displayed version. Wait with `gh run watch <id> --exit-status`, then download `module-release-check` and inspect `release-check.json` and `Package.resolved`. The report names the version, commit and products actually built. A failed check means the release is not verified; repair in a new version rather than moving the tag. To recheck a published version: `gh workflow run module-release-check.yml --ref main --field version=0.3.1`.
 4. Bump `from:` in each app that should receive the verified change. A compile check establishes package consumption, not app UI behavior or minimum-OS runtime coverage.
 
 ## Use the library from an app
@@ -159,7 +159,7 @@ An app created from this template starts with the same `Package.swift`, `Modules
 packages:
   StarterModules:
     url: https://github.com/asavs/ios-app-starter
-    from: "0.3.0"
+    from: "0.3.1"
 targets:
   StarterApp:
     dependencies:
@@ -175,7 +175,7 @@ targets:
 
 Then delete `Package.swift` and `Modules/` from the app, or keep them under a different package name for app-local modules. Xcode writes `StarterApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` for a URL dependency; commit it. To improve a module from inside an app, point the app at a local clone (`path: ../ios-app-starter`) while developing, open the pull request here, tag, and switch back to `url:` with the new version.
 
-The current release is `0.3.0`, which made module text translatable (see Localization; it changed public API from `0.2.0`, the round-one release). Check its **Module release check** result before adopting it. The initial `0.1.0` tag contains only TemplateVersion and predates Theme, Onboarding and Settings. Inspect `Package.swift` at the chosen tag before changing from `path:` to `url:`; the current contents of `main` and the displayed version constant do not establish what an older tag ships. Keep only the products the app needs; Onboarding and Settings require Theme. Never move an existing tag to add products.
+The current release is `0.3.1`. `0.3.0` made module text translatable (see Localization; it changed public API from `0.2.0`, the round-one release); `0.3.1` rewords the template's onboarding copy and lets code off the main actor read `OnboardingView`'s default titles. Check its **Module release check** result before adopting it. The initial `0.1.0` tag contains only TemplateVersion and predates Theme, Onboarding and Settings. Inspect `Package.swift` at the chosen tag before changing from `path:` to `url:`; the current contents of `main` and the displayed version constant do not establish what an older tag ships. Keep only the products the app needs; Onboarding and Settings require Theme. Never move an existing tag to add products.
 
 ## XcodeGen include note
 

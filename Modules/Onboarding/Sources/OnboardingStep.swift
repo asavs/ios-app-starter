@@ -88,10 +88,10 @@ public struct OnboardingStep: Identifiable, Sendable {
                 features: [
                     WelcomeFeature(id: "phone", systemImage: "iphone.gen3",
                                    title: LocalizedStringResource("Built for your phone", bundle: .module),
-                                   detail: LocalizedStringResource("Every build is tested on GitHub Actions before it reaches you.", bundle: .module)),
+                                   detail: LocalizedStringResource("Native SwiftUI for iPhone and iPad, with dark mode, large text and VoiceOver.", bundle: .module)),
                     WelcomeFeature(id: "modules", systemImage: "square.stack.3d.up",
                                    title: LocalizedStringResource("Made of modules", bundle: .module),
-                                   detail: LocalizedStringResource("Theme, onboarding and settings are packages you keep or drop.", bundle: .module)),
+                                   detail: LocalizedStringResource("Onboarding, theme and settings are modules you keep or delete.", bundle: .module)),
                     WelcomeFeature(id: "yours", systemImage: "slider.horizontal.3",
                                    title: LocalizedStringResource("Make it yours", bundle: .module),
                                    detail: LocalizedStringResource("Replace these steps with your own in one array of OnboardingStep values.", bundle: .module)),
@@ -104,7 +104,7 @@ public struct OnboardingStep: Identifiable, Sendable {
                 id: "notifications",
                 systemImage: "bell.badge",
                 title: LocalizedStringResource("Stay in the loop", bundle: .module),
-                message: LocalizedStringResource("Starter App can tell you when a new build is ready to try. You decide on the next screen.", bundle: .module),
+                message: LocalizedStringResource("Notifications let Starter App tell you when something changes. You decide on the next screen.", bundle: .module),
                 requester: PermissionOverride.resolve(real: NotificationPermission()))),
         ]
     }

@@ -56,10 +56,11 @@ public struct OnboardingView: View {
                   finishTitle: finishTitle, onFinish: onFinish)
     }
 
-    /// "Skip", "Continue" and "Get started", from this module's string catalog.
-    public static let defaultSkipTitle = LocalizedStringResource("Skip", bundle: .module)
-    public static let defaultContinueTitle = LocalizedStringResource("Continue", bundle: .module)
-    public static let defaultFinishTitle = LocalizedStringResource("Get started", bundle: .module)
+    /// "Skip", "Continue" and "Get started", from this module's string catalog. `nonisolated` so code
+    /// outside the main actor, in another module, can read them too.
+    nonisolated public static let defaultSkipTitle = LocalizedStringResource("Skip", bundle: .module)
+    nonisolated public static let defaultContinueTitle = LocalizedStringResource("Continue", bundle: .module)
+    nonisolated public static let defaultFinishTitle = LocalizedStringResource("Get started", bundle: .module)
 
     public var body: some View {
         VStack(spacing: theme.spacing.medium) {

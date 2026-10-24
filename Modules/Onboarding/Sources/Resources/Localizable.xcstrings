@@ -78,28 +78,6 @@
         }
       }
     },
-    "Every build is tested on GitHub Actions before it reaches you.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Every build is tested on GitHub Actions before it reaches you."
-          }
-        }
-      }
-    },
-    "Everything here was built and tested on GitHub Actions before it reached you.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Everything here was built and tested on GitHub Actions before it reached you."
-          }
-        }
-      }
-    },
     "Get started": {
       "extractionState": "manual",
       "localizations": {
@@ -129,6 +107,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Make it yours"
+          }
+        }
+      }
+    },
+    "Native SwiftUI for iPhone and iPad, with dark mode, large text and VoiceOver.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Native SwiftUI for iPhone and iPad, with dark mode, large text and VoiceOver."
+          }
+        }
+      }
+    },
+    "Notifications let Starter App tell you when something changes. You decide on the next screen.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications let Starter App tell you when something changes. You decide on the next screen."
+          }
+        }
+      }
+    },
+    "Onboarding, theme and settings are modules you keep or delete.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Onboarding, theme and settings are modules you keep or delete."
           }
         }
       }
@@ -188,17 +199,6 @@
         }
       }
     },
-    "Starter App can tell you when a new build is ready to try. You decide on the next screen.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Starter App can tell you when a new build is ready to try. You decide on the next screen."
-          }
-        }
-      }
-    },
     "Stay in the loop": {
       "extractionState": "manual",
       "localizations": {
@@ -228,17 +228,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "The app adapts to the answer. Ask only what changes what people see."
-          }
-        }
-      }
-    },
-    "Theme, onboarding and settings are packages you keep or drop.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Theme, onboarding and settings are packages you keep or drop."
           }
         }
       }
