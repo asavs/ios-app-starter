@@ -4,8 +4,6 @@
 [![iOS and iPadOS 17+](https://img.shields.io/badge/iOS%20%7C%20iPadOS-17%2B-blue?logo=apple)](#current-defaults)
 [![Swift 6](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white)](#current-defaults)
 [![Xcode 27](https://img.shields.io/badge/Xcode-27-147EFB?logo=xcode&logoColor=white)](#current-defaults)
-[![Modules](https://img.shields.io/github/v/tag/asavs/ios-app-starter?label=modules&sort=semver)](docs/modules.md)
-[![iOS build](https://github.com/asavs/ios-app-starter/actions/workflows/ios.yml/badge.svg?branch=main)](https://github.com/asavs/ios-app-starter/actions/workflows/ios.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 A starting point for a native iPhone and iPad app. Onboarding, theming, settings and secure storage are already built, tested and accessible, and each one is a module you keep or delete. You start on the part that makes your app different.
