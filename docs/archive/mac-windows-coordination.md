@@ -1,10 +1,10 @@
 # Mac and Windows coordination
 
-This is the shared execution plan agreed on 2026-10-12. Read it with [the roadmap](../roadmap.md), [agent instructions](../AGENTS.md), and [setup evidence](setup-experience.md). Milestone 7 remains open. The milestone 2 reporting gate is complete, but improving reporting comes first because it makes every subsequent change cheaper to verify.
+This is the shared execution plan agreed on 2026-10-12. Read it with [the roadmap](../../roadmap.md), [agent instructions](../../AGENTS.md), and [setup evidence](../setup-experience.md). Milestone 7 remains open. The milestone 2 reporting gate is complete, but improving reporting comes first because it makes every subsequent change cheaper to verify.
 
 ## Board rules (2026-10-16)
 
-The [master plan](master-plan.md) puts a lighter board first. From now on:
+The [master plan](../master-plan.md) puts a lighter board first. From now on:
 
 - The "Current handoff" table below is the board. One row per task; one bullet per side when a task is active: what was done, the run or artifact link, what remains.
 - Detailed evidence goes in the setup journal once, not here and there. Link it.

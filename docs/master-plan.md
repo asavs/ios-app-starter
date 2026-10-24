@@ -1,12 +1,14 @@
 # Master plan
 
-Agreed 2026-10-16. This is the ordered list of everything the repository should do next, and why each step is in its position. The roadmap's milestone table follows this order; the [coordination board](mac-windows-coordination.md) tracks the current task; the [setup journal](setup-experience.md) records what actually happened.
+Agreed 2026-10-16. This is the ordered list of everything the repository should do next, and why each step is in its position. The roadmap's milestone table follows this order; the [coordination board](archive/mac-windows-coordination.md) tracks the current task; the [setup journal](setup-experience.md) records what actually happened.
 
 ## The organizing test
 
-A fresh agent on a fresh machine, Mac or Windows, takes a fresh clone to a template app on a phone, asking the human only for the steps Apple and GitHub force on humans. Every commit should make that run shorter, more reliable, or more useful to the agents who iterate afterwards: reading logs and bug reports, compiling the next build, and getting it onto the phone.
+The repository is an iOS starter app. Someone building an app should start with onboarding, sign-in, database design and UX affordances already scaffolded and prunable, and spend their time on what makes the app different, without handling builds, signing or delivery. The owner builds apps from the template, then backpropagates the quintessential pieces into it as modules: onboarding, authentication, database design, UX elements, and later chat and AI features and the iMessage bridge.
 
-The repository is a template for building many apps. The valuable part is the module library: onboarding, authentication, database design, UX elements, chat and AI features, and the iMessage bridge. Milestones 1–7 are the delivery plumbing that makes any app from the template shippable from anywhere. The owner builds apps from the template, then backpropagates the quintessential pieces into the template as modules. Optional Apple platforms matter because they are testable in GitHub-hosted runners, but they are not needed until the module library exists.
+Builds on GitHub's runners, development from Windows, AI-automated setup, the iMessage bridge and AI model support are what make that possible from anywhere; they serve the app scaffold, not the other way round. Milestones 1–7 are that delivery plumbing. Optional Apple platforms matter because they are testable in GitHub-hosted runners, but they are not needed until the module library exists.
+
+The test for that plumbing: a fresh agent on a fresh machine, Mac or Windows, takes a fresh clone to a template app on a phone, asking the human only for the steps Apple and GitHub force on humans. Every commit should make that run shorter, more reliable, or more useful to the agents who iterate afterwards: reading logs and bug reports, compiling the next build, and getting it onto the phone.
 
 ## Order of work
 

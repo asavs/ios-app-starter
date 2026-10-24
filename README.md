@@ -1,198 +1,91 @@
 # iOS App Starter
 
-A native Apple app starter built around **Windows → GitHub Actions → TestFlight → iPhone**. Users do not need a separately managed Mac. GitHub-hosted macOS runners perform the Xcode work.
+A starting point for a native iPhone and iPad app. Onboarding, theming, settings and secure storage are already built, tested and accessible, and each one is a module you keep or delete. You start on the part that makes your app different.
 
-The starter has a generated iPhone/iPad app and a passing remote build gate. Configuration validation, a renamed-app example, and portable success/failure reports have also been verified on GitHub. Distribution signing has been validated for the demo app. TestFlight delivery and iPhone acceptance are complete for the demo app; optional platforms remain planned in [the roadmap](roadmap.md).
+Building, testing, signing and shipping to TestFlight are handled for you on GitHub's Macs, so you can work from a Mac, from Windows, or with an AI agent doing the setup.
 
-## Develop from Windows
+## What you get
 
-1. On GitHub, choose **Use this template → Create a new repository**. Enable Actions in your new repository if needed. This is a public GitHub template.
-2. Edit Swift files under `StarterApp/StarterApp` using your preferred Windows editor or GitHub's browser editor.
-3. Edit `project.yml` for project settings. It is the source of truth for the generated Xcode project.
-4. Open a pull request. The **iOS** workflow generates the project, builds the app, and tests the welcome screen on an iPhone simulator; its `ios-gate` check and the three portable `portable (...)` checks are required before merging to `main`. Documentation-only pull requests pass the gate without a simulator run, and draft pull requests wait until marked ready for review. Enable auto-merge (`gh pr merge <number> --auto --merge`) and move on; GitHub merges when the checks pass. Pushes to `main` run all three configurations; newer main pushes cancel superseded iOS runs. Signing and TestFlight preflights run on pull requests or by manual dispatch, not again on push.
-5. Open the workflow run in GitHub's **Actions** tab. Read its test summary and download the **ios-test-results-starter** artifact (or **ios-test-results-pocket-notes** / **ios-test-results-starter-app-demo** for the examples) for full logs, JSON counts, and the `.xcresult` bundle. Artifacts are retained for 14 days. You can also select **iOS → Run workflow** to run it manually.
+A SwiftUI app for iPhone and iPad, iOS 17 and later, that already has:
 
-This first workflow is unsigned and needs no Apple credentials. It produces no installable build. The manually triggered [TestFlight delivery workflow](docs/testflight-delivery.md) is milestone 6; the demo upload and user-reported iPhone acceptance are complete.
+| Module | What it gives you |
+| --- | --- |
+| **Onboarding** | A first-launch flow built from steps you pick: a welcome sheet, tour cards, a question with fixed answers, a permission primer, or your own view. Shown once per version, skippable, and followed by TipKit tips that wait until it's done. |
+| **Theme** | Colors, spacing, corner radii and text styles in one place, plus buttons, cards and an empty state that follow dark mode and Dynamic Type. Change the accent once at the root. |
+| **Settings** | A settings screen with an appearance picker, app info, and a row for secrets stored in the Keychain. |
+| **TemplateVersion** | The module version the app was built against, shown on the welcome screen. |
+
+Also included:
+
+- **Translations.** Every piece of text is in a string catalog, the app's and each module's, ready for more languages.
+- **Accessibility.** VoiceOver labels, Dynamic Type up to the largest sizes, and 44-point touch targets, with a UI test at the largest text size.
+- **Tests.** Unit tests per module and UI tests that walk each feature and attach screenshots.
+- **A placeholder icon** you can personalize with one command, in Apple's Icon Composer format.
+
+Planned next, as real apps ask for them: sign-in (Sign in with Apple), a database layer on SwiftData with a schema guide, chat and AI with cloud or on-device models, an iMessage bridge, and Watch, Mac, TV and Vision Pro targets. See the [roadmap](roadmap.md).
+
+## Start your app
+
+1. On GitHub, choose **Use this template → Create a new repository**.
+2. Name the app in [`project.yml`](project.yml), the single source of truth for the Xcode project:
+
+   | What | Setting in `project.yml` | Example |
+   |---|---|---|
+   | Home Screen name | `targets.StarterApp.settings.base.INFOPLIST_KEY_CFBundleDisplayName` | `"Pocket Notes"` |
+   | Name of development builds | `targets.StarterApp.settings.base.DEV_DISPLAY_NAME` | `"Notes Dev"` |
+   | App identifier | `targets.StarterApp.settings.base.PRODUCT_BUNDLE_IDENTIFIER` | `org.example.pocketnotes` |
+   | Test identifiers | The same setting under `StarterAppTests` and `StarterAppUITests` | `org.example.pocketnotes.tests` |
+   | Minimum iOS | `options.deploymentTarget.iOS` | `"17.0"` |
+   | Devices | `targets.StarterApp.settings.base.TARGETED_DEVICE_FAMILY` | `"1,2"` both, `"1"` iPhone, `"2"` iPad |
+
+   Keep the internal names (`StarterApp` targets and scheme) as they are; the Home Screen name is separate from them. [`examples/pocket-notes.yml`](examples/pocket-notes.yml) shows a renamed app.
+3. Give it its own icon: `python scripts/personalize-icon.py` ([icon guide](docs/app-icon.md)).
+4. Keep only the modules you want. Each is one product line under `targets.StarterApp.dependencies` in `project.yml`; delete the line and the app still builds, because the template only uses a module when it's present. [`examples/no-modules.yml`](examples/no-modules.yml) is the app with none of them.
+5. Build your screens in `StarterApp/StarterApp/`. `StarterAppApp.swift` sets up the theme and the onboarding steps; `ContentView.swift` is the welcome screen to replace.
+
+How modules work, how to change one and how to move an app to a tagged version: [docs/modules.md](docs/modules.md).
+
+## Run it
+
+**On a Mac with Xcode 27:** `bash scripts/generate-project.sh`, then open `StarterApp/StarterApp.xcodeproj` and run the `StarterApp` scheme. `bash scripts/test-ios.sh` runs the same UI tests as CI. With your iPhone connected:
+
+```sh
+IOS_DEVELOPMENT_TEAM=<your team ID> bash scripts/run-on-device.sh
+```
+
+That builds, installs and launches a development build on the phone in about a minute, with no upload. Use your own app identifier, or `IOS_CONFIGURATION=starter-app-demo`; details in [docs/ci.md](docs/ci.md#run-on-your-iphone-from-a-mac).
+
+**From Windows, or anywhere without Xcode:** edit, push and open a pull request. GitHub builds the app on a Mac, runs the tests on a simulator and posts the results with screenshots. Nothing to install.
+
+**On your phone through TestFlight:** once Apple setup is done, one command builds, signs and uploads from `main`:
+
+```sh
+python scripts/deliver_testflight.py --configuration starter-app-demo
+```
+
+Apple setup takes an Apple Developer membership and an App Store Connect API key; [docs/apple-setup.md](docs/apple-setup.md) walks through it, and [docs/testflight-delivery.md](docs/testflight-delivery.md) covers delivery.
+
+## What's handled for you
+
+- **Builds and tests on GitHub's Macs.** Every pull request builds the app and runs its UI tests on an iPhone simulator; a merge needs them green. Reports name the failing test, file and line, so you or an agent can fix it without opening Xcode. [docs/ci.md](docs/ci.md)
+- **No Mac required.** Xcode work runs on GitHub, so Windows works for everything except the optional live iMessage bridge.
+- **Signing and TestFlight.** Credentials live in GitHub Secrets; pull requests never see them. [docs/testflight-delivery.md](docs/testflight-delivery.md)
+- **Older iOS versions.** A weekly run tests the app on every iOS version GitHub's Macs offer, back to iOS 17. [docs/ci.md](docs/ci.md#test-on-older-ios-versions)
+- **Tester feedback.** TestFlight feedback can be read from the command line and turned into issues. [docs/tester-feedback.md](docs/tester-feedback.md)
+- **Setup by an AI agent.** An agent can take a fresh copy of this repository to the app on your phone, asking you only for what Apple and GitHub require a person to do. [docs/agent-onboarding.md](docs/agent-onboarding.md)
 
 ## Current defaults
 
 | Setting | Value |
 |---|---|
-| GitHub runner | `xcode-27` public preview |
-| Xcode | 27.0, explicitly selected and verified |
-| SDK | Bundled iOS 27.0 SDK |
-| Simulator smoke test | iPhone 17, iOS 27.0 on every pull request and `main` push; weekly matrix verified iOS 17.0.1, 18.1, 26.0.1 and 27.0 on 2026-10-16 |
-| Minimum OS | iOS/iPadOS 17.0, including test targets |
+| Xcode | 27.0 on GitHub's `xcode-27` runner, with the iOS 27.0 SDK |
+| Minimum OS | iOS and iPadOS 17.0 |
 | Devices | iPhone and iPad |
-| Project generator | XcodeGen 2.46.0, downloaded with SHA-256 verification |
+| Simulator for required checks | iPhone 17, iOS 27.0 |
+| Project generator | XcodeGen 2.46.0 |
 
-The iOS 17.0 deployment target is backed by a passing smoke test on an iOS 17.0.1 simulator (Xcode 16.2) in the weekly compatibility matrix; required checks still run on iOS 27.0. Watch, native Mac, TV, and Vision Pro targets will be optional; they are not generated yet.
+The default identifier, `com.example.StarterApp`, works for builds and tests; choose your own before signing.
 
-The default bundle identifier is `com.example.StarterApp`; replace it before distribution.
+## Working on the starter itself
 
-## Configure your app from Windows
-
-Edit the marked settings in `project.yml`, commit, and push. Actions regenerates the project before checking or building it; Windows users do not need XcodeGen installed locally. The checked-in project is convenient for Mac users.
-
-| What to change | Location in `project.yml` | Example |
-|---|---|---|
-| Name shown on the Home Screen | `targets.StarterApp.settings.base.INFOPLIST_KEY_CFBundleDisplayName` | `"Pocket Notes"` |
-| Name of development (Debug) builds, so a phone install is told apart from TestFlight's | `targets.StarterApp.settings.base.DEV_DISPLAY_NAME` | `"Notes Dev"` |
-| App identifier | `targets.StarterApp.settings.base.PRODUCT_BUNDLE_IDENTIFIER` | `org.example.pocketnotes` |
-| Unit-test identifier | Same setting under `StarterAppTests` | `org.example.pocketnotes.tests` |
-| UI-test identifier | Same setting under `StarterAppUITests` | `org.example.pocketnotes.uitests` |
-| Minimum iOS/iPadOS | `options.deploymentTarget.iOS` | `"17.0"` |
-| Supported devices | `targets.StarterApp.settings.base.TARGETED_DEVICE_FAMILY` | `"1,2"` for both, `"1"` for iPhone, `"2"` for iPad |
-
-Give the app its own placeholder icon with `python scripts/personalize-icon.py`: the template's discs on Apple's guide grid in random colours and arrangement, until you design a real icon ([docs/app-icon.md](docs/app-icon.md)).
-
-Modules (versioned Swift packages in this repository) are enabled per app with one product line under `targets.StarterApp.dependencies`; see [docs/modules.md](docs/modules.md) for the layout, tests, tagging and how an app created from the template depends on a tagged version.
-
-**App icon.** The icon is the Icon Composer document `StarterApp/StarterApp/AppIcon.icon`: flat SVG layers under `Assets/` and an `icon.json` that sets the background, Liquid Glass, shadows, translucency and refraction. The placeholder is Apple's Icon Composer demo icon, under Apple's Design Resources license (`third_party/apple-icon-composer-demo/`); replace it before shipping. Xcode 27 renders its refraction; Xcode 26 builds it without. There is no generator; edit the document by hand from any platform or open it in Icon Composer on a Mac. `python3 scripts/check-app-icon.py` validates it with a named fix per problem (a layer whose file is missing, an unreferenced asset, no dark fill) and, where Icon Composer's `ictool` exists, writes Default, Dark and TintedLight previews plus a home-screen-size render with `--output <dir>`. The iOS lane runs it for the starter configuration and uploads the previews under `icon/` in `ios-test-results-starter`, so the icon can be reviewed from Windows per run; the portable job checks the structure on every OS. `actool` compiles the document into the iOS 26 layered icon and the PNG fallbacks for iOS 17. See [docs/app-icon.md](docs/app-icon.md) for the document's structure, editing on Mac or Windows, and the pitfalls.
-
-Choose distinct reverse-DNS bundle identifiers containing letters, numbers, hyphens, and periods. The `com.example` identifiers are usable for unsigned template checks; choose your own before signing/distribution. Keep project name, target names, Swift module/product names, and the `StarterApp` scheme stable. The displayed app name is independent of those internal names.
-
-The initial supported deployment minimum is 17.0 or newer, up to the selected SDK version. Raising it does not install a newer test runtime: choose a compatible `IOS_TEST_DESTINATION` in the workflow if you raise it beyond the current simulator OS. For iPad-only apps, select an installed iPad simulator in `IOS_TEST_DESTINATION`. App and test targets must share the minimum; use the project-level setting instead of target overrides. A build against a newer SDK does not establish runtime coverage on the declared minimum.
-
-The workflow selects its simulator in job-level `IOS_TEST_DESTINATION` and explicitly waits for it to boot, with a five-minute startup step limit. The app's UI suite runs without parallel test workers and covers the welcome screen, onboarding, theme and settings when enabled.
-
-**What Actions checks:** XcodeGen validates the native manifest and its references. `scripts/check-configuration.py` then inspects the generated project, shared scheme, and Xcode-resolved Debug/Release settings. Errors explain missing/invalid identifiers, blank names, invalid or inconsistent deployment minimums, missing tests, and unsupported platforms/capabilities. Initial capability/account signing setup is pending; entitlement files and enabled account capabilities are rejected for this unsigned starter. Do not enable Mac compatibility flags or add Watch, Mac, TV, or Vision Pro targets yet.
-
-CI runs the starter and two [native XcodeGen override examples](examples/pocket-notes.yml) independently. The [Starter App demo](examples/starter-app-demo.yml) validates the separately registered demo identity; the reusable `project.yml` default remains `com.example.StarterApp`. Each configuration builds and tests the welcome screen, then checks the compiled app's `Info.plist` against the validated name, identifier, deployment minimum, and device families. The examples inherit the manifest but override the display name and three bundle identifiers. Artifacts include `configuration.json` and `built-app.json`, with only the checked public app settings. Setup/preflight failures appear in the Actions step logs; test summaries exist only after testing starts.
-
-On an optional Mac, run generation followed by `python3 scripts/check-configuration.py`. Integration probes can be repeated with `python3 scripts/tests/check-configurations.py`; they use temporary projects and require Xcode, XcodeGen downloads, and no Apple credentials.
-
-## Optional local Mac development
-
-Windows users do not run these commands locally. On a Mac with Xcode, generate the project with:
-
-```sh
-bash scripts/generate-project.sh
-```
-
-The generated project is checked in for convenience, but changes belong in `project.yml`; regenerate after editing it. Open `StarterApp/StarterApp.xcodeproj` and select the `StarterApp` scheme.
-
-With Xcode 27.0 and the iOS 27.0 simulator installed, run the same UI suite as CI:
-
-```sh
-bash scripts/test-ios.sh
-```
-
-The script prints its report directory under `build/test-results/`. Set `IOS_TEST_DESTINATION` to use another installed simulator, and `IOS_TEST_OUTPUT_DIR` to choose the reports directory. A nonzero build or test result remains a nonzero command exit even though output is captured through `tee`. A successful command with no verified passing tests is also rejected. Individual tests have a 300-second execution allowance; simulator startup has a five-minute step limit, build/test has a 20-minute step limit, and the job has a 30-minute overall limit. Adjust these workflow limits deliberately as the app grows. Routine CI skips verbose sysdiagnose collection after failures to avoid delaying reports. Set `IOS_TEST_DIAGNOSTICS=on-failure` for a dedicated diagnostic run if needed.
-
-### Run on your iPhone from a Mac
-
-With an iPhone connected over USB or Wi-Fi (Developer Mode on, computer trusted), build a Debug app, install it and launch it without a commit, upload or TestFlight:
-
-```sh
-IOS_CONFIGURATION=starter-app-demo IOS_DEVELOPMENT_TEAM=<your 10-character team ID> bash scripts/run-on-device.sh
-```
-
-The script regenerates the project, picks the single connected paired iPhone or iPad (set `IOS_DEVICE` when several are paired), builds with Xcode automatic signing for the given team, installs with `devicectl`, launches the app, and prints the exact relaunch command. `IOS_DEVICE_CONSOLE=1` streams the app's console; `IOS_RUN_ON_DEVICE_DRY_RUN=1` prints every command without running them, which is how an agent previews the run. From an SSH session, unlock the login keychain first and, if automatic signing picks a certificate from another keychain, point `IOS_SIGNING_KEYCHAIN` at the one holding the working identity; the script narrows the search list for the build and restores it (details in the script header). First use with a team lets Xcode create or refresh a development profile for that team and device, an account-side change you should expect. The default `com.example.StarterApp` identifier may not be provisionable under your team because bundle identifiers are global, so use the demo configuration or your own identifier. Logs and build products go to the gitignored `build/run-on-device/`.
-
-To run the unit and UI tests on the phone instead, use `bash scripts/test-on-device.sh` with the same environment. It keeps the Debug app (shown as "Starter Dev", from `DEV_DISPLAY_NAME`) installed and uninstalls the UI test runner afterwards, also when a test fails. Keep the phone unlocked while it runs: a locked phone fails before the first test with "Timed out while enabling automation mode".
-
-## Check failure reports
-
-To check the complete failure-reporting path, manually run **iOS** with **verify_failure_reporting** selected. This injects an explicit failure after the welcome-screen assertion in the runner's temporary checkout, deliberately produces a failed test, and should make that run red. Inspect the summary for the test name and assertion failure; download the artifact to see the same details and complete logs. Normal push and PR runs never enable the probe. It does not upload an app or change committed source.
-
-Every test artifact contains `summary.md` and `failures.json` with the same facts: a stage (`passed`, `tests_failed`, `build_failed`, `setup_failed` or `unverified`), each failed test with its file, line and message, compiler errors with file, line and column, and the test-produced screenshots under `attachments/` (the smoke test always attaches `welcome-screen`). Agents read `failures.json`; people read `summary.md`, which is also the job summary. If failure happens before the test command starts, inspect the failed setup step in the Actions logs; test artifacts may not exist yet. `.xcresult` is primarily useful with Xcode, while Markdown, JSON, and text logs can be read on Windows.
-
-The iOS and compatibility artifacts retain the complete exported `attachments/` directory, including screenshots, recordings and failure text such as spindumps. After a failed test command, they also export the bundle's existing diagnostic `.log` files under `diagnostics/`, including XCTest session and testmanagerd logs. Exporting these retained logs does not enable expensive diagnostics collection. Do not infer file type from an attachment's suggested name: an unfinished `Screen Recording` can be a short text error placeholder. Use controlled sample data in recorded UI tests, as with screenshots. If xcresult omits a failed XCTest's source location, the report recovers it from `xcodebuild.log` only when the test identity and failure message match one unambiguous location; existing locations and the run's failure status are preserved.
-
-For an intermittent terminate/relaunch failure, run **UI lifecycle diagnostics** with an app commit or tag and either `starter` or `pocket-notes`:
-
-```bash
-gh workflow run ui-lifecycle-diagnostics.yml --ref main --field app_ref=main --field configuration=pocket-notes --field attempts=1
-```
-
-This manual probe builds once on Xcode 27.0, then runs only the onboarding persistence UI test on a freshly erased CI simulator, once by default or up to 3, 5 or 10 times. It stops at the first failure and stays red. Start with one attempt: the build has an eight-minute limit, the test step twelve minutes, and simulator reset operations their own deadlines, so a slow batch may stop before reaching its maximum attempt count. Its `ui-lifecycle-<configuration>` artifact records separate app and tooling commits, phase markers, per-attempt results, exported attachments and a host process timeline containing timestamps, load, and app PIDs/state/CPU without command arguments. Lightweight evidence uploads first; complete result bundles upload separately as `ui-lifecycle-bundles-<configuration>`. Heavy native diagnostics are off by default: select `collect_diagnostics=true` for a dedicated follow-up after inspecting the lightweight evidence. Use a fixed app SHA to compare unchanged sources. Process absence is meaningful only if the timeline first observed that app running; a Home Screen recording alone cannot establish process exit. Passing repetitions show that the failure was not reproduced in that batch, rather than establishing a fix.
-
-Download the manual probe's evidence with `gh run download RUN_ID --name ui-lifecycle-pocket-notes --dir build/lifecycle-review`, replacing `RUN_ID` with the run number (and the artifact's configuration when needed). Start with `context.json`, each attempt's `phase.txt` and `failures.json`, and `process-timeline.log`. A simulator-reset timeout with no test counts is a setup failure, not an application test result.
-
-## Review CI evidence from Windows
-
-With GitHub CLI authenticated and the repository checked out, review a pull request's hosted checks and sanitized artifacts together:
-
-```powershell
-python scripts/review_ci.py --pr 123
-```
-
-Or review one run, or the newest run on your branch, the same way:
-
-```powershell
-python scripts/review_ci.py --run 38974328806
-python scripts/review_ci.py --latest --workflow iOS --no-download
-```
-
-`--run` shows the workflow, event, head, each job's conclusion and elapsed time, and the recognized artifacts; for the compatibility matrix it prints the verified runtimes and every lane's status, device, toolchain and counts. `--latest` picks the newest run for the checkout branch (`--branch` to override, `--workflow` to filter) and says which run it chose. Replace `123` with the pull request number. The command shows check conclusions and elapsed time, clearly labels skipped jobs, downloads recognized test and preflight artifacts to a temporary directory, and reports test counts, simulator runtime, compiled app identity, symbol UUIDs, and artifact links. For merged pull requests it also finds workflows for the exact merge commit. It compares the current checkout commit with the PR head and prints `MATCH` or `MISMATCH`; use `--require-checkout-head` to fail when they differ, or `--no-download` to list checks and links only. A TestFlight preflight symbol match verifies the unsigned archive app/dSYM. Exported-IPA matching is reported only when a delivery artifact contains that check. The command reads only selected sanitized fields and never prints raw logs or account diagnostic contents.
-
-## Deliver to TestFlight in one command
-
-Once a change is on `main` with a green smoke run, one command proposes the build, dispatches **TestFlight delivery** with `perform_upload`, waits for the `apple-credentials` gate, and reports each stage:
-
-```powershell
-python scripts/deliver_testflight.py --configuration starter-app-demo --dry-run
-python scripts/deliver_testflight.py --configuration starter-app-demo
-```
-
-The proposal names the `main` head, the newest iOS push run for it and any delivery already in flight (a second dispatch is refused while one is running). The `apple-credentials` environment allows deployments from `main` and has no required reviewer in this repository's setup. `--approve` remains available for template users who add that optional protection; if there is no pending deployment, the command continues without attempting approval. The final report lists release-plan, delivery-validation, upload-report and processing-report statuses from the sanitized artifact and ends with one line: processed by Apple (`VALID`), upload accepted but still processing, or the exact failing job and step, with a warning when the upload was accepted before a later step failed. `--run <id>` resumes a run after a timeout (exit code 3). See [docs/testflight-delivery.md](docs/testflight-delivery.md).
-
-## Reference tools
-
-For setup troubleshooting and agent handoff, see [the experience journal](docs/setup-experience.md) and [agent instructions](AGENTS.md). The journal records observed problems, fixes, test evidence, and remaining gaps; update it as development proceeds.
-
-`App-Store-Connect-CLI/` is a separately cloned reference checkout, excluded from this repository. Milestone 4 audited it and integrates a pinned release binary for optional account diagnostics. Unsigned app builds do not depend on it.
-
-## Apple account setup and diagnostics
-
-Follow [the Windows-first Apple setup guide](docs/apple-setup.md) for membership, API access, choosing a key, secure credential entry, and agent-assisted setup. Start without credentials:
-
-```powershell
-python scripts/apple-doctor.py
-```
-
-The **Apple diagnostics** workflow tests the portable commands on Windows, Linux and macOS. A manual run lets you choose `starter`, `pocket-notes` or `starter-app-demo` and exports that manifest's current Xcode configuration. Edit `project.yml` and choose `starter` for your own app. Optional account reads consume the same run's export and use a separate `apple-credentials` environment on `main`. The job summary identifies skipped, failed or completed account checks; a green diagnostic does not establish signing readiness. Demo signing passed milestone 5. Follow [TestFlight delivery](docs/testflight-delivery.md) for workflow details, including the **TestFlight groups** workflow that creates an auto-distributing internal group through the pinned CLI; the demo's milestone 6 upload and owner-reported iPhone acceptance completed on 2026-10-12.
-
-The CLI integration downloads pinned, checksum-verified `asc` 5.14.0 release binaries when requested. No source build, Go installation, cloud Mac account or Apple secret is needed for the ordinary diagnostic checks.
-
-## CI tool-download caching
-
-Actions caches the public, pinned XcodeGen archive and `asc` release downloads under `build/tool-downloads/`, plus Xcode's cloned Swift package sources under `build/swiftpm-cache/` for the app, module and compatibility lanes. Tool cache keys separate operating system, architecture, version and the scripts containing the pinned digests. Every tool download rechecks SHA-256; a missing or invalid cache downloads and verifies the pinned asset again. Swift package cache keys include the operating system, architecture, Xcode version, package manifests and resolved pins; older entries may be restored after a manifest change, and SwiftPM still resolves and validates the requested revisions. No DerivedData or test/build products are cached. A miss continues with a normal dependency fetch.
-
-The scripts also reuse verified downloads within a job or local checkout. Project generation requires Python 3, curl and unzip alongside the existing Mac tools. Override `IOS_XCODEGEN_CACHE_DIR` or the CLI installer's `--cache-dir` for an isolated download cache; set `IOS_SPM_CACHE_DIR` to choose an isolated Xcode package-clone directory. The account job restores public tool downloads but does not save caches. Credentials, profiles, compiler output, signed archives and test reports are outside these cache paths. Cache corruption that recurs after restore may require deleting the affected Actions cache entry because existing entries are immutable. The current root package has no remote dependencies, so Swift package caching is in place for later package additions and should not be counted as a present CI speedup.
-
-## Device diagnostics and compatibility
-
-Milestone 7 is in progress. See [the diagnostics plan](docs/device-diagnostics.md) for the design boundary and [the tester feedback guide](docs/tester-feedback.md) for the verified loop: a tester submits TestFlight feedback, Windows reads it with the fixed `scripts/read-testflight-feedback.py` command or the App Store Connect browser, and actionable items become sanitized GitHub issues. TestFlight preflight verifies archive app/dSYM UUIDs; private-repository symbol retention is optional and off for this public template. The manual **iOS runtime inventory** workflow reports a hosted image's actual Xcode, SDK and simulator runtimes without building anything.
-
-Required pull-request checks test iOS 27.0 only. The manual and weekly **iOS compatibility matrix** workflow inventories each hosted macOS image, pairs every available iOS runtime with a Swift 6-capable Xcode on that image, runs the same smoke test on each pairing, and publishes one coverage report naming only the runtimes whose lane passed. Hosted inventory on 2026-10-16 found iOS 17.0.1 through 27.0 across the `macos-14`, `macos-15` and `xcode-27` images, and the first `main` dispatch ([run 38974328806](https://github.com/asavs/ios-app-starter/actions/runs/38974328806)) passed on iOS 17.0.1, 18.1, 26.0.1 and 27.0. Dispatch it with:
-
-```powershell
-gh workflow run ios-compatibility.yml --ref main --field configuration=starter --field selection=one-per-major
-```
-
-Use `selection=all` for every available runtime or `minimum` for the lowest one. Download **compatibility-report** for the table, or an individual **ios-compat-starter-ios-17-0-1** style artifact for that lane's logs. Each test job inventories its own runner and replans the requested runtime there before resolving an exact Xcode version/build/SDK. Reports preserve the discovery plan and record the executing toolchain, so mixed hosted-image rollouts do not require identical builds across jobs. Compatibility is claimed only for runtimes whose lane passed; a passing simulator lane verifies the smoke test on that runtime and toolchain, not physical-device behavior.
-
-## Recommended repository settings
-
-After creating a repository from this template, preview and apply the settings the pull-request loop relies on:
-
-```powershell
-python scripts/configure-github-repo.py --repo <owner>/<repository>
-python scripts/configure-github-repo.py --repo <owner>/<repository> --apply
-```
-
-The dry run shows current and intended values. `--apply` turns on auto-merge and head-branch deletion, enables secret scanning with push protection, restricts actions to GitHub-owned and verified creators, requires approval for every fork contributor's workflows, adds a default-branch ruleset that requires a pull request with passing `ios-gate` and `portable (...)` checks, and configures `apple-credentials` for exactly `main` with no required reviewer. Template users can add a reviewer with `--require-reviewer` (and then `--apply`) or in **Settings → Environments → `apple-credentials` → Required reviewers**. The ruleset blocks direct pushes to `main` for everyone, including the owner.
-
-## Faster manual iteration
-
-The **iOS** manual workflow offers `configuration=starter`, `pocket-notes`, or `starter-app-demo` for one app, with `all` as the default. Pull requests test `starter` only; pushes to `main` test all three configurations, since the examples are overlays of the same code. For example, from PowerShell:
-
-```powershell
-gh workflow run ios.yml --ref main --field configuration=starter-app-demo --field verify_failure_reporting=false
-```
-
-Use `verify_failure_reporting=true` only for the controlled expected-red report check. Artifact names still identify the selected app. New commits on a PR cancel that PR's obsolete iOS run, and a newer push to `main` cancels an older iOS push run. Manual runs remain independent. This lane remains unsigned and credential-free.
-
-The workflow uploads `ios-test-results-<configuration>` for each configuration it runs, so a single-app dispatch produces one matching test artifact and `all` produces all three.
+Read [AGENTS.md](AGENTS.md) first. The [roadmap](roadmap.md) holds the agreed decisions and what's next, and the [setup journal](docs/setup-experience.md) records what went wrong along the way and how it was fixed.

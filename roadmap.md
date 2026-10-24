@@ -1,8 +1,12 @@
-# Windows-first Apple app starter roadmap
+# iOS App Starter roadmap
 
-The core workflow is **Windows → GitHub Actions → TestFlight → iPhone**. Users edit and configure their apps on Windows or through GitHub. GitHub-hosted macOS runners generate Xcode projects, build, run simulator tests, sign, and upload. Users do not need to own, rent, manage, or log into a Mac for this workflow.
+The starter is a native iPhone and iPad app with the pieces most apps need already built and prunable: onboarding, theme and UX elements, settings with secure storage, and next sign-in and a database layer. Someone building an app starts from those and spends their time on what makes the app different, without handling builds, signing or delivery.
 
-A separately managed Mac is an optional build alternative. A persistent Mac becomes necessary only for users enabling the live iMessage bridge.
+Those are handled for them. GitHub-hosted macOS runners generate the Xcode project, build, test, sign and upload, so the app can be developed from Windows, from a Mac, or by an AI agent. That has these guarantees:
+
+- No separately managed Mac is required for development, signing or TestFlight delivery. A local Mac is an optional faster loop.
+- A persistent Mac is needed only for the optional live iMessage bridge.
+- AI, backend services, sign-in, storage and messaging are independent capabilities. A basic app requires none of them.
 
 ## Agreed defaults
 
@@ -17,7 +21,7 @@ A separately managed Mac is an optional build alternative. A persistent Mac beco
 
 Xcode and project-generation tools are pinned and upgraded deliberately. The hosted runner image itself can change; validate required tools and runtimes and fail clearly if they are unavailable.
 
-## Commit and milestone order
+## Milestones
 
 Each milestone can span several small, reviewable commits. **Do not begin the next milestone until the current milestone's required checks pass.** Fix failures within the same milestone. Local checks support development but do not substitute for the required GitHub Actions build.
 
@@ -41,46 +45,26 @@ Each milestone can span several small, reviewable commits. **Do not begin the ne
 
 **Renumbered 2026-10-16** to follow [the master plan](docs/master-plan.md). Documents and issues written earlier use the previous numbering: old 8 (modules) is now 9, old 9 (platforms) is now 14, old 10 (AI) is now 11, old 11 (simulated bridge) is now 12, old 12 (live bridge) is now 13, old 13 (publication) is now 15. Milestone 8 (iteration loop) and the onboarding/second-app proof in 10 are new. Optional platforms moved late because the module library is the product; they stay in the template because they are testable on hosted runners.
 
-## Issue schedule and milestone 5 gates
+## Current status
 
-[PR #5](https://github.com/asavs/ios-app-starter/pull/5) is merged. After preserving both branches' setup journal entries, updated head `6c9083b` passed [all three iOS configurations](https://github.com/asavs/ios-app-starter/actions/runs/37880098030). Downloaded artifacts confirm one passing smoke test per configuration, zero failures and the expected compiled identities; all portable checks also passed. Its acceptance does not establish signing or TestFlight readiness.
+As of 2026-10-24. Detailed evidence for every milestone is in [the setup journal](docs/setup-experience.md); the earlier status write-ups are in [the roadmap history](docs/archive/roadmap-history.md).
 
-Milestone 5 implementation shipped across [PR #8](https://github.com/asavs/ios-app-starter/pull/8), [PR #9](https://github.com/asavs/ios-app-starter/pull/9), and [PR #11](https://github.com/asavs/ios-app-starter/pull/11). The signing workflow uses the selected native manifest, reads Apple state through the pinned CLI wrapper, creates an unsigned Xcode archive, exports an App Store Connect distribution package with automatic signing, and validates only the exported app. Pull requests remain unsigned and secretless. The workflow uploads a sanitized validation report and never uploads to TestFlight.
+- **Milestones 1–7 are complete.** The app is generated from `project.yml` and built, tested and reported on GitHub-hosted Xcode 27.0. Configuration is validated with actionable errors. Apple setup diagnostics, signing and TestFlight delivery were accepted for the demo app, which the owner installed on their iPhone on 2026-10-12. Device failures are investigable from Windows, and the compatibility matrix verified the iOS 17.0 minimum on an iOS 17.0.1 simulator alongside 18.1, 26.0.1 and 27.0 ([run 38974328806](https://github.com/asavs/ios-app-starter/actions/runs/38974328806)).
+- **Milestone 8 is in place.** Structured failure reports, the run review command, feedback-to-issue drafts, measured caching, one-command TestFlight delivery and `run-on-device` for Macs all exist. The optional ad hoc dev-build channel waits on a hosting decision.
+- **Milestone 9, round one, is released.** Theme, Onboarding and Settings ship with TemplateVersion as module library `0.2.0` (2026-10-23). `0.3.0` (2026-10-24) made all module text translatable and moved Keychain calls off the main actor. See [docs/modules.md](docs/modules.md). Sign-in and the SwiftData layer are the second round, built when a real app asks for them.
+- **Milestone 10 is in progress.** The [onboarding runbook](docs/agent-onboarding.md), its consent checklist and the resumable `scripts/setup.py` exist. Still to do: the timed run on a fresh second app and one backpropagation round-trip.
 
-**Milestone 5 is complete for the `starter-app-demo` acceptance app (2026-10-10).** [Fresh authenticated diagnostics](https://github.com/asavs/ios-app-starter/actions/runs/38110592974) on main commit `74b673f` used Xcode 27.0 and the pinned App Store Connect CLI 5.14.0 wrapper. The current-run native export resolved `com.asaschaeffer.starterappdemo` under team `9L6Y9T3PPW`; account reads found one matching app record, one bundle identifier, two distribution certificates, and initially zero linked profiles. The user-approved [signed archive validation run](https://github.com/asavs/ios-app-starter/actions/runs/38110737163) passed after the `apple-credentials` gate was approved. Its downloaded sanitized report identifies `app-store-connect-export-from-archive`, the expected bundle/team, valid profile expiry `2027-08-08T20:07:36Z`, certificate expiry `2027-02-08T21:55:09Z`, and the actual signed entitlement keys. The validator requires an Apple Distribution identity for the selected team, a valid App Store profile, matching embedded signing-certificate bytes, non-expired profile/certificate, exact app/team identifiers, `get-task-allow` disabled, and all signed entitlements covered by the profile. A post-signing read-only [account recheck](https://github.com/asavs/ios-app-starter/actions/runs/38110953919) found one linked profile (up from zero); the app, bundle and two-certificate counts remained unchanged. This is the expected provisioning-profile effect within the approved scope. The run was dispatched, approved, downloaded and reviewed from Windows; all Xcode work ran on GitHub-hosted macOS. No separately managed Mac, TestFlight upload, or iPhone installation was used. Membership and agreements remain unverified by these diagnostics.
+## Principles
 
-[Integrated main iOS regression](https://github.com/asavs/ios-app-starter/actions/runs/37880872209) also passed all three configurations at `7fe45df`; downloaded artifacts confirm one passing UI assertion per app and the expected compiled identities. On the merged milestone-5 implementation commit, [main Apple diagnostics](https://github.com/asavs/ios-app-starter/actions/runs/38016696495), [signing preflight](https://github.com/asavs/ios-app-starter/actions/runs/38016696459), and [all three iOS lanes](https://github.com/asavs/ios-app-starter/actions/runs/38016696524) passed before the live archive run.
+Every module is a scaffold an app can keep, change or delete: the app builds with any subset enabled, and nothing enters the template until a real app needed it. Onboarding and examples are updated with every milestone. Finish with complete walkthroughs from Windows and from a Mac, and generated non-AI and AI examples proving optional modules remain optional.
 
-The initial CI-efficiency improvement is complete at `25ac193`: checksum-verified XcodeGen downloads are reused across generation calls, and reviewed public tool downloads are cached by version/digest/OS/architecture. [Cold/configuration verification](https://github.com/asavs/ios-app-starter/actions/runs/37875269100), [warm restoration on all platforms](https://github.com/asavs/ios-app-starter/actions/runs/37875337210) and [both iOS regression lanes](https://github.com/asavs/ios-app-starter/actions/runs/37875237501) passed. All eighteen portable tests passed. No additional infrastructure optimization needs to block app setup. Measure cold and warm runs before adding compiler-output caching; keep signed outputs and credentials out of caches. Cache misses must remain functional and required build/test checks must still execute. Swift package dependency caching becomes relevant when packages are introduced. Consider avoiding superseded unsigned runs and unnecessary simulator builds for documentation changes while preserving required-check reporting. This is an optimization task, not evidence of signing readiness.
+Maintain [the setup experience journal](docs/setup-experience.md) throughout development. Record actual failures, fixes, important decisions, verification evidence, and unresolved limitations so future people and agents can reproduce the setup. Root `AGENTS.md` makes this part of the ongoing workflow.
 
-These gates guided milestone 5 execution. The acceptance-app credential and signed-archive gates are now satisfied by the evidence above. Remaining issue-schedule items are follow-up documentation or milestone 6 onboarding work; they do not negate the validated demo archive. Resolve and close each issue only when its own acceptance evidence exists.
+Agent guidance should explain human-only Apple prerequisites, diagnose before changing anything, preview account changes, and keep secrets out of chat. Choose API key types and roles deliberately rather than defaulting to the broadest access. Windows users enter credentials through supported local secret storage or GitHub secrets; Mac Keychain is an optional local path.
 
-| When | Tracked work | Required evidence / gate |
-| --- | --- | --- |
-| First, before relying on authenticated diagnostic results | [#2: distinguish a credential-free account dispatch](https://github.com/asavs/ios-app-starter/issues/2) | A prominent workflow summary/warning distinguishes requested-but-skipped account reads, authentication/access failures, and completed reads. Missing credentials never look like verified account readiness; logs and artifacts stay sanitized. |
-| Before demo account diagnostics or archive/signing | Configuration-selection follow-up from the PR review | Reuse the native manifest selection so the chosen configuration drives the Xcode export, account bundle-ID checks and archive. Verify the demo export resolves its demo identifier and adopters can select their own identity. Keep reusable defaults unchanged; do not silently diagnose/sign the placeholder app when the demo was requested. |
-| Before choosing or provisioning any new key | [#1: least-privilege key type and role](https://github.com/asavs/ios-app-starter/issues/1) | Map the exact pinned read commands and planned signing operations to documented permissions or verified access. Distinguish app access from provisioning access; show the intended team, key type and role. Reuse appropriate existing access and explain any human-only step. Do not broaden, replace or revoke keys automatically. |
-| Before implementing App ID/capability setup; verify again during signed-archive validation | [#3: Apple's default In-App Purchase toggle](https://github.com/asavs/ios-app-starter/issues/3) | Update setup guidance with Apple's documented default and distinguish account defaults from app implementation. Inspect generated signing configuration and actual signed entitlements for consistency; add no unrelated StoreKit code or optional capabilities. |
-| Before any new App Store Connect record creation; carry into milestone 6 onboarding | [#4: record-name availability and display-name separation](https://github.com/asavs/ios-app-starter/issues/4) | Explain record name versus Home Screen display name. Confirm name, bundle ID, permanent SKU, language and intended access before creation; handle a name collision with a reviewed alternative. Reuse the existing demo record rather than creating another. |
-| After the role/key plan and environment policy are settled, before storing release credentials | [#7: no-echo optional credential bootstrap](https://github.com/asavs/ios-app-starter/issues/7) | Accept a securely stored local key file and send it directly to the intended protected GitHub environment without printing its contents or asking for secrets in chat. Verify only secret metadata. Unsigned builds and pull requests remain secretless; template users who only build/test need no Apple setup. |
+Common logic belongs in shared packages; enabled platforms own their interface and lifecycle. An iPhone provides physical iPhone testing. Watch, Mac, TV, and Vision Pro hardware behavior requires the relevant device, another tester, or remote access; cloud tests do not establish physical-device coverage.
 
-Milestone 5's selected-identity signing acceptance is complete: the real archive-derived App Store export passed certificate/profile validity and entitlement checks without putting credentials in the downloaded artifact. Milestone 6 adds reviewed delivery export configuration, build numbering, protected TestFlight upload, and iPhone installation. Recheck role permissions if upload operations need different access.
-
-[#6: preview-runner queue delays](https://github.com/asavs/ios-app-starter/issues/6) remains a separate CI observation. Investigate if it recurs; a queue delay alone does not block credential design or justify declaring the app defective. Required build/signing checks must still complete successfully before their milestone advances.
-
-## Next execution sequence and Xcode outputs
-
-**Superseded 2026-10-16 by [the master plan](docs/master-plan.md).** The ordered Mac/Windows tasks below were milestone 7's internal sequence; orders 1–3 are verified and order 4 is closing under [issue #29](https://github.com/asavs/ios-app-starter/issues/29). The master plan's first steps are a lighter coordination board, clearing open pull requests and the minimum-OS decision, then the agent-comfortable iteration loop (milestone 8) and the first module round (milestone 9). The Xcode output boundaries below remain in force.
-
-Milestones 5 and 6 are complete for the acceptance app. Windows dispatched the protected hosted builds, inspected downloaded evidence, and the owner reported opening TestFlight build **1.0 (1.9.1)** on their iPhone. The acceptance documentation is in [PR #21](https://github.com/asavs/ios-app-starter/pull/21); its merge/check status must be verified separately from device acceptance.
-
-1. **Catch-up:** Keep the delivery guide, version/build instructions and owner tester path consistent with the recorded acceptance. Beta description and per-build What to Test belong to the delivery experience; full store listing/submission remains milestone 13. Metadata automation is not implemented.
-2. **Milestone 7 diagnostics (feedback loop verified 2026-10-13):** Follow [device diagnostics](docs/device-diagnostics.md) and the [issue drafts status](docs/milestone-7-issue-drafts.md). Archive symbol UUID checks and the fixed TestFlight feedback reader are implemented and verified; private symbol retention, crash reads and hosted macOS symbolication remain conditional on an observed investigation need. Record access failures and absent data honestly. Crash reports and screenshots may contain personal data and need controlled handling.
-3. **Milestone 7 compatibility:** Inventory actual hosted simulator availability and establish minimum-OS runtime coverage. Do not equate the iOS 27 SDK/runtime with iOS 17 execution.
-4. **Performance:** Assess Apple's available aggregate reports within milestone 7. Optional app-side MetricKit collection is a separate feature with its own storage/privacy design; it must not require a backend for the basic starter.
-5. **Report improvement:** Add individual test-failure details and controlled screenshot attachments through native `xcresulttool`. Preserve useful Windows-readable outputs and nonzero failure status.
-
-GitHub CLI controls repository/workflow operations from Windows; pinned `asc` wrappers read Apple account/release state; hosted Xcode tools generate, build, test, sign and upload. Xcode Cloud remains an optional build-provider evaluation under milestone 13, rather than a prerequisite for diagnostics.
+## Where Xcode output lives
 
 Use Xcode as a source of native configuration and evidence, with these storage boundaries:
 
@@ -95,57 +79,6 @@ Use Xcode as a source of native configuration and evidence, with these storage b
 
 No local Xcode installation is needed to produce these outputs. Local Xcode remains an optional debugging aid. A green local build with preexisting accounts/Keychain state cannot replace the fresh hosted-runner gate.
 
-## Milestone 3 implementation approach
-
-Reuse the existing infrastructure: `project.yml` is the configuration, XcodeGen generates and validates the project structure, and GitHub Actions runs `xcodebuild` to inspect resolved settings, build, and test. Do not introduce a separate `app.config.json`, configuration service, custom project generator, or hosted setup backend.
-
-- Document app display name, bundle identifiers, deployment minimum, device families, targets, and schemes in the existing manifest. Keep display/product naming separate from internal Swift module and test target names so customization does not accidentally break imports or CI selection.
-- Use XcodeGen's existing validation for malformed manifests and missing source/target references. Use `xcodebuild -list -json` and `-showBuildSettings -json` to check the actual generated project and selected scheme. Add only small checks for template policies that those tools do not enforce, such as the currently supported platform set and identifier format.
-- Prove customization with a changed app name and bundle ID that builds and passes the smoke test on GitHub. Verify representative invalid and unsupported configurations fail with useful messages. Generating a project alone is not the acceptance check.
-- Keep capability setup in Apple's native entitlements/build settings and the later signing milestones. A declared entitlement does not prove Apple has enabled the capability for the account.
-
-GitHub Actions orchestrates these commands; Xcode performs Apple's compilation, testing, and later signing/archive work. This remains a repository with scripts and workflows, without a separately operated service. Milestone 3 is complete based on the remote checks and inspected artifacts linked below.
-
-## First end-to-end acceptance check
-
-Milestone 6 is the first major success point: a person using **Windows, GitHub Actions, an iPhone, and an Apple Developer membership** can configure an app, change visible behavior, pass remote checks, trigger a signed build, and install it through TestFlight without using a Mac themselves.
-
-The first milestones make this loop work before adding AI, server, or messaging features. Unsigned build/test workflows remain usable before Apple account setup is complete.
-
-## Onboarding, accounts, and platform boundaries
-
-Onboarding and examples are updated with every milestone. Finish with a complete Windows walkthrough and generated non-AI and AI examples proving optional modules remain optional.
-
-Maintain [the setup experience journal](docs/setup-experience.md) throughout development. Record actual failures, fixes, important decisions, verification evidence, and unresolved limitations so future people and agents can reproduce the setup. Root `AGENTS.md` makes this part of the ongoing workflow.
-
-Agent guidance should explain human-only Apple prerequisites, diagnose before changing anything, preview account changes, and keep secrets out of chat. Choose API key types and roles deliberately rather than defaulting to the broadest access. Windows users enter credentials through supported local secret storage or GitHub secrets; Mac Keychain is an optional local path.
-
-Common logic belongs in shared packages; enabled platforms own their interface and lifecycle. An iPhone provides physical iPhone testing. Watch, Mac, TV, and Vision Pro hardware behavior requires the relevant device, another tester, or remote access; cloud tests do not establish physical-device coverage.
-
-## Current status
-
-**Milestone 1 is complete.** The app is generated from `project.yml` with pinned XcodeGen 2.46.0. GitHub Actions selected and verified Xcode 27.0 and the iOS 27 SDK, generated the project, built the app and test targets, and passed the welcome-screen simulator test. Regeneration also reproduced the checked-in project without changes.
-
-- Repository: [asavs/ios-app-starter](https://github.com/asavs/ios-app-starter) (public).
-- Verified implementation commit: `b67df32`.
-- Required remote check: [successful iOS build and simulator test](https://github.com/asavs/ios-app-starter/actions/runs/37822420937).
-- **Milestone 2 is complete:** reusable `scripts/test-ios.sh`, Markdown/JSON summaries, and retained logs/result bundles. Five report tests and a shell failure-status check passed locally; success and explicit assertion-failure reports/artifacts were downloaded and inspected on GitHub.
-- Verified milestone 2 implementation commit: `f122dae`.
-- [Successful build/test and report upload](https://github.com/asavs/ios-app-starter/actions/runs/37826317826).
-- [Deliberate assertion-failure check](https://github.com/asavs/ios-app-starter/actions/runs/37826318371): expected red run; named failure, exit 65, logs, and result bundle verified.
-- GitHub repository metadata confirms **template repository enabled**; visibility is public, as authorized by the user.
-- **Milestone 3 is complete:** native configuration checks, a renamed-app example, twelve invalid-configuration probes, and compiled-app settings verification.
-- Verified implementation commit: `76c9db4`.
-- [Successful starter and Pocket Notes acceptance run](https://github.com/asavs/ios-app-starter/actions/runs/37833792319): both built with Xcode 27.0/iOS SDK 27.0 and passed one welcome-screen test each on iOS 27.0. Downloaded artifacts confirm distinct app names/identifiers, iOS 17.0 minimum, and iPhone/iPad support in the compiled apps. All twelve invalid-configuration probes passed.
-- Slow bootstrap/automation exposed the previous 120-second test allowance. CI now prepares the simulator explicitly, allows 300 seconds per test, and bounds build/test to ten minutes. Native runner timing still varies; the journal records the observed failures and limits of the diagnosis.
-- **Milestone 4 is complete:** Windows-first Apple setup/agent guidance, pinned CLI integration, and read-only Markdown/JSON diagnostics. [Portable Windows/Linux/macOS verification](https://github.com/asavs/ios-app-starter/actions/runs/37838797337) passed all nine tests; [fresh Xcode configuration/report verification](https://github.com/asavs/ios-app-starter/actions/runs/37838190831) and [missing-secret account-job verification](https://github.com/asavs/ios-app-starter/actions/runs/37838380306) passed. [Fresh iOS builds/tests and report uploads](https://github.com/asavs/ios-app-starter/actions/runs/37838166104) also passed for both example configurations. No live Apple account was authenticated; those checks remain explicitly unverified.
-- **Milestone 5 is complete for the existing Starter App Demo acceptance app.** The archive-derived App Store Connect export passed real signature, profile/certificate, expiry and entitlement validation on GitHub-hosted macOS; see [signing run 38110737163](https://github.com/asavs/ios-app-starter/actions/runs/38110737163) and the [downloaded sanitized report](https://github.com/asavs/ios-app-starter/actions/runs/38110737163#artifacts). Windows dispatched and approved the protected run and downloaded the report. No TestFlight upload or iPhone installation occurred.
-- **Milestone 6 is complete for the demo app (2026-10-12):** the approved [delivery run](https://github.com/asavs/ios-app-starter/actions/runs/38117486727) accepted build **1.0 (1.9.1)**. Apple subsequently showed Ready to Test, and the owner reported the app open on their iPhone and closed the installation/visible-caption acceptance gate. No tester message was received; the observed owner path did not require creating a group or invitation. Device acceptance is owner-reported, not an automated device inspection.
-- **Milestone 7 is complete (2026-10-16).** Of the [shared Mac/Windows order](docs/mac-windows-coordination.md), consolidated CI evidence ([PR #23](https://github.com/asavs/ios-app-starter/pull/23)), targeted iteration ([PR #24](https://github.com/asavs/ios-app-starter/pull/24)), the tester feedback loop (real feedback for build 1.0 (1.9.1) read through the fixed CLI reader; [issue #25](https://github.com/asavs/ios-app-starter/issues/25) awaits an owner decision) and OS runtime coverage are verified. The inventory-driven compatibility matrix ([PR #28](https://github.com/asavs/ios-app-starter/pull/28)) passed all four planned lanes on its first `main` dispatch, [run 38974328806](https://github.com/asavs/ios-app-starter/actions/runs/38974328806): iOS 17.0.1 (Xcode 16.2, `macos-14`), 18.1, 26.0.1 and 27.0, one welcome-screen assertion each. The iOS 17.0 minimum is kept and now backed by simulator evidence on a different toolchain from the Xcode 27 release build; the report records both. Device failures are investigable from Windows through the TestFlight feedback reader and archive/dSYM UUID checks. [Issue #29](https://github.com/asavs/ios-app-starter/issues/29) is closed. Next: milestone 8 (iteration loop, [PR #34](https://github.com/asavs/ios-app-starter/pull/34) in acceptance) and milestone 9 (first module round) per [the master plan](docs/master-plan.md).
-- **Milestone 9 mechanism in place (2026-10-19).** One root `Package.swift` (`StarterModules`) with one product per `Modules/<Name>/` folder; the template depends on it by path, apps by semantic-version tag (`scripts/tag-modules.py`). Enablement is a product line in `project.yml`; template sources use `#if canImport`. `scripts/check-modules.py` runs in the required lane; `scripts/test-module.sh` tests one module on the simulator. Seed module `TemplateVersion` shows the library version on the welcome screen. Verified locally on iOS 26.5: module tests, app smoke test with the module, and the every-module-disabled overlay build. See [docs/modules.md](docs/modules.md). Next: the first-round modules, per-module and no-modules lanes, package caching.
-
-The cloned `App-Store-Connect-CLI` remains an ignored reference checkout. Milestone 4 audited it and integrates the pinned 5.14.0 release binary through narrow read commands; unsigned app builds do not depend on the CLI.
-
 ## References
 
 - [GitHub Xcode 27 runner announcement](https://github.com/actions/runner-images/issues/14404)
@@ -154,23 +87,3 @@ The cloned `App-Store-Connect-CLI` remains an ignored reference checkout. Milest
 - [Apple App Store Connect API setup](https://developer.apple.com/help/app-store-connect/get-started/app-store-connect-api)
 
 The separate `platform-and-sdk-notes.md` preserves the earlier pasted text verbatim. This roadmap records the subsequently agreed decisions.
-
-## Milestone 4 implementation approach
-
-The optional authenticated diagnostic job uses the GitHub environment `apple-credentials`. Its purpose is credential access; GitHub's “deployment” wording does not mean account setup or app publication occurred.
-
-The Windows-first [Apple setup guide](docs/apple-setup.md) pairs human prerequisites with portable `scripts/apple-doctor.py` reports. Project findings consume milestone 3's native Xcode JSON export; no second configuration format or hosted service is introduced. The `asc` 5.14.0 subprocess is checksum-pinned, telemetry-disabled and constrained to paginated read commands with isolated credential resolution. Optional account reads run only on explicit request; ordinary checks need no Apple account.
-
-Windows/Linux/macOS CI exercises the native binary and diagnosis/redaction contract. Real Apple account reads require user-owned credentials and remain unverified until the opt-in workflow runs with them. Milestone 5 adds persistent credential handling, signing-asset validation/setup and a validated signed archive; milestone 6 adds the first TestFlight installation.
-
-
-## Milestone 6 implementation and acceptance split
-
-Development occurs on the optional local Mac; acceptance continues in the existing Windows chat using [the handoff prompt](docs/windows-milestone-6-handoff.md). The new protected `TestFlight delivery` workflow reuses milestone 5's unsigned-archive → distribution-export flow. Its checked-in `config/ExportOptions-TestFlight.plist` selects internal testing and disables automatic number rewriting. A stable base plus workflow run/attempt proposes a unique number; fixed, isolated, paginated app/build reads verify it exceeds existing builds; unknown inventory blocks release. Repository-local release serialization reduces collisions, while cross-repository uploads and delayed Apple visibility remain documented risks.
-
-PR/push checks and default manual dispatch are credential-free; real signing/upload requires an explicitly enabled main-branch manual dispatch. The `apple-credentials` environment restricts deployments to `main`; a template user may add required reviewers. The package must pass the existing signing validator and planned identity/version checks before upload; its SHA-256 binds validation to the exact IPA. Raw uploader output is captured, sanitized reports are allowlisted artifacts, and temporary keys/packages are removed. Upload acceptance, processing, tester/compliance readiness and iPhone installation remain separate statuses. [The delivery guide](docs/testflight-delivery.md) documents permissions, human decisions, recovery and numbering limits.
-
-Implementation acceptance requires portable tests, hosted native preflight including actual unsigned archive/version checks, and existing iOS regressions. No live Apple operation is authorized by implementing this workflow. Live milestone 6 acceptance is a Windows-made visible app change, successful approved upload/processing, then installation and observed behavior on the iPhone. That gate was closed by the owner-reported iPhone acceptance on 2026-10-12; see Current status and the setup journal. Individual test-failure/screenshot export improvements remain a separate enhancement to the existing report tooling; they are not silently included in this delivery change.
-
-
-Milestone 6 implementation at `b2e0ccb` was reviewed in [PR #13](https://github.com/asavs/ios-app-starter/pull/13). [All 47 portable tests](https://github.com/asavs/ios-app-starter/actions/runs/38113613320), [hosted TestFlight preflight](https://github.com/asavs/ios-app-starter/actions/runs/38113613317), [existing signing preflight](https://github.com/asavs/ios-app-starter/actions/runs/38113613326), and [all three iOS smoke lanes](https://github.com/asavs/ios-app-starter/actions/runs/38113613319) passed. Downloaded reports confirm one passing UI assertion and expected compiled identity per app; the native preflight checks the real unsigned archive's planned versions and compiled icon. The missing default AppIcon was fixed with an original opaque 1024px PNG, matching SVG reference and standard-library regeneration script. Protected signing/upload jobs were skipped. This is implementation evidence, not milestone 6 live delivery/installation acceptance.

@@ -6,7 +6,7 @@ Two research passes behind the Onboarding module's design, run on 2026-10-19 by 
 - **Moderate:** a named practitioner with numbers, test design partly stated.
 - **Weak:** vendor blog without method, anecdote, or a secondhand statistic.
 
-Board tasks that came out of this: `ios-s5.4` (step model, welcome sheet, permission primer), `ios-s5.5` (choice step and tips), `ios-s5.6` (Settings replay row), `ios-s5.7` (paywall step), `ios-s5.8` (commitment step), `ios-s5.9` (plan summary and progress indicator), `ios-s5.10` (social-proof slot), `ios-s5.11` (event hook and holdout flag), `ios-s5.1` (sign-in module). The module's design is described in [modules.md](modules.md#onboarding).
+Board tasks that came out of this: `ios-s5.4` (step model, welcome sheet, permission primer), `ios-s5.5` (choice step and tips), `ios-s5.6` (Settings replay row), `ios-s5.7` (paywall step), `ios-s5.8` (commitment step), `ios-s5.9` (plan summary and progress indicator), `ios-s5.10` (social-proof slot), `ios-s5.11` (event hook and holdout flag), `ios-s5.1` (sign-in module). The module's design is described in [modules.md](../modules.md#onboarding).
 
 ## Part 1: what good onboarding looks like
 
