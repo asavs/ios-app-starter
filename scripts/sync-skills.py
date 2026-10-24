@@ -169,7 +169,9 @@ def copy_skill(skill: dict, source: Path, name: str) -> str:
         raise ValueError(f"unsafe source path for {name}: {skill['path']}")
     entries = git_tree(source)
     skill_path = PurePosixPath(".") if str(relative) == "." else relative
-    if not any(path == skill_path or path.as_posix().startswith(f"{skill_path.as_posix()}/") for path in entries):
+    # A skill at the repository root (path ".") contains every entry; git paths never start with "./".
+    if skill_path != PurePosixPath(".") and not any(
+            path == skill_path or path.as_posix().startswith(f"{skill_path.as_posix()}/") for path in entries):
         raise ValueError(f"source directory does not exist for {name}: {skill['path']}")
     skill_manifest = skill_path / "SKILL.md" if skill_path != PurePosixPath(".") else PurePosixPath("SKILL.md")
     if skill_manifest not in entries:
