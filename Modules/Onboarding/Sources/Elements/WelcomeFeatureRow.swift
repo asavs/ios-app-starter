@@ -33,6 +33,6 @@ public struct WelcomeFeatureRow: View {
 }
 
 #Preview("Feature row") {
-    WelcomeFeatureRow(WelcomeFeature(systemImage: "bell", title: "Stay informed", detail: "Why notifications help."))
+    WelcomeFeatureRow(WelcomeFeature(id: "notify", systemImage: "bell", title: "Stay informed", detail: "Why notifications help."))
         .padding()
 }

@@ -23,9 +23,9 @@ public struct OnboardingStep: Identifiable, Sendable {
     /// Whether the flow-wide Skip button shows while this step is on screen. Never shown on the last step.
     public var allowsSkip: Bool
     /// Label of the Continue button on this step; `nil` uses the flow's continue or finish title.
-    public var continueTitle: String?
+    public var continueTitle: LocalizedStringResource?
 
-    public init(id: String, kind: Kind, allowsSkip: Bool = true, continueTitle: String? = nil) {
+    public init(id: String, kind: Kind, allowsSkip: Bool = true, continueTitle: LocalizedStringResource? = nil) {
         self.id = id
         self.kind = kind
         self.allowsSkip = allowsSkip
@@ -34,19 +34,19 @@ public struct OnboardingStep: Identifiable, Sendable {
 
     /// The Stocks/Journal-style welcome sheet: icon, title, feature rows, one Continue.
     public static func welcome(_ content: WelcomeContent, id: String = "welcome", allowsSkip: Bool = true,
-                               continueTitle: String? = nil) -> OnboardingStep {
+                               continueTitle: LocalizedStringResource? = nil) -> OnboardingStep {
         OnboardingStep(id: id, kind: .welcome(content), allowsSkip: allowsSkip, continueTitle: continueTitle)
     }
 
     /// A classic tour card; identity comes from the page.
     public static func page(_ page: OnboardingPage, allowsSkip: Bool = true,
-                            continueTitle: String? = nil) -> OnboardingStep {
+                            continueTitle: LocalizedStringResource? = nil) -> OnboardingStep {
         OnboardingStep(id: page.id, kind: .page(page), allowsSkip: allowsSkip, continueTitle: continueTitle)
     }
 
     /// One question, single or multiple select; identity comes from the choice.
     public static func choice(_ choice: OnboardingChoice, allowsSkip: Bool = true,
-                              continueTitle: String? = nil) -> OnboardingStep {
+                              continueTitle: LocalizedStringResource? = nil) -> OnboardingStep {
         OnboardingStep(id: choice.id, kind: .choice(choice), allowsSkip: allowsSkip, continueTitle: continueTitle)
     }
 
@@ -54,12 +54,12 @@ public struct OnboardingStep: Identifiable, Sendable {
     /// and the system alert that follows is where people decline. The button reads
     /// `primer.continueTitle` unless the step sets `continueTitle`.
     public static func permission(_ primer: PermissionPrimer, allowsSkip: Bool = false,
-                                  continueTitle: String? = nil) -> OnboardingStep {
+                                  continueTitle: LocalizedStringResource? = nil) -> OnboardingStep {
         OnboardingStep(id: primer.id, kind: .permission(primer), allowsSkip: allowsSkip, continueTitle: continueTitle)
     }
 
     /// Any SwiftUI view; the flow supplies the Skip and Continue controls around it.
-    public static func custom(id: String, allowsSkip: Bool = true, continueTitle: String? = nil,
+    public static func custom(id: String, allowsSkip: Bool = true, continueTitle: LocalizedStringResource? = nil,
                               @ViewBuilder content: @escaping @MainActor @Sendable () -> some View) -> OnboardingStep {
         OnboardingStep(id: id, kind: .custom(CustomStepContent(content)), allowsSkip: allowsSkip,
                        continueTitle: continueTitle)
@@ -76,44 +76,53 @@ public struct OnboardingStep: Identifiable, Sendable {
     }
 
     /// The template's flow: one of each shipped step kind, so an app sees them once and keeps what it
-    /// needs. The choice step asks what the user will build (multiple select; option identifiers are
-    /// the titles) and hands each answer to `onChoice`. The permission primer asks for notifications;
+    /// needs. The choice step (`templateChoice`) asks what the user will build and hands each answer
+    /// to `onChoice`. Its text comes from this module's string catalog. The permission primer asks for notifications;
     /// `PermissionOverride` lets UI tests and previews replace the system prompt with a fake outcome
     /// through a launch argument.
     public static func template(onChoice: @escaping @MainActor @Sendable ([String]) -> Void = { _ in }) -> [OnboardingStep] {
         [
             .welcome(WelcomeContent(
                 icon: .system("sparkles"),
-                title: "Welcome to Starter App",
+                title: LocalizedStringResource("Welcome to Starter App", bundle: .module),
                 features: [
-                    WelcomeFeature(systemImage: "iphone.gen3", title: "Built for your phone",
-                                   detail: "Every build is tested on GitHub Actions before it reaches you."),
-                    WelcomeFeature(systemImage: "square.stack.3d.up", title: "Made of modules",
-                                   detail: "Theme, onboarding and settings are packages you keep or drop."),
-                    WelcomeFeature(systemImage: "slider.horizontal.3", title: "Make it yours",
-                                   detail: "Replace these steps with your own in one array of OnboardingStep values."),
+                    WelcomeFeature(id: "phone", systemImage: "iphone.gen3",
+                                   title: LocalizedStringResource("Built for your phone", bundle: .module),
+                                   detail: LocalizedStringResource("Every build is tested on GitHub Actions before it reaches you.", bundle: .module)),
+                    WelcomeFeature(id: "modules", systemImage: "square.stack.3d.up",
+                                   title: LocalizedStringResource("Made of modules", bundle: .module),
+                                   detail: LocalizedStringResource("Theme, onboarding and settings are packages you keep or drop.", bundle: .module)),
+                    WelcomeFeature(id: "yours", systemImage: "slider.horizontal.3",
+                                   title: LocalizedStringResource("Make it yours", bundle: .module),
+                                   detail: LocalizedStringResource("Replace these steps with your own in one array of OnboardingStep values.", bundle: .module)),
                 ])),
-            .choice(OnboardingChoice(
-                id: "build",
-                title: "What will you build?",
-                message: "The app adapts to the answer. Ask only what changes what people see.",
-                options: [
-                    .init(title: "A tool for myself", systemImage: "hammer"),
-                    .init(title: "Something for friends", systemImage: "person.2"),
-                    .init(title: "A product to sell", systemImage: "storefront"),
-                ],
-                mode: .multiple,
-                onAnswer: onChoice)),
+            .choice(templateChoice(onAnswer: onChoice)),
             .page(OnboardingPage(id: "tour", systemImage: "hand.draw",
-                                 title: "Swipe or tap",
-                                 message: "Pages like this one are the classic tour card. Keep as many or as few as the app needs.")),
+                                 title: LocalizedStringResource("Swipe or tap", bundle: .module),
+                                 message: LocalizedStringResource("Pages like this one are the classic tour card. Keep as many or as few as the app needs.", bundle: .module))),
             .permission(PermissionPrimer(
                 id: "notifications",
                 systemImage: "bell.badge",
-                title: "Stay in the loop",
-                message: "Starter App can tell you when a new build is ready to try. You decide on the next screen.",
+                title: LocalizedStringResource("Stay in the loop", bundle: .module),
+                message: LocalizedStringResource("Starter App can tell you when a new build is ready to try. You decide on the next screen.", bundle: .module),
                 requester: PermissionOverride.resolve(real: NotificationPermission()))),
         ]
+    }
+
+    /// The template's question: what the user will build, multiple select, with the option
+    /// identifiers `tool`, `friends` and `product`.
+    public static func templateChoice(onAnswer: @escaping @MainActor @Sendable ([String]) -> Void = { _ in }) -> OnboardingChoice {
+        OnboardingChoice(
+            id: "build",
+            title: LocalizedStringResource("What will you build?", bundle: .module),
+            message: LocalizedStringResource("The app adapts to the answer. Ask only what changes what people see.", bundle: .module),
+            options: [
+                .init(id: "tool", title: LocalizedStringResource("A tool for myself", bundle: .module), systemImage: "hammer"),
+                .init(id: "friends", title: LocalizedStringResource("Something for friends", bundle: .module), systemImage: "person.2"),
+                .init(id: "product", title: LocalizedStringResource("A product to sell", bundle: .module), systemImage: "storefront"),
+            ],
+            mode: .multiple,
+            onAnswer: onAnswer)
     }
 
     /// The template's flow with no one listening to the choice step's answer.

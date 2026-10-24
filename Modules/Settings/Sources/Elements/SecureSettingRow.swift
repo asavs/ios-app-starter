@@ -16,11 +16,12 @@ public struct SecureSettingRow: View {
     @State private var isWorking = false
     @State private var failure: String?
 
-    private let title: String
+    private let title: LocalizedStringResource
     private let key: String
     private let store: any SecureStore
 
-    public init(_ title: String, key: String, store: any SecureStore = KeychainStore()) {
+    /// - Parameter title: The field's placeholder, looked up in the app's string catalog when a literal.
+    public init(_ title: LocalizedStringResource, key: String, store: any SecureStore = KeychainStore()) {
         self.title = title
         self.key = key
         self.store = store
@@ -33,15 +34,15 @@ public struct SecureSettingRow: View {
                 ? AnyLayout(VStackLayout(alignment: .leading, spacing: theme.spacing.small))
                 : AnyLayout(HStackLayout(spacing: theme.spacing.small))
             entry {
-                SecureField(title, text: $draft)
+                SecureField(text: $draft) { Text(title) }
                     .autocorrectionDisabled() // No password content type: these are keys and tokens, not credentials AutoFill should offer to save.
                     .accessibilityIdentifier("settings.secure.\(key).field")
                 HStack(spacing: theme.spacing.medium) {
-                    Button("Save", action: save)
+                    Button(action: save) { Text("Save", bundle: .module) }
                         .disabled(draft.isEmpty || isWorking)
                         .accessibilityIdentifier("settings.secure.\(key).save")
                     if isStored == true {
-                        Button("Clear", role: .destructive, action: clear)
+                        Button(role: .destructive, action: clear) { Text("Clear", bundle: .module) }
                             .disabled(isWorking)
                             .accessibilityIdentifier("settings.secure.\(key).clear")
                     }
@@ -59,9 +60,9 @@ public struct SecureSettingRow: View {
     private var status: String {
         if let failure { return failure }
         switch isStored {
-        case true?: return "Stored securely on this device."
-        case false?: return "Not set."
-        case nil: return "Checking…"
+        case true?: return String(localized: "Stored securely on this device.", bundle: .module)
+        case false?: return String(localized: "Not set.", bundle: .module)
+        case nil: return String(localized: "Checking…", bundle: .module)
         }
     }
 
@@ -73,7 +74,7 @@ public struct SecureSettingRow: View {
             isStored = try await store.perform { try $0.contains(key) }
             failure = nil
         } catch {
-            failure = "Could not read: \(error)"
+            failure = String(localized: "Could not read: \(String(describing: error))", bundle: .module)
         }
     }
 
@@ -87,9 +88,9 @@ public struct SecureSettingRow: View {
                 draft = ""
                 isStored = true
                 failure = nil
-                announce("\(title) saved.")
+                announce(String(localized: "\(String(localized: title)) saved.", bundle: .module))
             } catch {
-                failure = "Could not save: \(error)"
+                failure = String(localized: "Could not save: \(String(describing: error))", bundle: .module)
                 announce(failure)
             }
         }
@@ -104,9 +105,9 @@ public struct SecureSettingRow: View {
                 try await store.perform { try $0.remove(key) }
                 isStored = false
                 failure = nil
-                announce("\(title) cleared.")
+                announce(String(localized: "\(String(localized: title)) cleared.", bundle: .module))
             } catch {
-                failure = "Could not clear: \(error)"
+                failure = String(localized: "Could not clear: \(String(describing: error))", bundle: .module)
                 announce(failure)
             }
         }

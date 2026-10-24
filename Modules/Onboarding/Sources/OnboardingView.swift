@@ -13,9 +13,9 @@ public struct OnboardingView: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let steps: [OnboardingStep]
-    private let skipTitle: String
-    private let continueTitle: String
-    private let finishTitle: String
+    private let skipTitle: LocalizedStringResource?
+    private let continueTitle: LocalizedStringResource
+    private let finishTitle: LocalizedStringResource
     private let onFinish: @MainActor () -> Void
     @State private var pager: OnboardingPager
     @State private var isRequesting = false
@@ -29,10 +29,16 @@ public struct OnboardingView: View {
     ///   - skipTitle: Label of the top trailing button; `nil` removes it so every step must be seen.
     ///   - continueTitle: Label of the bottom button before the last step, unless the step sets its own.
     ///   - finishTitle: Label of the bottom button on the last step, unless the step sets its own.
-    public init(steps: [OnboardingStep], skipTitle: String? = "Skip", continueTitle: String = "Continue",
-                finishTitle: String = "Get started", onFinish: @escaping @MainActor () -> Void) {
+    ///
+    /// Titles written as literals are looked up in the app's string catalog; the defaults come from
+    /// this module's.
+    public init(steps: [OnboardingStep],
+                skipTitle: LocalizedStringResource? = OnboardingView.defaultSkipTitle,
+                continueTitle: LocalizedStringResource = OnboardingView.defaultContinueTitle,
+                finishTitle: LocalizedStringResource = OnboardingView.defaultFinishTitle,
+                onFinish: @escaping @MainActor () -> Void) {
         self.steps = steps
-        self.skipTitle = skipTitle ?? ""
+        self.skipTitle = skipTitle
         self.continueTitle = continueTitle
         self.finishTitle = finishTitle
         self.onFinish = onFinish
@@ -41,17 +47,25 @@ public struct OnboardingView: View {
     }
 
     /// Tour cards only; the same as `steps: OnboardingStep.pages(pages)`.
-    public init(pages: [OnboardingPage], skipTitle: String? = "Skip", continueTitle: String = "Continue",
-                finishTitle: String = "Get started", onFinish: @escaping @MainActor () -> Void) {
+    public init(pages: [OnboardingPage],
+                skipTitle: LocalizedStringResource? = OnboardingView.defaultSkipTitle,
+                continueTitle: LocalizedStringResource = OnboardingView.defaultContinueTitle,
+                finishTitle: LocalizedStringResource = OnboardingView.defaultFinishTitle,
+                onFinish: @escaping @MainActor () -> Void) {
         self.init(steps: OnboardingStep.pages(pages), skipTitle: skipTitle, continueTitle: continueTitle,
                   finishTitle: finishTitle, onFinish: onFinish)
     }
+
+    /// "Skip", "Continue" and "Get started", from this module's string catalog.
+    public static let defaultSkipTitle = LocalizedStringResource("Skip", bundle: .module)
+    public static let defaultContinueTitle = LocalizedStringResource("Continue", bundle: .module)
+    public static let defaultFinishTitle = LocalizedStringResource("Get started", bundle: .module)
 
     public var body: some View {
         VStack(spacing: theme.spacing.medium) {
             HStack {
                 Spacer()
-                if !skipTitle.isEmpty {
+                if let skipTitle {
                     Button(action: finish) {
                         Text(skipTitle)
                             .frame(minWidth: 44, minHeight: 44) // The text alone is a 22 pt target.
@@ -96,14 +110,15 @@ public struct OnboardingView: View {
         return OnboardingView.canLeave(current, answers: answers)
     }
 
-    private var buttonTitle: String {
+    private var buttonTitle: LocalizedStringResource {
         OnboardingView.buttonTitle(for: current, isLast: pager.isLast,
                                    continueTitle: continueTitle, finishTitle: finishTitle)
     }
 
     /// The Continue label: the step's own title, else a permission primer's, else continue or finish.
     nonisolated static func buttonTitle(for step: OnboardingStep?, isLast: Bool,
-                            continueTitle: String, finishTitle: String) -> String {
+                            continueTitle: LocalizedStringResource,
+                                        finishTitle: LocalizedStringResource) -> LocalizedStringResource {
         if let title = step?.continueTitle { return title }
         if case .permission(let primer)? = step?.kind { return primer.continueTitle }
         return isLast ? finishTitle : continueTitle

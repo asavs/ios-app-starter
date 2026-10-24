@@ -8,6 +8,7 @@ import PackageDescription
 
 let package = Package(
     name: "StarterModules",
+    defaultLocalization: "en", // Module text is looked up in each module's Resources/Localizable.xcstrings.
     platforms: [
         .iOS(.v17), // Keep at or below options.deploymentTarget.iOS in project.yml.
         .macOS(.v14), // Host-side `swift test` for host-portable modules only; the simulator lane is the supported check.
@@ -21,11 +22,14 @@ let package = Package(
     targets: [
         .target(name: "TemplateVersion", path: "Modules/TemplateVersion/Sources"),
         .testTarget(name: "TemplateVersionTests", dependencies: ["TemplateVersion"], path: "Modules/TemplateVersion/Tests"),
-        .target(name: "Theme", path: "Modules/Theme/Sources"),
+        .target(name: "Theme", path: "Modules/Theme/Sources",
+                resources: [.process("Resources")]),
         .testTarget(name: "ThemeTests", dependencies: ["Theme"], path: "Modules/Theme/Tests"),
-        .target(name: "Onboarding", dependencies: ["Theme"], path: "Modules/Onboarding/Sources"),
+        .target(name: "Onboarding", dependencies: ["Theme"], path: "Modules/Onboarding/Sources",
+                resources: [.process("Resources")]),
         .testTarget(name: "OnboardingTests", dependencies: ["Onboarding"], path: "Modules/Onboarding/Tests"),
-        .target(name: "Settings", dependencies: ["Theme"], path: "Modules/Settings/Sources"),
+        .target(name: "Settings", dependencies: ["Theme"], path: "Modules/Settings/Sources",
+                resources: [.process("Resources")]),
         .testTarget(name: "SettingsTests", dependencies: ["Settings"], path: "Modules/Settings/Tests"),
     ],
     swiftLanguageModes: [.v6]

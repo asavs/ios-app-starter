@@ -29,7 +29,12 @@ public struct ChoiceStepView: View {
                             .font(theme.typography.body)
                             .foregroundStyle(theme.colors.textSecondary)
                     }
-                    Text(choice.mode == .single ? "Choose one" : "Choose any that apply")
+                    Group {
+                        switch choice.mode {
+                        case .single: Text("Choose one", bundle: .module)
+                        case .multiple: Text("Choose any that apply", bundle: .module)
+                        }
+                    }
                         .font(theme.typography.caption)
                         .foregroundStyle(theme.colors.textSecondary)
                 }

@@ -1,0 +1,303 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "A product to sell": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A product to sell"
+          }
+        }
+      }
+    },
+    "A short tour of what this app does, one screen at a time.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A short tour of what this app does, one screen at a time."
+          }
+        }
+      }
+    },
+    "A tool for myself": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A tool for myself"
+          }
+        }
+      }
+    },
+    "Built for your phone": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Built for your phone"
+          }
+        }
+      }
+    },
+    "Choose any that apply": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose any that apply"
+          }
+        }
+      }
+    },
+    "Choose one": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose one"
+          }
+        }
+      }
+    },
+    "Continue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        }
+      }
+    },
+    "Every build is tested on GitHub Actions before it reaches you.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every build is tested on GitHub Actions before it reaches you."
+          }
+        }
+      }
+    },
+    "Everything here was built and tested on GitHub Actions before it reached you.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything here was built and tested on GitHub Actions before it reached you."
+          }
+        }
+      }
+    },
+    "Get started": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get started"
+          }
+        }
+      }
+    },
+    "Made of modules": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Made of modules"
+          }
+        }
+      }
+    },
+    "Make it yours": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make it yours"
+          }
+        }
+      }
+    },
+    "Pages like this one are the classic tour card. Keep as many or as few as the app needs.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pages like this one are the classic tour card. Keep as many or as few as the app needs."
+          }
+        }
+      }
+    },
+    "Replace these pages with your own in a single array of OnboardingPage values.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replace these pages with your own in a single array of OnboardingPage values."
+          }
+        }
+      }
+    },
+    "Replace these steps with your own in one array of OnboardingStep values.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replace these steps with your own in one array of OnboardingStep values."
+          }
+        }
+      }
+    },
+    "Skip": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip"
+          }
+        }
+      }
+    },
+    "Something for friends": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something for friends"
+          }
+        }
+      }
+    },
+    "Starter App can tell you when a new build is ready to try. You decide on the next screen.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starter App can tell you when a new build is ready to try. You decide on the next screen."
+          }
+        }
+      }
+    },
+    "Stay in the loop": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stay in the loop"
+          }
+        }
+      }
+    },
+    "Swipe or tap": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe or tap"
+          }
+        }
+      }
+    },
+    "The app adapts to the answer. Ask only what changes what people see.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app adapts to the answer. Ask only what changes what people see."
+          }
+        }
+      }
+    },
+    "Theme, onboarding and settings are packages you keep or drop.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Theme, onboarding and settings are packages you keep or drop."
+          }
+        }
+      }
+    },
+    "Waiting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting"
+          }
+        }
+      }
+    },
+    "Welcome": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome"
+          }
+        }
+      }
+    },
+    "Welcome to Starter App": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome to Starter App"
+          }
+        }
+      }
+    },
+    "What will you build?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What will you build?"
+          }
+        }
+      }
+    },
+    "You can change this anytime in Settings.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can change this anytime in Settings."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

@@ -5,16 +5,18 @@ public struct EmptyStateView: View {
     @Environment(\.appTheme) private var theme
     @ScaledMetric(relativeTo: .title) private var symbolSize: CGFloat = 44
     private let systemImage: String
-    private let title: String
-    private let message: String
-    private let actionTitle: String?
+    private let title: LocalizedStringResource
+    private let message: LocalizedStringResource
+    private let actionTitle: LocalizedStringResource?
     private let action: (@MainActor () -> Void)?
 
     /// - Parameters:
     ///   - systemImage: SF Symbol name.
+    ///   - title: Looked up in the app's string catalog when written as a literal, like every text
+    ///     parameter in the modules.
     ///   - actionTitle: Label of the primary button; omit both action parameters for no button.
-    public init(systemImage: String, title: String, message: String,
-                actionTitle: String? = nil, action: (@MainActor () -> Void)? = nil) {
+    public init(systemImage: String, title: LocalizedStringResource, message: LocalizedStringResource,
+                actionTitle: LocalizedStringResource? = nil, action: (@MainActor () -> Void)? = nil) {
         self.systemImage = systemImage
         self.title = title
         self.message = message
