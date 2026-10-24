@@ -54,7 +54,7 @@ Choose distinct reverse-DNS bundle identifiers containing letters, numbers, hyph
 
 The initial supported deployment minimum is 17.0 or newer, up to the selected SDK version. Raising it does not install a newer test runtime: choose a compatible `IOS_TEST_DESTINATION` in the workflow if you raise it beyond the current simulator OS. For iPad-only apps, select an installed iPad simulator in `IOS_TEST_DESTINATION`. App and test targets must share the minimum; use the project-level setting instead of target overrides. A build against a newer SDK does not establish runtime coverage on the declared minimum.
 
-The workflow selects its simulator in job-level `IOS_TEST_DESTINATION` and explicitly waits for it to boot, with a five-minute startup step limit. The single smoke test runs without parallel test workers.
+The workflow selects its simulator in job-level `IOS_TEST_DESTINATION` and explicitly waits for it to boot, with a five-minute startup step limit. The app's UI suite runs without parallel test workers and covers the welcome screen, onboarding, theme and settings when enabled.
 
 **What Actions checks:** XcodeGen validates the native manifest and its references. `scripts/check-configuration.py` then inspects the generated project, shared scheme, and Xcode-resolved Debug/Release settings. Errors explain missing/invalid identifiers, blank names, invalid or inconsistent deployment minimums, missing tests, and unsupported platforms/capabilities. Initial capability/account signing setup is pending; entitlement files and enabled account capabilities are rejected for this unsigned starter. Do not enable Mac compatibility flags or add Watch, Mac, TV, or Vision Pro targets yet.
 
@@ -72,7 +72,7 @@ bash scripts/generate-project.sh
 
 The generated project is checked in for convenience, but changes belong in `project.yml`; regenerate after editing it. Open `StarterApp/StarterApp.xcodeproj` and select the `StarterApp` scheme.
 
-With Xcode 27.0 and the iOS 27.0 simulator installed, run the same smoke test as CI:
+With Xcode 27.0 and the iOS 27.0 simulator installed, run the same UI suite as CI:
 
 ```sh
 bash scripts/test-ios.sh

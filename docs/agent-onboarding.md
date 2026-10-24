@@ -42,7 +42,7 @@ Never ask for, or accept, passwords, two-factor codes typed into chat, private-k
 
 ## 2. Agent-runnable stages
 
-Each stage ends at a check you can read without opening the Actions UI. For any workflow run, `python scripts/review_ci.py --run <id>` (or `--latest`, `--pr <n>`) reports jobs and the named failure ([scripts/review_ci.py](../scripts/review_ci.py)). It downloads only the iOS test, compatibility and delivery artifacts. For the Apple diagnostics artifacts, use [Reading Apple diagnostics artifacts](#reading-apple-diagnostics-artifacts). Do not poll CI from a model loop. Block in the shell with `gh run watch <id>` or `gh pr checks <n> --watch` (see AGENTS.md, "Do not wait on CI").
+Each stage ends at a check you can read without opening the Actions UI. For any workflow run, `python scripts/review_ci.py --run <id>` (or `--latest`, `--pr <n>`) reports jobs and recognized sanitized evidence ([scripts/review_ci.py](../scripts/review_ci.py)). It downloads iOS test, compatibility, signing-preflight and TestFlight artifacts. Download the signed-archive validation report separately in Stage E; for Apple diagnostics, use [Reading Apple diagnostics artifacts](#reading-apple-diagnostics-artifacts). Do not poll CI from a model loop. Block in the shell with `gh run watch <id>` or `gh pr checks <n> --watch` (see AGENTS.md, "Do not wait on CI").
 
 `python scripts/setup.py` records the setup's consent choices and completed stage checkpoints in the ignored `build/setup-state.json`. It resumes at the first unfinished stage, stops when consent is declined, and never stores credential values. Run `python scripts/setup.py --status` to inspect progress, `--grant <category>` or `--decline <category>` to update one consent choice, and `--complete <stage>` only after that stage's runbook checks pass. Use `--reset` to remove the checkpoint. The script guides and records progress; follow the stage instructions below to perform and verify the work.
 
@@ -58,8 +58,9 @@ Each stage ends at a check you can read without opening the Actions UI. For any 
 
    This enables auto-merge, secret scanning and push protection, restricts actions, and adds the `main` ruleset requiring `ios-gate` and `portable (...)`. After this, direct pushes to `main` are blocked for everyone.
 3. Set the app identity in `project.yml`: `INFOPLIST_KEY_CFBundleDisplayName`, `DEV_DISPLAY_NAME` (the shorter name Debug builds show, such as "Notes Dev"), and `PRODUCT_BUNDLE_IDENTIFIER` for the app and both test targets (README, "Customize the app"). Choose a reverse-DNS identifier the owner controls. `com.example.*` is fine for unsigned checks but cannot be signed. Leave `starter-app-demo` alone; it is the template's own registered app. Then give the app its own placeholder icon with `python scripts/personalize-icon.py` (random disc colours and arrangement on Apple's guide grid; [app icon](app-icon.md)) and commit `StarterApp/StarterApp/AppIcon.icon/icon.json` with the identity change.
-4. Commit on a branch, open a pull request and enable auto-merge: `gh pr merge <n> --auto --merge`. The pull-request lane builds and tests `starter` on the simulator with no secrets ([.github/workflows/ios.yml](../.github/workflows/ios.yml)).
-5. When a result is needed: `python scripts/review_ci.py --pr <n>`. A red run names the file, line, message and failing test. The `ios-test-results-starter` artifact includes a screenshot of the welcome screen.
+4. Choose the enabled modules under `targets.StarterApp.dependencies` in `project.yml`: `TemplateVersion`, `Theme`, `Onboarding` and `Settings` are enabled initially. Onboarding and Settings require Theme. Keep only the products the app needs, following [Modules](modules.md); the app icon is a document and scripts, not a Swift package product. The initial unsigned check can use the copied local library. Before switching to a tagged URL dependency, verify that the selected release contains every enabled product: the initial `0.1.0` tag contains only TemplateVersion. Follow [Use the library from an app](modules.md#use-the-library-from-an-app) within the app's first release.
+5. Commit on a branch, open a pull request and enable auto-merge: `gh pr merge <n> --auto --merge`. The pull-request lane builds and tests `starter` on the simulator with no secrets ([.github/workflows/ios.yml](../.github/workflows/ios.yml)). Windows users edit the manifest; Actions regenerates the Xcode project before building.
+6. When a result is needed: `python scripts/review_ci.py --pr <n>`. Inspect the counts and reports for the enabled features; the lane runs the app's UI suite, including onboarding, theme and settings checks. The `ios-test-results-starter` artifact includes test screenshots and `failures.json` with the named failure and source location when available. The review command summarizes counts; download the artifact to read individual failures.
 
 ### Stage B: credential-free Apple readiness
 
@@ -118,7 +119,18 @@ Needs `apple-provisioning`. Xcode automatic signing may create or refresh the di
 gh workflow run signing-validation.yml --ref main --field configuration=starter --field perform_signing=true
 ```
 
-Approve the gate, then `python scripts/review_ci.py --latest --branch main --workflow "Signed archive validation"`. The report checks identity, signature, entitlements, profile and certificate match, and expiry ([.github/workflows/signing-validation.yml](../.github/workflows/signing-validation.yml)). Nothing is uploaded.
+The default environment has no required reviewer. If this repository configured one, follow [Optional required-reviewer gate](#optional-required-reviewer-gate). Select the authorized dispatch, check its head SHA against the intended commit, then wait and read its results:
+
+```powershell
+$run = gh run list --workflow signing-validation.yml --branch main --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId'
+gh run view $run --json headSha --jq .headSha
+gh run watch $run --exit-status
+python scripts/review_ci.py --run $run
+gh run download $run --name signing-validation-starter --dir build/review/$run/signing
+Get-Content build/review/$run/signing/signing-validation.json
+```
+
+If another dispatch is newer, use the intended run ID explicitly. Replace the artifact's `starter` suffix when using another configuration. `review_ci.py` reports job conclusions and the unsigned preflight; it does not download `signing-validation-<configuration>`. The separate JSON must report `status: passed` and `validatedArtifact: app-store-connect-export-from-archive`, with the intended bundle/team and valid profile/certificate expiry. The validator checks identity, signature, entitlements, profile and certificate match, and expiry ([.github/workflows/signing-validation.yml](../.github/workflows/signing-validation.yml)). An absent report leaves signing unverified. This stage does not upload to App Store Connect.
 
 ### Stage F: TestFlight group with automatic distribution
 
@@ -241,7 +253,6 @@ Mined from [the journal](setup-experience.md). Check here before diagnosing from
 | --- | --- | --- |
 | Consent choices and stage progress survive interruptions | `python scripts/setup.py` stores consent booleans and completed stages in ignored `build/setup-state.json`; individual tools still require their own action approval | Implemented for guided setup checkpoints; broader consent integration is not built |
 | Guided resumable setup | `python scripts/setup.py`; stage actions remain in this runbook | Master plan step 6, `scripts/setup.py`; issues #2, #3, #4, #17 |
-| `apple-credentials` environment created by script | GitHub UI | Master plan step 6, `configure-github-repo.py` |
 | Stored key role record | Stage C notes; role must be confirmed separately from secret-name checks | Issue #1 |
 | Feedback to sanitized issue draft | Manual triage with the issue template | Master plan step 4 |
 | Ad hoc install without TestFlight | TestFlight only (Windows), `run-on-device` (Mac) | Master plan step 4, evaluation pending |
