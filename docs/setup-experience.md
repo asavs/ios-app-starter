@@ -1,14 +1,14 @@
 # Setup experience and troubleshooting journal
 
-This journal records problems hit while setting up and developing apps from the starter, the fixes tried, and the evidence checked. Read it with [the roadmap](../roadmap.md). Entries keep what was observed apart from planned improvements. Do not paste credentials or unredacted logs here.
+Problems met while setting up and developing apps from the starter, the fixes tried, and the evidence checked. Read it alongside [the roadmap](../roadmap.md). Never paste credentials or unredacted logs here.
 
 ## How to maintain this journal
 
-Add a dated entry as the work happens. Give the symptom, whether the cause is confirmed or suspected, the fix, the verification result, and what it means for future setup. Put reusable instructions in the README or a focused guide and link to them from here. Keep the roadmap status accurate: do not mark anything complete while required checks are pending.
+Add a dated entry as work proceeds, in the format from `AGENTS.md`, and keep observations apart from planned improvements. Put reusable instructions in the README or a focused guide and link to them from the entry. Keep the roadmap status accurate; do not claim completion while required checks are pending.
 
 ## Where the entries live
 
-The journal is split by milestone under `docs/journal/`. Add new entries to the current milestone's file, newest first, directly under the scope line. When a new milestone begins, start a new file and add it to this table. Use the entry format from `AGENTS.md`.
+Entries are split by milestone under `docs/journal/`. Add new ones to the current milestone's file, newest first, directly under the scope line. When a new milestone begins, start a new file and add it to this table.
 
 | File | Milestone | Dates | Entries |
 | --- | --- | --- | --- |
