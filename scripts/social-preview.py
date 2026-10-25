@@ -215,7 +215,7 @@ def main(argv=None):
                 theme, args.output / f"social-preview-{theme}.png", icon,
                 args.title or config.get("title") or display_name(),
                 args.tagline or config.get("tagline") or repository_description(),
-                args.url or config.get("url") or repository_url(),
+                args.url if args.url is not None else config["url"] if "url" in config else repository_url(),
                 choose_chips(args.chip, config, topics), feature_flags(config.get("features", [])), screens), check=True)
             fit_upload_limit(args.output / f"social-preview-{theme}.png")
     print(f"Upload one under Settings > General > Social preview: {args.output}")
