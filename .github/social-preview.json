@@ -4,8 +4,8 @@
   "screens": ["onboarding-welcome", "welcome-screen", "settings-screen"],
   "features": [
     {"icon": "modules", "label": "Modules you keep or delete"},
-    {"icon": "sparkle", "label": "AI infrastructure, cloud or on-device", "soon": true},
-    {"icon": "bridge", "label": "iMessage bridge", "soon": true},
-    {"icon": "backend", "label": "Backend for API keys", "soon": true}
+    {"icon": "lock", "label": "Sign-in and storage", "soon": true},
+    {"icon": "sparkle", "label": "AI with keys kept off the device", "soon": true},
+    {"icon": "bridge", "label": "iMessage bridge", "soon": true}
   ]
 }
