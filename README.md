@@ -24,7 +24,7 @@ Also included:
 - **Tests.** Unit tests per module, and UI tests for each feature with screenshots.
 - **A placeholder icon** you can personalize with one command.
 
-Planned, as real apps need them: Sign in with Apple, a SwiftData database layer, AI chat (cloud or on-device), an iMessage bridge, and Watch, Mac, TV and Vision Pro. See the [roadmap](roadmap.md).
+Planned, as real apps need them: Sign in with Apple, a SwiftData database layer, AI chat (cloud or on-device), and Watch, Mac, TV and Vision Pro. On the backend: a server that holds API keys so the app doesn't have to, and an iMessage bridge. See the [roadmap](roadmap.md).
 
 ## Start your app
 
