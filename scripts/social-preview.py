@@ -2,10 +2,12 @@
 """Make light and dark 1280x640 social preview cards for the repository.
 
 The card shows the app's own icon (StarterApp/StarterApp/AppIcon.icon, rendered by Icon Composer's
-ictool), the title, a tagline, optional chips, and up to three UI test screenshots. Screenshots come
-from the newest local `scripts/test-ios.sh` run, or from `--attachments`, a downloaded
-`ios-test-results-*` artifact's `attachments/` folder. Rendering needs macOS with Xcode 26 or later;
-from Windows, run the manual **Social preview** workflow instead.
+ictool), the title, a tagline, up to four feature rows with drawn icons, one line of chips, and up to
+three UI test screenshots. Text comes from `.github/social-preview.json`; anything it leaves out falls
+back to the Home Screen name, the repository description and the first three repository topics.
+Screenshots come from the newest local `scripts/test-ios.sh` run, or from `--attachments`, a
+downloaded `ios-test-results-*` artifact's `attachments/` folder. Rendering needs macOS with Xcode 26
+or later; from Windows, run the manual **Social preview** workflow instead.
 
 Upload one of the results under Settings > General > Social preview; GitHub has no API for it.
 """
@@ -21,6 +23,8 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 ICON = ROOT / "StarterApp/StarterApp/AppIcon.icon"
 RENDERER = ROOT / "scripts/render-social-preview.swift"
+CONFIG = ROOT / ".github/social-preview.json"
+GLYPHS = {"modules", "chat", "bridge", "backend", "lock", "sparkle", "globe", "check"}
 DEFAULT_SCREENS = ["onboarding-welcome", "welcome-screen", "settings-screen"]
 
 
@@ -65,6 +69,45 @@ def repository_url():
     return f"github.com/{match.group(1)}" if match else None
 
 
+def load_config(path=CONFIG):
+    """The card settings: optional title, tagline, url, chips and features. Missing file means defaults."""
+    if not path.is_file():
+        return {}
+    config = json.loads(path.read_text(encoding="utf-8"))
+    for index, feature in enumerate(config.get("features", [])):
+        if not isinstance(feature, dict) or not feature.get("label"):
+            raise SystemExit(f"{path.name}: features[{index}] needs a label")
+        if feature.get("icon", "") not in GLYPHS:
+            print(f"{path.name}: features[{index}] icon {feature.get('icon')!r} is not one of {sorted(GLYPHS)}; drawing a dot",
+                  file=sys.stderr)
+    return config
+
+
+def feature_flags(features):
+    """`glyph|label` or `glyph|label|soon` values for the renderer's --feature."""
+    return ["|".join([feature.get("icon", ""), feature["label"]] + (["soon"] if feature.get("soon") else []))
+            for feature in features[:4]]
+
+
+def repository_topics():
+    """The repository's GitHub topics through `gh`, in GitHub's order, or [] when gh is unavailable."""
+    try:
+        output = subprocess.run(["gh", "repo", "view", "--json", "repositoryTopics", "--jq", "[.repositoryTopics[].name]"],
+                                cwd=ROOT, capture_output=True, text=True, check=True, timeout=30).stdout
+        return json.loads(output or "[]")
+    except (OSError, subprocess.SubprocessError, json.JSONDecodeError):
+        return []
+
+
+def choose_chips(flags, config, topics):
+    """--chip wins, then the config's chips (an empty list hides them), then the first three topics."""
+    if flags:
+        return flags
+    if "chips" in config:
+        return list(config["chips"])
+    return topics[:3]
+
+
 def repository_description():
     """The GitHub repository description through `gh`, or None when gh is unavailable."""
     try:
@@ -88,7 +131,7 @@ def render_icon(target):
     return target
 
 
-def renderer_command(theme, output, icon, title, tagline, url, chips, planned, screens):
+def renderer_command(theme, output, icon, title, tagline, url, chips, features, screens):
     command = ["swift", str(RENDERER), "--theme", theme, "--output", str(output), "--icon", str(icon), "--title", title]
     if tagline:
         command += ["--tagline", tagline]
@@ -96,8 +139,8 @@ def renderer_command(theme, output, icon, title, tagline, url, chips, planned, s
         command += ["--url", url]
     for chip in chips:
         command += ["--chip", chip]
-    for chip in planned:
-        command += ["--planned", chip]
+    for feature in features:
+        command += ["--feature", feature]
     for screen in screens:
         command += ["--screen", str(screen)]
     return command
@@ -111,11 +154,13 @@ def main(argv=None):
                         help=f"UI test attachment name, front first (default: {', '.join(DEFAULT_SCREENS)})")
     parser.add_argument("--title", help="defaults to the Home Screen name in project.yml")
     parser.add_argument("--tagline", help="defaults to the GitHub repository description")
-    parser.add_argument("--chip", action="append", default=[], help="a feature label; repeat for more")
-    parser.add_argument("--planned", action="append", default=[], help="a planned feature, drawn dashed with '· soon'")
+    parser.add_argument("--chip", action="append", default=[],
+                        help="a chip label; repeat for more (default: the config's chips, else the first three topics)")
+    parser.add_argument("--config", type=Path, default=CONFIG, help="card settings (default: .github/social-preview.json)")
     parser.add_argument("--url", help="defaults to github.com/<owner>/<repo> from the origin remote")
     parser.add_argument("--icon", type=Path, help="a PNG to use instead of rendering AppIcon.icon")
     args = parser.parse_args(argv)
+    config = load_config(args.config)
 
     attachments = args.attachments or newest_attachments()
     screens = pick_screens(attachments, args.screens or DEFAULT_SCREENS) if attachments else []
@@ -123,12 +168,16 @@ def main(argv=None):
         print("No UI test screenshots found; the card will have no screens. Run scripts/test-ios.sh or pass --attachments.",
               file=sys.stderr)
     args.output.mkdir(parents=True, exist_ok=True)
+    topics = [] if args.chip or "chips" in config else repository_topics()
     with tempfile.TemporaryDirectory() as scratch:
         icon = args.icon or render_icon(Path(scratch) / "icon.png")
         for theme in ("light", "dark"):
-            subprocess.run(renderer_command(theme, args.output / f"social-preview-{theme}.png", icon,
-                                            args.title or display_name(), args.tagline or repository_description(),
-                                            args.url or repository_url(), args.chip, args.planned, screens), check=True)
+            subprocess.run(renderer_command(
+                theme, args.output / f"social-preview-{theme}.png", icon,
+                args.title or config.get("title") or display_name(),
+                args.tagline or config.get("tagline") or repository_description(),
+                args.url or config.get("url") or repository_url(),
+                choose_chips(args.chip, config, topics), feature_flags(config.get("features", [])), screens), check=True)
     print(f"Upload one under Settings > General > Social preview: {args.output}")
     return 0
 

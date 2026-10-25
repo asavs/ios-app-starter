@@ -7,19 +7,15 @@ on:
   workflow_dispatch:
     inputs:
       title:
-        description: Card title (blank uses the Home Screen name from project.yml)
+        description: Card title (blank uses .github/social-preview.json, else the Home Screen name)
         type: string
         default: ''
       tagline:
-        description: Tagline (blank uses the repository description)
+        description: Tagline (blank uses .github/social-preview.json, else the repository description)
         type: string
         default: ''
       chips:
-        description: Feature labels, comma-separated
-        type: string
-        default: ''
-      planned:
-        description: Planned features, comma-separated, drawn dashed with "· soon"
+        description: Chip labels, comma-separated (blank uses .github/social-preview.json, else the first three topics)
         type: string
         default: ''
 
@@ -56,7 +52,6 @@ jobs:
           TITLE: ${{ inputs.title }}
           TAGLINE: ${{ inputs.tagline }}
           CHIPS: ${{ inputs.chips }}
-          PLANNED: ${{ inputs.planned }}
         run: |
           import os, subprocess
           command = ['python3', 'scripts/social-preview.py', '--output', os.environ['RUNNER_TEMP'] + '/social-preview']
@@ -65,9 +60,8 @@ jobs:
           for flag, name in (('--title', 'TITLE'), ('--tagline', 'TAGLINE')):
               if os.environ[name].strip():
                   command += [flag, os.environ[name].strip()]
-          for flag, name in (('--chip', 'CHIPS'), ('--planned', 'PLANNED')):
-              for label in filter(None, (part.strip() for part in os.environ[name].split(','))):
-                  command += [flag, label]
+          for label in filter(None, (part.strip() for part in os.environ['CHIPS'].split(','))):
+              command += ['--chip', label]
           subprocess.run(command, check=True)
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:

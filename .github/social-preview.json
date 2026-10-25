@@ -1,0 +1,10 @@
+{
+  "title": "iOS App Starter",
+  "tagline": "Build an idiomatic Swift app from any OS, from tested foundations to AI and iMessage.",
+  "features": [
+    {"icon": "modules", "label": "Modules you keep or delete"},
+    {"icon": "chat", "label": "AI chat, cloud or on-device", "soon": true},
+    {"icon": "bridge", "label": "iMessage bridge", "soon": true},
+    {"icon": "backend", "label": "Backend for API keys", "soon": true}
+  ]
+}

@@ -53,11 +53,11 @@ class SocialPreviewTests(unittest.TestCase):
 
     def test_renderer_command_passes_only_what_was_given(self):
         command = social_preview.renderer_command("dark", Path("out.png"), Path("icon.png"), "My App", None, None,
-                                                  ["Theme"], ["AI chat"], [Path("a.png")])
+                                                  ["Theme"], ["chat|AI chat|soon"], [Path("a.png")])
         self.assertEqual(command[:2], ["swift", str(social_preview.RENDERER)])
         self.assertNotIn("--tagline", command)
         self.assertNotIn("--url", command)
-        for pair in (["--theme", "dark"], ["--chip", "Theme"], ["--planned", "AI chat"], ["--screen", "a.png"]):
+        for pair in (["--theme", "dark"], ["--chip", "Theme"], ["--feature", "chat|AI chat|soon"], ["--screen", "a.png"]):
             index = command.index(pair[0])
             self.assertEqual(command[index:index + 2], pair)
 
@@ -70,6 +70,32 @@ class SocialPreviewTests(unittest.TestCase):
             (with_manifest / "manifest.json").write_text("[]", encoding="utf-8")
             self.assertEqual(social_preview.newest_attachments(results), with_manifest)
             self.assertIsNone(social_preview.newest_attachments(results / "missing"))
+
+    def test_chips_prefer_flags_then_config_then_the_first_three_topics(self):
+        topics = ["accessibility", "github-actions", "imessage", "ios"]
+        self.assertEqual(social_preview.choose_chips(["Mine"], {"chips": ["Config"]}, topics), ["Mine"])
+        self.assertEqual(social_preview.choose_chips([], {"chips": ["Config"]}, topics), ["Config"])
+        self.assertEqual(social_preview.choose_chips([], {"chips": []}, topics), [])
+        self.assertEqual(social_preview.choose_chips([], {}, topics), ["accessibility", "github-actions", "imessage"])
+
+    def test_features_become_renderer_values_and_stop_at_four(self):
+        features = [{"icon": "modules", "label": "Modules"}, {"icon": "chat", "label": "AI chat", "soon": True}] * 3
+        self.assertEqual(social_preview.feature_flags(features)[:2], ["modules|Modules", "chat|AI chat|soon"])
+        self.assertEqual(len(social_preview.feature_flags(features)), 4)
+
+    def test_config_needs_a_label_per_feature_and_is_optional(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / "social-preview.json"
+            self.assertEqual(social_preview.load_config(path), {})
+            path.write_text(json.dumps({"features": [{"icon": "chat"}]}), encoding="utf-8")
+            with self.assertRaises(SystemExit):
+                social_preview.load_config(path)
+
+    def test_the_repository_config_is_valid(self):
+        config = social_preview.load_config()
+        self.assertLessEqual(len(config.get("features", [])), 4)
+        for feature in config.get("features", []):
+            self.assertIn(feature["icon"], social_preview.GLYPHS)
 
 
 if __name__ == "__main__":

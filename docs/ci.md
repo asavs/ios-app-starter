@@ -157,23 +157,39 @@ Set `verify_failure_reporting=true` only for the controlled check that is meant 
 
 ## Make a social preview card
 
-A link to your repository on LinkedIn, X or Slack shows its social preview image. `scripts/social-preview.py` draws a 1280×640 card in light and dark: your app's icon (rendered from `StarterApp/StarterApp/AppIcon.icon`), a title, a tagline, optional feature chips and up to three UI test screenshots.
+A link to your repository on LinkedIn, X or Slack shows its social preview image. `scripts/social-preview.py` draws a 1280×640 card in light and dark: your app's icon (rendered from `StarterApp/StarterApp/AppIcon.icon`) beside the title, a tagline, up to four feature rows with drawn icons, one line of chips and up to three UI test screenshots.
+
+Describe the card once in `.github/social-preview.json`:
+
+```json
+{
+  "title": "Pocket Notes",
+  "tagline": "Notes that sync to every device.",
+  "features": [
+    {"icon": "sparkle", "label": "Smart folders"},
+    {"icon": "chat", "label": "Ask your notes", "soon": true}
+  ],
+  "chips": ["swiftui", "icloud", "widgets"]
+}
+```
+
+Every field is optional. Without a title or tagline the card uses the Home Screen name in `project.yml` and the repository description; without `chips` it shows the repository's first three topics, and `"chips": []` hides them. Feature icons: `modules`, `chat`, `bridge`, `backend`, `lock`, `sparkle`, `globe`, `check`. `"soon": true` adds a SOON tag. The icons are drawn by the script, so the card contains no Apple symbol or emoji artwork.
 
 On a Mac with Xcode 26 or later, after `bash scripts/test-ios.sh`:
 
 ```sh
-python3 scripts/social-preview.py --chip Onboarding --chip Settings --planned "AI chat"
+python3 scripts/social-preview.py
 ```
 
-The title defaults to the Home Screen name in `project.yml` and the tagline to the repository description; pass `--title` and `--tagline` to change them. `--screen <attachment name>` picks screenshots by their UI test attachment name, front first (default: `onboarding-welcome`, `welcome-screen`, `settings-screen`). The cards land in `build/social-preview/`.
+`--title`, `--tagline` and `--chip` override the config for one run. `--screen <attachment name>` picks screenshots by their UI test attachment name, front first (default: `onboarding-welcome`, `welcome-screen`, `settings-screen`). The cards land in `build/social-preview/`.
 
 From Windows or anywhere else, run the **Social preview** workflow:
 
 ```sh
-gh workflow run social-preview.yml --ref main --field chips="Onboarding,Settings" --field planned="AI chat"
+gh workflow run social-preview.yml --ref main
 ```
 
-It reuses the screenshots from the newest passing iOS run on `main` and attaches the cards to the run as the `social-preview` artifact for 7 days; nothing is committed. Upload one under **Settings → General → Social preview**. GitHub has no API for that setting.
+It reads the same config, reuses the screenshots from the newest passing iOS run on `main`, and attaches the cards to the run as the `social-preview` artifact for 7 days; nothing is committed. Upload one under **Settings → General → Social preview**. GitHub has no API for that setting.
 
 ## Tool-download caching
 
