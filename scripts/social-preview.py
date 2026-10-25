@@ -3,8 +3,9 @@
 
 The card shows the app's own icon (StarterApp/StarterApp/AppIcon.icon, rendered by Icon Composer's
 ictool), the title, a tagline, up to four feature rows with drawn icons, one line of chips, and up to
-three UI test screenshots. Text comes from `.github/social-preview.json`; anything it leaves out falls
-back to the Home Screen name, the repository description and the first three repository topics.
+three UI test screenshots. Text and screenshot choice come from `.github/social-preview.json`;
+anything it leaves out falls back to the Home Screen name, the repository description, the first three
+repository topics and the onboarding, home and settings screenshots.
 Screenshots come from the newest local `scripts/test-ios.sh` run, or from `--attachments`, a
 downloaded `ios-test-results-*` artifact's `attachments/` folder. Rendering needs macOS with Xcode 26
 or later; from Windows, run the manual **Social preview** workflow instead.
@@ -35,8 +36,8 @@ def newest_attachments(results=ROOT / "build/test-results"):
     return runs[0] / "attachments" if runs else None
 
 
-def pick_screens(attachments, names):
-    """Screenshot paths for the named UI test attachments, in the order asked; missing names are skipped.
+def screenshot_names(attachments):
+    """Each PNG attachment's name mapped to its exported file, first export of a name winning.
 
     `xcresulttool` names each export `<attachment name>_<index>_<uuid>.png`; the manifest maps that
     readable name to the exported file.
@@ -49,6 +50,16 @@ def pick_screens(attachments, names):
             name = re.sub(r"_\d+_[0-9A-Fa-f-]+\.png$", "", readable)
             if name and name not in exported and attachment.get("exportedFileName", "").endswith(".png"):
                 exported[name] = attachments / attachment["exportedFileName"]
+    return exported
+
+
+def pick_screens(attachments, names):
+    """Screenshot paths for the named UI test attachments, in the order asked; missing names are skipped."""
+    exported = screenshot_names(attachments)
+    missing = [name for name in names if name not in exported]
+    if missing:
+        print(f"No screenshot named {', '.join(missing)}. Available: {', '.join(sorted(exported)) or 'none'}",
+              file=sys.stderr)
     return [exported[name] for name in names if name in exported and exported[name].is_file()]
 
 
@@ -151,7 +162,7 @@ def main(argv=None):
     parser.add_argument("--output", type=Path, default=ROOT / "build/social-preview", help="folder for the two PNGs")
     parser.add_argument("--attachments", type=Path, help="an attachments/ folder from a test run or downloaded artifact")
     parser.add_argument("--screen", action="append", dest="screens", metavar="NAME",
-                        help=f"UI test attachment name, front first (default: {', '.join(DEFAULT_SCREENS)})")
+                        help=f"UI test attachment name, front first (default: the config's screens, else {', '.join(DEFAULT_SCREENS)})")
     parser.add_argument("--title", help="defaults to the Home Screen name in project.yml")
     parser.add_argument("--tagline", help="defaults to the GitHub repository description")
     parser.add_argument("--chip", action="append", default=[],
@@ -163,7 +174,8 @@ def main(argv=None):
     config = load_config(args.config)
 
     attachments = args.attachments or newest_attachments()
-    screens = pick_screens(attachments, args.screens or DEFAULT_SCREENS) if attachments else []
+    names = args.screens or config.get("screens") or DEFAULT_SCREENS
+    screens = pick_screens(attachments, names[:3]) if attachments else []
     if not screens:
         print("No UI test screenshots found; the card will have no screens. Run scripts/test-ios.sh or pass --attachments.",
               file=sys.stderr)

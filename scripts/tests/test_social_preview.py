@@ -1,4 +1,6 @@
+import contextlib
 import importlib.util
+import io
 import json
 from pathlib import Path
 import tempfile
@@ -96,6 +98,14 @@ class SocialPreviewTests(unittest.TestCase):
         self.assertLessEqual(len(config.get("features", [])), 4)
         for feature in config.get("features", []):
             self.assertIn(feature["icon"], social_preview.GLYPHS)
+
+
+    def test_missing_screen_names_list_what_is_available(self):
+        with tempfile.TemporaryDirectory() as root:
+            folder = self.attachments(root, [attachment("theme-dark_0_ABCD.png", "D.png")])
+            with contextlib.redirect_stderr(io.StringIO()) as errors:
+                self.assertEqual(social_preview.pick_screens(folder, ["nope", "theme-dark"])[0].name, "D.png")
+        self.assertIn("No screenshot named nope. Available: theme-dark", errors.getvalue())
 
 
 if __name__ == "__main__":

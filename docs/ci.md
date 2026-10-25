@@ -169,11 +169,14 @@ Describe the card once in `.github/social-preview.json`:
     {"icon": "sparkle", "label": "Smart folders"},
     {"icon": "chat", "label": "Ask your notes", "soon": true}
   ],
-  "chips": ["swiftui", "icloud", "widgets"]
+  "chips": ["swiftui", "icloud", "widgets"],
+  "screens": ["onboarding-welcome", "welcome-screen", "theme-dark"]
 }
 ```
 
 Every field is optional. Without a title or tagline the card uses the Home Screen name in `project.yml` and the repository description; without `chips` it shows the repository's first three topics, and `"chips": []` hides them. Feature icons: `modules`, `chat`, `bridge`, `backend`, `lock`, `sparkle`, `globe`, `check`. `"soon": true` adds a SOON tag. The icons are drawn by the script, so the card contains no Apple symbol or emoji artwork.
+
+`screens` names up to three UI test screenshots, front first; the names are the `attach(name:)` names in `StarterAppUITests` (the template's include `welcome-screen`, `onboarding-welcome`, `onboarding-choice`, `onboarding-tour`, `onboarding-permission`, `settings-screen`, `theme-light` and `theme-dark`). Without `screens` the card uses `onboarding-welcome`, `welcome-screen` and `settings-screen`. A name with no screenshot is skipped, and the script lists the names it found. To show a screen of your own, attach a screenshot of it in a UI test.
 
 On a Mac with Xcode 26 or later, after `bash scripts/test-ios.sh`:
 
@@ -181,7 +184,7 @@ On a Mac with Xcode 26 or later, after `bash scripts/test-ios.sh`:
 python3 scripts/social-preview.py
 ```
 
-`--title`, `--tagline` and `--chip` override the config for one run. `--screen <attachment name>` picks screenshots by their UI test attachment name, front first (default: `onboarding-welcome`, `welcome-screen`, `settings-screen`). The cards land in `build/social-preview/`.
+`--title`, `--tagline`, `--chip` and `--screen` override the config for one run. The cards land in `build/social-preview/`.
 
 From Windows or anywhere else, run the **Social preview** workflow:
 

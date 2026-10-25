@@ -219,9 +219,13 @@ if let url = option("url"), !url.isEmpty {
 }
 
 // Right: screenshots fanned, the first one in front.
-let fan: [(x: CGFloat, y: CGFloat, degrees: CGFloat)] = [(800, 318, 7), (972, 330, 0), (1140, 318, -7)]
+let fans: [[(x: CGFloat, y: CGFloat, degrees: CGFloat)]] = [
+    [(972, 320, 0)],
+    [(890, 318, 5), (1060, 326, -5)],
+    [(800, 318, 7), (972, 330, 0), (1140, 318, -7)],
+]
 for (index, shot) in screens.enumerated().reversed() {
-    let slot = screens.count == 1 ? (x: CGFloat(972), y: CGFloat(320), degrees: CGFloat(0)) : fan[index]
+    let slot = fans[screens.count - 1][index]
     phone(shot, center: NSPoint(x: slot.x, y: slot.y), height: 460, degrees: slot.degrees)
 }
 

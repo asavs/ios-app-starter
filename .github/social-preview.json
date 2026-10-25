@@ -1,6 +1,7 @@
 {
   "title": "iOS App Starter",
   "tagline": "Build an idiomatic Swift app from any OS, from tested foundations to AI and iMessage.",
+  "screens": ["onboarding-welcome", "welcome-screen", "settings-screen"],
   "features": [
     {"icon": "modules", "label": "Modules you keep or delete"},
     {"icon": "chat", "label": "AI chat, cloud or on-device", "soon": true},
