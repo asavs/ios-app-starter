@@ -4,7 +4,7 @@
 //
 // swift scripts/render-social-preview.swift --theme light|dark --output card.png --icon icon.png
 //     --title "My App" [--tagline "..."] [--url "github.com/me/app"]
-//     [--feature "glyph|label" or "glyph|label|soon" ...] [--chip label ...]
+//     [--feature "glyph|label" or "glyph|label|soon" ...] [--chip label ...] [--scale 2]
 //     [--screen front.png --screen middle.png --screen back.png]
 // Glyphs: modules, chat, bridge, backend, lock, sparkle, globe, check. Anything else draws a dot.
 import AppKit
@@ -39,9 +39,12 @@ let features = (options["feature"] ?? []).prefix(4).map { spec -> (glyph: String
 }
 
 let width: CGFloat = 1280, height: CGFloat = 640
-let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(width), pixelsHigh: Int(height), bitsPerSample: 8,
-                           samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
-                           bytesPerRow: 0, bitsPerPixel: 0)!
+// Laid out in 1280x640 points and rendered at 2x, so the card stays sharp on high-density screens.
+let scale = CGFloat(Double(option("scale") ?? "2") ?? 2)
+let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(width * scale), pixelsHigh: Int(height * scale),
+                           bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                           colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+rep.size = NSSize(width: width, height: height)
 NSGraphicsContext.saveGraphicsState()
 NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
 

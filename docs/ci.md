@@ -157,7 +157,7 @@ Set `verify_failure_reporting=true` only for the controlled check that is meant 
 
 ## Make a social preview card
 
-A link to your repository on LinkedIn, X or Slack shows its social preview image. `scripts/social-preview.py` draws a 1280×640 card in light and dark: your app's icon (rendered from `StarterApp/StarterApp/AppIcon.icon`) beside the title, a tagline, up to four feature rows with drawn icons, one line of chips and up to three UI test screenshots.
+A link to your repository on LinkedIn, X or Slack shows its social preview image. `scripts/social-preview.py` draws a 1280×640 card (rendered at 2560×1280) in light and dark: your app's icon (rendered from `StarterApp/StarterApp/AppIcon.icon`) beside the title, a tagline, up to four feature rows with drawn icons, one line of chips and up to three UI test screenshots.
 
 Describe the card once in `.github/social-preview.json`:
 
@@ -174,7 +174,7 @@ Describe the card once in `.github/social-preview.json`:
 }
 ```
 
-Every field is optional. Without a title or tagline the card uses the Home Screen name in `project.yml` and the repository description; without `chips` it shows the repository's first three topics, and `"chips": []` hides them. Feature icons: `modules`, `chat`, `bridge`, `backend`, `lock`, `sparkle`, `globe`, `check`. `"soon": true` adds a SOON tag. The icons are drawn by the script, so the card contains no Apple symbol or emoji artwork.
+Every field is optional. Without a title or tagline the card uses the Home Screen name in `project.yml` and the repository description. A card shows feature rows or chips, not both: with `features` the chips are left off; without them it shows `chips`, or else the repository's first three topics (`"chips": []` hides them). Feature icons: `modules`, `chat`, `bridge`, `backend`, `lock`, `sparkle`, `globe`, `check`. `"soon": true` adds a SOON tag. The icons are drawn by the script, so the card contains no Apple symbol or emoji artwork.
 
 `screens` names up to three UI test screenshots, front first; the names are the `attach(name:)` names in `StarterAppUITests` (the template's include `welcome-screen`, `onboarding-welcome`, `onboarding-choice`, `onboarding-tour`, `onboarding-permission`, `settings-screen`, `theme-light` and `theme-dark`). Without `screens` the card uses `onboarding-welcome`, `welcome-screen` and `settings-screen`. A name with no screenshot is skipped, and the script lists the names it found. To show a screen of your own, attach a screenshot of it in a UI test.
 
@@ -192,7 +192,7 @@ From Windows or anywhere else, run the **Social preview** workflow:
 gh workflow run social-preview.yml --ref main
 ```
 
-It reads the same config, reuses the screenshots from the newest passing iOS run on `main`, and attaches the cards to the run as the `social-preview` artifact for 7 days; nothing is committed. Upload one under **Settings → General → Social preview**. GitHub has no API for that setting.
+It reads the same config, reuses the screenshots from the newest passing iOS run on `main`, and attaches the cards to the run as the `social-preview` artifact for 7 days; nothing is committed. Upload one under **Settings → General → Social preview**; GitHub has no API for that setting and takes files up to 1 MB, so the script writes a JPEG beside any larger PNG.
 
 ## Tool-download caching
 

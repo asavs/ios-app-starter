@@ -73,9 +73,10 @@ class SocialPreviewTests(unittest.TestCase):
             self.assertEqual(social_preview.newest_attachments(results), with_manifest)
             self.assertIsNone(social_preview.newest_attachments(results / "missing"))
 
-    def test_chips_prefer_flags_then_config_then_the_first_three_topics(self):
+    def test_chips_show_only_without_features_preferring_flags_then_config_then_topics(self):
         topics = ["accessibility", "github-actions", "imessage", "ios"]
         self.assertEqual(social_preview.choose_chips(["Mine"], {"chips": ["Config"]}, topics), ["Mine"])
+        self.assertEqual(social_preview.choose_chips(["Mine"], {"features": [{"label": "Modules"}]}, topics), [])
         self.assertEqual(social_preview.choose_chips([], {"chips": ["Config"]}, topics), ["Config"])
         self.assertEqual(social_preview.choose_chips([], {"chips": []}, topics), [])
         self.assertEqual(social_preview.choose_chips([], {}, topics), ["accessibility", "github-actions", "imessage"])

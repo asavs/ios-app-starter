@@ -111,7 +111,10 @@ def repository_topics():
 
 
 def choose_chips(flags, config, topics):
-    """--chip wins, then the config's chips (an empty list hides them), then the first three topics."""
+    """Chips appear only on a card without feature rows: --chip, then the config's chips (an empty list
+    hides them), then the first three topics."""
+    if config.get("features"):
+        return []
     if flags:
         return flags
     if "chips" in config:
@@ -140,6 +143,21 @@ def render_icon(target):
                     "--rendition", "Default", "--width", "1024", "--height", "1024", "--scale", "1"],
                    check=True, capture_output=True)
     return target
+
+
+def fit_upload_limit(card, limit=1_000_000):
+    """GitHub rejects social preview uploads over 1 MB; write a JPEG beside a PNG that is too large."""
+    if card.stat().st_size <= limit:
+        return card
+    for quality in (90, 80, 70, 60):
+        jpeg = card.with_suffix(".jpg")
+        subprocess.run(["sips", "-s", "format", "jpeg", "-s", "formatOptions", str(quality), str(card), "--out", str(jpeg)],
+                       check=True, capture_output=True)
+        if jpeg.stat().st_size <= limit:
+            print(f"{card.name} is over GitHub's 1 MB limit; upload {jpeg.name} instead.", file=sys.stderr)
+            return jpeg
+    print(f"{card.name} is over GitHub's 1 MB limit even as a JPEG; use fewer screenshots.", file=sys.stderr)
+    return card
 
 
 def renderer_command(theme, output, icon, title, tagline, url, chips, features, screens):
@@ -180,7 +198,7 @@ def main(argv=None):
         print("No UI test screenshots found; the card will have no screens. Run scripts/test-ios.sh or pass --attachments.",
               file=sys.stderr)
     args.output.mkdir(parents=True, exist_ok=True)
-    topics = [] if args.chip or "chips" in config else repository_topics()
+    topics = [] if args.chip or "chips" in config or config.get("features") else repository_topics()
     with tempfile.TemporaryDirectory() as scratch:
         icon = args.icon or render_icon(Path(scratch) / "icon.png")
         for theme in ("light", "dark"):
@@ -190,6 +208,7 @@ def main(argv=None):
                 args.tagline or config.get("tagline") or repository_description(),
                 args.url or config.get("url") or repository_url(),
                 choose_chips(args.chip, config, topics), feature_flags(config.get("features", [])), screens), check=True)
+            fit_upload_limit(args.output / f"social-preview-{theme}.png")
     print(f"Upload one under Settings > General > Social preview: {args.output}")
     return 0
 
