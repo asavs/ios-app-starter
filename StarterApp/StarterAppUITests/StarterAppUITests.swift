@@ -152,11 +152,11 @@ final class StarterAppUITests: XCTestCase {
                       "The choice step should follow and scroll to its last answer")
         next.tap()
 
-        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.page.tour")), "The tour card should follow")
+        XCTAssertTrue(waitUntilOnScreen(app, element(app, "onboarding.page.tour")), "The tour card should follow")
         attach(name: "large-tour")
         next.tap()
 
-        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.page.notifications")), "The primer should follow")
+        XCTAssertTrue(waitUntilOnScreen(app, element(app, "onboarding.page.notifications")), "The primer should follow")
         attach(name: "large-permission")
         XCTAssertTrue(scroll(app, to: element(app, "onboarding.permission.notifications.footnote")),
                       "The primer's footnote should be reachable by scrolling")
@@ -189,6 +189,20 @@ final class StarterAppUITests: XCTestCase {
             app.swipeUp()
         }
         return waitUntilHittable(element, timeout: 5)
+    }
+
+    /// Waits until the element's frame overlaps the window and its page has slid in. At the largest text
+    /// sizes a page's combined card runs past the bottom edge, so its centre, which `isHittable` tests,
+    /// can sit under the Continue button while the page is plainly on screen.
+    @MainActor
+    private func waitUntilOnScreen(_ app: XCUIApplication, _ element: XCUIElement, timeout: TimeInterval = 15) -> Bool {
+        let window = app.windows.firstMatch
+        let shown = NSPredicate { _, _ in
+            guard element.exists else { return false }
+            let frame = element.frame, bounds = window.frame
+            return frame.intersects(bounds) && frame.minX >= bounds.minX - 1 && frame.minX < bounds.midX
+        }
+        return XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: shown, object: nil)], timeout: timeout) == .completed
     }
 
     private func waitUntilGone(_ element: XCUIElement, timeout: TimeInterval = 15) -> Bool {

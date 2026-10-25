@@ -155,6 +155,26 @@ gh workflow run ios.yml --ref main --field configuration=starter-app-demo --fiel
 
 Set `verify_failure_reporting=true` only for the controlled check that is meant to go red. Each configuration run uploads its own `ios-test-results-<configuration>` artifact. A new commit cancels the PR's older iOS run, and a newer push to `main` cancels the older push run; manual runs are independent. This lane stays unsigned and credential-free.
 
+## Make a social preview card
+
+A link to your repository on LinkedIn, X or Slack shows its social preview image. `scripts/social-preview.py` draws a 1280×640 card in light and dark: your app's icon (rendered from `StarterApp/StarterApp/AppIcon.icon`), a title, a tagline, optional feature chips and up to three UI test screenshots.
+
+On a Mac with Xcode 26 or later, after `bash scripts/test-ios.sh`:
+
+```sh
+python3 scripts/social-preview.py --chip Onboarding --chip Settings --planned "AI chat"
+```
+
+The title defaults to the Home Screen name in `project.yml` and the tagline to the repository description; pass `--title` and `--tagline` to change them. `--screen <attachment name>` picks screenshots by their UI test attachment name, front first (default: `onboarding-welcome`, `welcome-screen`, `settings-screen`). The cards land in `build/social-preview/`.
+
+From Windows or anywhere else, run the **Social preview** workflow:
+
+```sh
+gh workflow run social-preview.yml --ref main --field chips="Onboarding,Settings" --field planned="AI chat"
+```
+
+It reuses the screenshots from the newest passing iOS run on `main` and attaches the cards to the run as the `social-preview` artifact for 7 days; nothing is committed. Upload one under **Settings → General → Social preview**. GitHub has no API for that setting.
+
 ## Tool-download caching
 
 Actions caches the pinned XcodeGen archive and `asc` downloads under `build/tool-downloads/`, and Xcode's cloned Swift package sources under `build/swiftpm-cache/` for the app, module and compatibility lanes. Tool cache keys cover operating system, architecture, version and the scripts holding the pinned digests; every download rechecks SHA-256, and a missing or invalid entry is downloaded and verified again. Swift package keys cover operating system, architecture, Xcode version, manifests and resolved pins; after a manifest change an older entry may be restored, and SwiftPM still resolves and validates the requested revisions. The root package has no remote dependencies yet, so this cache does not speed up CI today. DerivedData and build and test products are never cached, and a miss falls back to a normal fetch.
