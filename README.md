@@ -76,6 +76,7 @@ Apple setup takes an Apple Developer membership and an App Store Connect API key
 - **Failure reports an agent can act on.** A red pull request names the failing test, file and line. [docs/ci.md](docs/ci.md)
 - **Older iOS versions.** A weekly run tests the app on every iOS version GitHub's Macs offer, back to iOS 17. [docs/ci.md](docs/ci.md#test-on-older-ios-versions)
 - **Tester feedback.** TestFlight feedback can be read from the command line and turned into issues. [docs/tester-feedback.md](docs/tester-feedback.md)
+- **A social preview card.** `python scripts/social-preview.py` on a Mac, or the manual **Social preview** workflow from anywhere, draws a 1280×640 card with your app's icon and screenshots for link previews. [docs/ci.md](docs/ci.md#make-a-social-preview-card)
 - **Setup by an AI agent.** An agent can take a fresh copy of this repository to the app on your phone, asking you only for what Apple and GitHub require a person to do. [docs/agent-onboarding.md](docs/agent-onboarding.md)
 
 ## Current defaults

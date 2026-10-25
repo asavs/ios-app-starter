@@ -1,0 +1,77 @@
+name: Social preview
+
+# Manual only: renders light and dark 1280x640 cards with the app's icon and the screenshots from the
+# newest passing iOS run on main, and attaches them to this run for 7 days. Nothing is committed.
+# Upload one under Settings > General > Social preview (GitHub has no API for that setting).
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: Card title (blank uses the Home Screen name from project.yml)
+        type: string
+        default: ''
+      tagline:
+        description: Tagline (blank uses the repository description)
+        type: string
+        default: ''
+      chips:
+        description: Feature labels, comma-separated
+        type: string
+        default: ''
+      planned:
+        description: Planned features, comma-separated, drawn dashed with "· soon"
+        type: string
+        default: ''
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  render:
+    runs-on: xcode-27
+    timeout-minutes: 10
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Download screenshots from the newest passing iOS run on main
+        run: |
+          run_id=$(gh run list --workflow ios.yml --branch main --event push --status success --limit 1 \
+            --json databaseId --jq '.[0].databaseId')
+          if [ -z "$run_id" ]; then
+            echo "::warning::No passing iOS run on main yet; the cards will have no screenshots."
+            exit 0
+          fi
+          gh run download "$run_id" --name ios-test-results-starter --dir "$RUNNER_TEMP/ios-results"
+          attachments=$(find "$RUNNER_TEMP/ios-results" -path '*/attachments/manifest.json' -print -quit)
+          if [ -n "$attachments" ]; then
+            echo "ATTACHMENTS=$(dirname "$attachments")" >> "$GITHUB_ENV"
+            echo "Screenshots from run $run_id"
+          fi
+      - name: Render the cards
+        shell: python
+        env:
+          TITLE: ${{ inputs.title }}
+          TAGLINE: ${{ inputs.tagline }}
+          CHIPS: ${{ inputs.chips }}
+          PLANNED: ${{ inputs.planned }}
+        run: |
+          import os, subprocess
+          command = ['python3', 'scripts/social-preview.py', '--output', os.environ['RUNNER_TEMP'] + '/social-preview']
+          if os.environ.get('ATTACHMENTS'):
+              command += ['--attachments', os.environ['ATTACHMENTS']]
+          for flag, name in (('--title', 'TITLE'), ('--tagline', 'TAGLINE')):
+              if os.environ[name].strip():
+                  command += [flag, os.environ[name].strip()]
+          for flag, name in (('--chip', 'CHIPS'), ('--planned', 'PLANNED')):
+              for label in filter(None, (part.strip() for part in os.environ[name].split(','))):
+                  command += [flag, label]
+          subprocess.run(command, check=True)
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: social-preview
+          path: ${{ runner.temp }}/social-preview/*.png
+          retention-days: 7
+          if-no-files-found: error
