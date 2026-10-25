@@ -45,7 +45,7 @@ Planned, as real apps need them: Sign in with Apple, a SwiftData database layer,
    | Devices | `targets.StarterApp.settings.base.TARGETED_DEVICE_FAMILY` | `"1,2"` both, `"1"` iPhone, `"2"` iPad |
 
    Don't rename the `StarterApp` targets or scheme; the Home Screen name is separate.
-3. Give it its own icon: `python scripts/personalize-icon.py` ([icon guide](docs/app-icon.md)).
+3. Give it its own icon: `python scripts/personalize-icon.py` ([icon guide](docs/app-icon.md)). To show it at the top of this README, turn on the [README icon sync](docs/ci.md#keep-the-readme-icon-in-sync).
 4. Keep only the modules you want: delete a module's product line under `targets.StarterApp.dependencies` and the app still builds.
 5. Build your screens in `StarterApp/StarterApp/`. `StarterAppApp.swift` sets up the theme and the onboarding steps; `ContentView.swift` is the welcome screen to replace.
 

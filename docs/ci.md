@@ -192,7 +192,18 @@ From Windows or anywhere else, run the **Social preview** workflow:
 gh workflow run social-preview.yml --ref main
 ```
 
-It reads the same config, reuses the screenshots from the newest passing iOS run on `main`, and attaches the cards to the run as the `social-preview` artifact for 7 days; nothing is committed. Upload one under **Settings → General → Social preview**; GitHub has no API for that setting and takes files up to 1 MB, so the script writes a JPEG beside any larger PNG.
+It reads the same config, reuses the screenshots from the newest passing iOS run on `main`, and attaches the cards to the run as the `social-preview` artifact for 7 days, with `app-icon.png` at README size; nothing is committed. Upload one under **Settings → General → Social preview**; GitHub has no API for that setting and takes files up to 1 MB, so the script writes a JPEG beside any larger PNG.
+
+## Keep the README icon in sync
+
+The README header shows `docs/images/icon.png`. To have it follow your app icon without a Mac, add `"readme_icon": "app"` to `.github/social-preview.json` and let workflows open pull requests:
+
+```sh
+python scripts/configure-github-repo.py --repo <owner>/<repository> --allow-workflow-prs
+python scripts/configure-github-repo.py --repo <owner>/<repository> --allow-workflow-prs --apply
+```
+
+Then every change to `StarterApp/StarterApp/AppIcon.icon` on `main` runs the **README icon** workflow: it renders the icon at 512 px and, if `docs/images/icon.png` differs, opens a pull request with auto-merge. A pull request opened with the workflow token does not start other workflows, so the job starts the required iOS and portable checks on its branch itself. Run it by hand with `gh workflow run readme-icon.yml --ref main`. On a Mac, `python3 scripts/social-preview.py --readme-icon docs/images/icon.png` does the same render locally.
 
 ## Tool-download caching
 

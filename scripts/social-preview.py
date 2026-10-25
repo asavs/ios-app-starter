@@ -131,8 +131,8 @@ def repository_description():
         return None
 
 
-def render_icon(target):
-    """Render the app icon document to a 1024 px PNG with the same ictool lookup as check-app-icon.py."""
+def render_icon(target, size=1024):
+    """Render the app icon document to a square PNG with the same ictool lookup as check-app-icon.py."""
     spec = importlib.util.spec_from_file_location("check_app_icon", ROOT / "scripts/check-app-icon.py")
     check_app_icon = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(check_app_icon)
@@ -140,7 +140,7 @@ def render_icon(target):
     if ictool is None:
         raise SystemExit("ictool not found: install Xcode 26 or later, or pass --icon with a PNG")
     subprocess.run([str(ictool), str(ICON), "--export-image", "--output-file", str(target), "--platform", "iOS",
-                    "--rendition", "Default", "--width", "1024", "--height", "1024", "--scale", "1"],
+                    "--rendition", "Default", "--width", str(size), "--height", str(size), "--scale", "1"],
                    check=True, capture_output=True)
     return target
 
@@ -188,7 +188,14 @@ def main(argv=None):
     parser.add_argument("--config", type=Path, default=CONFIG, help="card settings (default: .github/social-preview.json)")
     parser.add_argument("--url", help="defaults to github.com/<owner>/<repo> from the origin remote")
     parser.add_argument("--icon", type=Path, help="a PNG to use instead of rendering AppIcon.icon")
+    parser.add_argument("--readme-icon", type=Path, metavar="PNG",
+                        help="only render the app icon at README size (512 px) to this path, then stop")
     args = parser.parse_args(argv)
+    if args.readme_icon:
+        args.readme_icon.parent.mkdir(parents=True, exist_ok=True)
+        render_icon(args.readme_icon, size=512)
+        print(args.readme_icon)
+        return 0
     config = load_config(args.config)
 
     attachments = args.attachments or newest_attachments()
@@ -201,6 +208,8 @@ def main(argv=None):
     topics = [] if args.chip or "chips" in config or config.get("features") else repository_topics()
     with tempfile.TemporaryDirectory() as scratch:
         icon = args.icon or render_icon(Path(scratch) / "icon.png")
+        if not args.icon:
+            render_icon(args.output / "app-icon.png", size=512)  # README size, for docs/images/icon.png
         for theme in ("light", "dark"):
             subprocess.run(renderer_command(
                 theme, args.output / f"social-preview-{theme}.png", icon,
