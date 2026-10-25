@@ -1,10 +1,14 @@
-# iOS App Starter
+<p align="center"><img src="docs/images/icon.png" width="160" alt="iOS App Starter icon: a blueprint with a dashed circle, an angle and a measuring line"></p>
 
-[![Status: in development](https://img.shields.io/badge/status-in%20development-orange)](roadmap.md)
-[![iOS and iPadOS 17+](https://img.shields.io/badge/iOS%20%7C%20iPadOS-17%2B-blue?logo=apple)](#current-defaults)
-[![Swift 6](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white)](#current-defaults)
-[![Xcode 27](https://img.shields.io/badge/Xcode-27-147EFB?logo=xcode&logoColor=white)](#current-defaults)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+<h1 align="center">iOS App Starter</h1>
+
+<p align="center">
+  <a href="roadmap.md"><img src="https://img.shields.io/badge/status-in%20development-orange" alt="Status: in development"></a>
+  <a href="#current-defaults"><img src="https://img.shields.io/badge/iOS%20%7C%20iPadOS-17%2B-blue?logo=apple" alt="iOS and iPadOS 17+"></a>
+  <a href="#current-defaults"><img src="https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white" alt="Swift 6"></a>
+  <a href="#current-defaults"><img src="https://img.shields.io/badge/Xcode-27-147EFB?logo=xcode&logoColor=white" alt="Xcode 27"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT"></a>
+</p>
 
 A native iPhone and iPad app to start from. Onboarding, theming and settings are already built as modules: keep the ones you need, delete the rest, and spend your time on what makes your app different. GitHub's Macs build, test and ship it to TestFlight, so you can work from a Mac, from Windows, or let an AI agent do the setup.
 
