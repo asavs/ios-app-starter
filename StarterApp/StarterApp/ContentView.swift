@@ -17,6 +17,9 @@ import Onboarding
 #endif
 
 struct ContentView: View {
+#if canImport(TabShell) && canImport(Settings) && canImport(Onboarding)
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+#endif
 #if canImport(TabShell)
     /// Whether the Settings tab has been opened in this scene; visiting it retires the tip that points at it.
     var hasVisitedSettingsTab = false
@@ -55,10 +58,13 @@ struct ContentView: View {
         }
 #elseif canImport(TabShell) && canImport(Settings) && canImport(Onboarding)
         welcome
-            // Just above the tab bar, next to the Settings tab it points at.
+            // Just above the tab bar, next to the Settings tab it points at. At accessibility sizes a
+            // pinned tip covers half the screen, so there it scrolls with the content instead.
             .safeAreaInset(edge: .bottom) {
-                ContextualTipView("settings", in: tips)
-                    .padding(.horizontal)
+                if !dynamicTypeSize.isAccessibilitySize {
+                    ContextualTipView("settings", in: tips)
+                        .padding(.horizontal)
+                }
             }
             // Retired when this tab next appears, including after a launch that restored Settings:
             // the next tip is a popover, which TipKit presents only while this tab is on screen.
@@ -87,6 +93,11 @@ struct ContentView: View {
                         .accessibilityAddTraits(.isHeader)
                     details
                     replayTour
+#if canImport(Onboarding) && canImport(Settings) && canImport(TabShell)
+                    if dynamicTypeSize.isAccessibilitySize {
+                        ContextualTipView("settings", in: tips)
+                    }
+#endif
                 }
                 .padding()
                 .frame(maxWidth: .infinity, minHeight: proxy.size.height)

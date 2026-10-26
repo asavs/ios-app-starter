@@ -111,6 +111,24 @@ final class StarterAppUITests: XCTestCase {
         attach(name: "tabs-tip-after-restore")
     }
 
+    /// At accessibility text sizes the Settings tip scrolls with the welcome content, after the tour button,
+    /// instead of staying pinned over half the screen. Skips without TabShell, Settings or Onboarding.
+    @MainActor
+    func testSettingsTipScrollsAtLargestTextSize() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL",
+                               "-tabs.selected", "welcome", "-onboarding.completedVersion", "99", "-tips.reset", "YES"]
+        app.launch()
+        try requireModuleUI("TabShell", appeared: tabButton(in: app, "welcome", title: "Welcome").waitForExistence(timeout: 10),
+                            "no Welcome tab")
+        let replay = app.buttons["onboarding.replay"]
+        try requireModuleUI("Onboarding", appeared: replay.waitForExistence(timeout: 10), "no tour button")
+        let tip = app.staticTexts["Settings has its own tab"]
+        XCTAssertTrue(scroll(app, to: tip), "The Settings tip should be reachable by scrolling")
+        XCTAssertGreaterThanOrEqual(tip.frame.minY, replay.frame.maxY, "The tip should follow the tour button in the content")
+        attach(name: "large-settings-tip")
+    }
+
     /// The Onboarding module's main path: welcome sheet, the choice step (multiple select, answer shown on the
     /// welcome screen), a tour card, the notifications primer against a fake requester, then the welcome
     /// screen with its first contextual tip. Skips when the module is disabled (no Continue button).
