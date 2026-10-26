@@ -15,17 +15,17 @@ import Theme
 #if canImport(Onboarding)
 import Onboarding
 #endif
-#if canImport(Settings)
-import Settings
-#endif
 
 struct ContentView: View {
-#if canImport(Settings)
-    @State private var isShowingSettings = false
+#if canImport(TabShell) && canImport(Settings) && canImport(Onboarding)
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 #endif
-#if canImport(Settings) && canImport(Onboarding)
-    @State private var tourResetPending = false
-    @State private var tipsResetPending = false
+#if canImport(TabShell)
+    /// Whether the Settings tab has been opened in this scene; visiting it retires the tip that points at it.
+    var hasVisitedSettingsTab = false
+#endif
+#if canImport(Settings) && !canImport(TabShell)
+    @State private var isShowingSettings = false
 #endif
 #if canImport(Onboarding)
     @State private var isReplayingTour = false
@@ -36,7 +36,7 @@ struct ContentView: View {
 #endif
 
     var body: some View {
-#if canImport(Settings)
+#if canImport(Settings) && !canImport(TabShell)
         NavigationStack {
             welcome
                 .toolbar {
@@ -53,9 +53,24 @@ struct ContentView: View {
                     }
                 }
                 .navigationDestination(isPresented: $isShowingSettings) {
-                    settings
+                    StarterSettingsView()
                 }
         }
+#elseif canImport(TabShell) && canImport(Settings) && canImport(Onboarding)
+        welcome
+            // Just above the tab bar, next to the Settings tab it points at. At accessibility sizes a
+            // pinned tip covers half the screen, so there it scrolls with the content instead.
+            .safeAreaInset(edge: .bottom) {
+                if !dynamicTypeSize.isAccessibilitySize {
+                    ContextualTipView("settings", in: tips)
+                        .padding(.horizontal)
+                }
+            }
+            // Retired when this tab next appears, including after a launch that restored Settings:
+            // the next tip is a popover, which TipKit presents only while this tab is on screen.
+            .onAppear {
+                if hasVisitedSettingsTab { tips.invalidate("settings") } // Done what the tip suggests.
+            }
 #else
         welcome
 #endif
@@ -66,7 +81,7 @@ struct ContentView: View {
         GeometryReader { proxy in
             ScrollView {
                 VStack(spacing: 16) {
-#if canImport(Onboarding) && canImport(Settings)
+#if canImport(Onboarding) && canImport(Settings) && !canImport(TabShell)
                     // Inline, because a popover anchored to a toolbar button does not appear on iOS 26.
                     ContextualTipView("settings", in: tips)
 #endif
@@ -78,6 +93,11 @@ struct ContentView: View {
                         .accessibilityAddTraits(.isHeader)
                     details
                     replayTour
+#if canImport(Onboarding) && canImport(Settings) && canImport(TabShell)
+                    if dynamicTypeSize.isAccessibilitySize {
+                        ContextualTipView("settings", in: tips)
+                    }
+#endif
                 }
                 .padding()
                 .frame(maxWidth: .infinity, minHeight: proxy.size.height)
@@ -128,59 +148,19 @@ struct ContentView: View {
     /// The template's tips. The Settings tip comes first when that module is enabled.
     private static var tips: [ContextualTip] {
         var tips: [ContextualTip] = []
-#if canImport(Settings)
+#if canImport(Settings) && canImport(TabShell)
+        tips.append(ContextualTip(id: "settings", title: "Settings has its own tab",
+                                  message: "Tap Settings below to pick light or dark, store secrets and show the tour again.",
+                                  systemImage: "gearshape"))
+#elseif canImport(Settings)
         tips.append(ContextualTip(id: "settings", title: "Settings live here",
-                                  message: "Tap the gear to pick light or dark, store secrets and show the tour again.",
+                                  message: "Open Settings to pick light or dark, store secrets and show the tour again.",
                                   systemImage: "gearshape"))
 #endif
         tips.append(ContextualTip(id: "tour", title: "See the tour again",
                                   message: "Replay onboarding any time without resetting it.",
                                   systemImage: "sparkles"))
         return tips
-    }
-#endif
-
-#if canImport(Settings)
-    /// The Settings module's screen with the app's own rows. Replace the example secret with real ones.
-    private var settings: some View {
-        SettingsView {
-            Section("Example secret") {
-                SecureSettingRow("API key", key: "example.apiKey")
-            }
-#if canImport(Onboarding)
-            Section("Welcome tour") {
-                resetButton("Show the welcome tour on next launch", done: "The welcome tour shows on next launch",
-                            isDone: $tourResetPending) {
-                    OnboardingRecord().reset()
-                }
-                .accessibilityIdentifier("settings.onboarding.reset")
-                resetButton("Show tips again on next launch", done: "Tips show again on next launch",
-                            isDone: $tipsResetPending) {
-                    ContextualTips.resetOnNextLaunch()
-                }
-                .accessibilityIdentifier("settings.tips.reset")
-            }
-#endif
-        }
-    }
-#endif
-
-#if canImport(Settings) && canImport(Onboarding)
-    /// A button whose effect only shows after a relaunch: once tapped it says so and turns inactive.
-    private func resetButton(_ title: LocalizedStringResource, done: LocalizedStringResource, isDone: Binding<Bool>,
-                             action: @escaping () -> Void) -> some View {
-        Button {
-            action()
-            isDone.wrappedValue = true
-            AccessibilityNotification.Announcement(String(localized: done)).post()
-        } label: {
-            if isDone.wrappedValue {
-                Label { Text(done) } icon: { Image(systemName: "checkmark") }
-            } else {
-                Text(title)
-            }
-        }
-        .disabled(isDone.wrappedValue)
     }
 #endif
 

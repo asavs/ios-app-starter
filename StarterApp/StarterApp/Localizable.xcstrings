@@ -56,6 +56,17 @@
         }
       }
     },
+    "Open Settings to pick light or dark, store secrets and show the tour again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings to pick light or dark, store secrets and show the tour again."
+          }
+        }
+      }
+    },
     "Replace this screen in ContentView.swift.": {
       "extractionState": "manual",
       "localizations": {
@@ -96,6 +107,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Settings"
+          }
+        }
+      }
+    },
+    "Settings has its own tab": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings has its own tab"
           }
         }
       }
@@ -144,13 +166,13 @@
         }
       }
     },
-    "Tap the gear to pick light or dark, store secrets and show the tour again.": {
+    "Tap Settings below to pick light or dark, store secrets and show the tour again.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tap the gear to pick light or dark, store secrets and show the tour again."
+            "value": "Tap Settings below to pick light or dark, store secrets and show the tour again."
           }
         }
       }
@@ -173,6 +195,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tips show again on next launch"
+          }
+        }
+      }
+    },
+    "Welcome": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome"
           }
         }
       }
