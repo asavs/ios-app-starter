@@ -3,7 +3,7 @@
   "tagline": "Build an idiomatic Swift app from any OS, from tested foundations to AI and iMessage.",
   "screens": ["onboarding-welcome", "welcome-screen", "settings-screen"],
   "features": [
-    {"icon": "modules", "label": "Modular architecture"},
+    {"icon": "modules", "label": "Onboarding, theming & settings"},
     {"icon": "lock", "label": "Authentication & persistence"},
     {"icon": "sparkle", "label": "On-device & cloud AI"},
     {"icon": "bridge", "label": "In-app chat & iMessage bridge"}
