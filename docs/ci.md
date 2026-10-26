@@ -186,8 +186,16 @@ Every field is optional, and the template's file lists them all. `null` (or leav
 | `chips` | the repository's first three topics | no chips |
 | `features` | none | none |
 | `frame` | the script's own drawn phones, fanned | the default |
+| `apple_design_resources_license` | not accepted | not accepted |
 
-`frame` is a device image with a transparent screen that you download yourself, such as one of Apple's [Product Bezels](https://developer.apple.com/design/resources/#product-bezels), saved somewhere git ignores (for example `build/frames/`). The screenshots then sit upright behind it, side by side, without tilt or shadow, as Apple's [marketing guidelines](https://developer.apple.com/app-store/marketing/guidelines/) require for its bezels. Apple licenses those images for marketing apps that are on the App Store; check that your use fits before you publish a card with one. The template never ships a frame, and the script warns if the file would be committed.
+`frame` puts the screenshots inside a real device, upright and side by side, without tilt or shadow, as Apple's [marketing guidelines](https://developer.apple.com/app-store/marketing/guidelines/) require for its bezels. Use either:
+
+- `"apple:<model> - <color>"`, for example `"apple:iPhone 17 Pro - Silver"`: the script downloads Apple's [Product Bezels](https://developer.apple.com/design/resources/#product-bezels) disk image once into `build/frames/` (about 250 MB; the workflow caches it), opens it, and extracts that portrait PNG. A wrong color lists the available ones. The disk image carries the **Apple Design Resources License**, and opening it accepts that license, so the script does so only when you have: set `"apple_design_resources_license": "accepted"` in your own repository's config, pass `--accept-apple-design-resources-license`, set `APPLE_DESIGN_RESOURCES_LICENSE=accepted`, or tick the workflow's checkbox. The license allows mock-ups; Apple licenses its device images for marketing apps that are on the App Store. Accepting it does not widen that, so check your use before publishing a card with a bezel. Maintainers add each year's bezel package to `APPLE_BEZELS` in the script.
+- A path to any PNG with a transparent screen that you keep out of git; the script warns if git would commit it.
+
+The template ships no device frame and leaves the license unaccepted.
+
+The app icon appears in the opposite appearance on each card, the dark icon on the light card and the light icon on the dark card, so it stands out on both.
 
 A card shows feature rows or chips, not both: with `features`, the chips are left off. Feature icons: `modules`, `chat`, `bridge`, `backend`, `lock`, `sparkle`, `globe`, `check`. `"soon": true` adds a SOON tag. The icons are drawn by the script, so the card contains no Apple symbol or emoji artwork.
 
