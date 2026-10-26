@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-26 — Tab shell on the Mac: iOS 26.3 drops tab identifiers
+
+- **Tools:** Xcode 27.0 on the Mac, XcodeGen 2.46.0, iPhone 17 / iOS 27.0 simulator, the owner's iPhone 14 Pro on iOS 26.3. Branch `claude/tab-shell-review`, stacked on the first pass.
+- **Confirmed on iOS 26.3:** SwiftUI does not pass `accessibilityIdentifier` through to tab bar buttons. A diagnostic test dumped `app.tabBars.buttons` with the shell as the first screen: both buttons had an empty identifier. That stayed true after switching tabs and after a sheet, with the identifier on `Tab`, on its label, and with the iOS 17 `tabItem` path forced. On the iOS 27.0 simulator the same build exposes `tabs.<id>`. Three UI tests that start on Welcome skipped on the phone as "module disabled", which a stale identifier must never cause; the tests now match a tab by identifier or, only when the identifier is empty, by its English title.
+- **Fixed in the host:** The Settings tip was retired by the gear button, which the shell replaces, so it never retired. Visiting the Settings tab now retires it on the way back to Welcome. Retiring it while Settings was selected left the next tip, a popover, unpresented on return. Two UI tests also broke on the tab bar, not on app behavior: a relaunch restored a tab left by an earlier test, and a theme check read the tab bar before it existed and sampled luminance on its material.
+- **Not from this change:** The Settings appearance picker's labels refract into stacked copies while the glass selection slides and the window switches color scheme. Seen on the phone and in a simulator recording; filed separately, the Settings code is unchanged by the shell.
+- **Remaining:** Tab badges and deep-link selection have module tests only; the demo host shows no badge and registers no URL. iOS 17/18 runtime behavior is unverified.
+
 ## 2026-10-25 — Native tab-shell first pass for Mac review
 
 - **Decision:** Add an optional `TabShell` product using the existing root package/module mechanism. The app developer chooses destinations, localized labels and SF Symbols in Swift. The first host integration reuses Welcome and Settings, each in its own navigation stack; it adds no app-builder UI or product screens. The research and manual acceptance steps are in [tab-navigation.md](../research/tab-navigation.md).

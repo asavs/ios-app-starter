@@ -61,9 +61,9 @@ final class StarterAppUITests: XCTestCase {
         app.launchArguments = ["-tabs.selected", "welcome", "-onboarding.completedVersion", "99",
                                "-tips.testing", "hideAll"]
         app.launch()
-        let welcome = app.buttons["tabs.welcome"]
+        let welcome = tabButton(in: app, "welcome", title: "Welcome")
         try requireModuleUI("TabShell", appeared: welcome.waitForExistence(timeout: 10), "no Welcome tab")
-        let settings = app.buttons["tabs.settings"]
+        let settings = tabButton(in: app, "settings", title: "Settings")
         try requireModuleUI("Settings", appeared: settings.waitForExistence(timeout: 5), "no Settings tab")
         XCTAssertTrue(waitUntil(welcome, "isSelected == true"))
         XCTAssertEqual(welcome.label, "Welcome")
@@ -160,9 +160,9 @@ final class StarterAppUITests: XCTestCase {
             XCTAssertTrue(settingsTip.waitForExistence(timeout: 10), "The Settings tip should show after onboarding")
             XCTAssertFalse(tour.exists, "Tips show one at a time")
             attach(name: "onboarding-tip-settings")
-            if settings.identifier == "tabs.settings" {
+            if settings.identifier != "settings.open" {
                 settings.tap() // Opening the tab does what the tip suggests.
-                app.buttons["tabs.welcome"].tap()
+                tabButton(in: app, "welcome", title: "Welcome").tap()
                 XCTAssertTrue(waitUntilGone(settingsTip), "Opening the Settings tab should retire its tip")
             } else {
                 app.buttons["Close"].firstMatch.tap()
@@ -395,7 +395,20 @@ final class StarterAppUITests: XCTestCase {
     /// Settings is a native tab when TabShell is enabled, otherwise the original toolbar button.
     @MainActor
     private func settingsButton(in app: XCUIApplication) -> XCUIElement {
-        app.buttons.matching(NSPredicate(format: "identifier IN %@", ["tabs.settings", "settings.open"])).firstMatch
+        let gear = NSPredicate(format: "identifier == 'settings.open'")
+        return app.buttons.matching(NSCompoundPredicate(orPredicateWithSubpredicates: [gear, tabPredicate("settings", title: "Settings")]))
+            .firstMatch
+    }
+
+    /// A TabShell tab button: by its `tabs.<id>` identifier, or by its English title, because iOS 26.3
+    /// leaves tab bar buttons without the identifier (with both `Tab` and `tabItem`; iOS 27 keeps it).
+    @MainActor
+    private func tabButton(in app: XCUIApplication, _ id: String, title: String) -> XCUIElement {
+        app.tabBars.buttons.matching(tabPredicate(id, title: title)).firstMatch
+    }
+
+    private func tabPredicate(_ id: String, title: String) -> NSPredicate {
+        NSPredicate(format: "identifier == %@ OR (identifier == '' AND label == %@)", "tabs.\(id)", title)
     }
 
     /// Modules the lane built the app with, from `scripts/test-ios.sh` (`TEST_RUNNER_IOS_ENABLED_MODULES`);
