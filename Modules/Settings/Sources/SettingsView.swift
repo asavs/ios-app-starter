@@ -34,9 +34,9 @@ public struct SettingsView<Extra: View>: View {
         _choice = State(initialValue: AppSettings().appearance)
     }
 
-    /// Long enough for the segmented control's selection to finish sliding: on iOS 27 it settles by
-    /// 300 ms (the glitch appeared below 150 ms), plus a margin for a busy device.
-    static var appearanceDelay: Duration { .milliseconds(350) }
+    /// Long enough for the segmented control's selection to slide clear: on an iOS 26.3 iPhone the
+    /// glitch appeared at 175 ms and not at 200 ms.
+    static var appearanceDelay: Duration { .milliseconds(200) }
 
     public var body: some View {
         Form {
