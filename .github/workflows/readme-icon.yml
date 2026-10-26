@@ -66,7 +66,9 @@ jobs:
           git commit -m "README icon: match the app icon at ${GITHUB_SHA::7}"
           git push origin "$branch"
           if ! gh pr create --head "$branch" --title "README icon: match the app icon" \
-            --body "Rendered from \`StarterApp/StarterApp/AppIcon.icon\` at ${GITHUB_SHA::7} by the README icon workflow."; then
+            --body "Rendered from \`StarterApp/StarterApp/AppIcon.icon\` at ${GITHUB_SHA::7} by the README icon workflow.
+
+          The app icon changed, so the social preview is out of date too: after this merges, run **Actions → Social preview → Run workflow** (or \`python3 scripts/social-preview.py\` on a Mac) and upload the new card under **Settings → General → Social preview**."; then
             echo "::error::Could not open the pull request. Let workflows open pull requests: python scripts/configure-github-repo.py --repo ${GITHUB_REPOSITORY} --apply (or Settings > Actions > General > Allow GitHub Actions to create and approve pull requests). The rendered icon is on branch $branch."
             exit 1
           fi
@@ -74,4 +76,5 @@ jobs:
           {
             echo "## README icon: pull request opened for $branch"
             echo "On the pull request, approve the waiting workflows, then approve the change; auto-merge does the rest."
+            echo "The app icon changed: regenerate the social preview (Actions > Social preview) and upload it under Settings > General > Social preview."
           } >> "$GITHUB_STEP_SUMMARY"
