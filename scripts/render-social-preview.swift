@@ -190,7 +190,7 @@ var cursor = paragraph(titleText, x: left + iconSize + 24, top: height - 72 - (i
 cursor = min(cursor, height - 72 - iconSize) - 22
 
 if let tagline = option("tagline"), !tagline.isEmpty {
-    cursor = paragraph(attributed(tagline, 25, .regular, ink.withAlphaComponent(0.68)), top: cursor) - 26
+    cursor = paragraph(attributed(tagline, 25, .regular, ink.withAlphaComponent(0.68)), top: cursor) - 44
 }
 
 // Feature rows: a tinted tile with the glyph, then the label, then "soon" for planned ones.
@@ -213,7 +213,7 @@ for feature in features {
         outline.stroke()
         soon.draw(at: NSPoint(x: soonX + 8, y: soonRect.minY + 2))
     }
-    cursor = rowTop - tile - 14
+    cursor = rowTop - tile - 22
 }
 
 let chipLabels = options["chip"] ?? []
