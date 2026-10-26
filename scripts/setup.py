@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_STATE = ROOT / "build" / "setup-state.json"
 CONSENTS = (
     "github-settings",
+    "github-browser",
     "apple-read",
     "apple-provisioning",
     "apple-testflight",

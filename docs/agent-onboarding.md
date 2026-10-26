@@ -15,6 +15,7 @@ Before any setup step, ask the owner which categories they grant for this reposi
 | Category | Grant? | Scope |
 | --- | --- | --- |
 | `github-settings` | Yes / No | Read or change repository settings, rulesets, environments and secret metadata, including the reviewed credential transfer in Stage C. |
+| `github-browser` | Yes / No | Let the agent use the owner's already signed-in GitHub tab for a setting with no API: uploading the social preview image. |
 | `apple-read` | Yes / No | Read App Store Connect records and reports for the named team; this does not authorize writes. |
 | `apple-provisioning` | Yes / No | Let Xcode create or refresh signing certificates and profiles for the named team during signing or delivery. |
 | `apple-testflight` | Yes / No | Create or modify beta groups, assign builds, or set build attributes for the named app. |
@@ -63,6 +64,7 @@ Each stage ends with a check you can read without opening the Actions UI. `pytho
 4. Choose modules under `targets.StarterApp.dependencies` in `project.yml`. `TemplateVersion`, `Theme`, `Onboarding` and `Settings` start enabled; Onboarding and Settings need Theme. Keep only the products the app needs ([Modules](modules.md)). The first unsigned check can use the copied local library. Within the app's first release, switch to a tagged URL dependency following [Use the library from an app](modules.md#use-the-library-from-an-app), after checking that the chosen release contains every enabled product (the initial `0.1.0` tag contains only TemplateVersion).
 5. Commit on a branch, open a pull request and enable auto-merge: `gh pr merge <n> --auto --merge`. The pull-request lane builds and tests `starter` on the simulator with no secrets ([.github/workflows/ios.yml](../.github/workflows/ios.yml)). Windows users edit the manifest; Actions regenerates the Xcode project before building.
 6. When you need the result, run `python scripts/review_ci.py --pr <n>` and check the counts for the enabled features; the lane runs the app's UI suite, including the onboarding, theme and settings checks. The command summarizes counts only. To read individual failures, download the `ios-test-results-starter` artifact: it has test screenshots and a `failures.json` naming each failure and, when available, its source location.
+7. Optional, after the first green run on `main`: make the social preview card with `python3 scripts/social-preview.py` on a Mac, or `gh workflow run social-preview.yml --ref main` and download the `social-preview` artifact ([CI guide](ci.md#make-a-social-preview-card)). GitHub has no API for the social preview setting, so with `github-browser` consent upload the light or dark JPEG in the owner's signed-in browser under Settings → General → Social preview; otherwise give the owner the file and those steps.
 
 ### Stage B: credential-free Apple readiness
 
@@ -219,6 +221,7 @@ Say the "before" line, wait for an answer that names the action, and only then a
 | Create the TestFlight group | `apple-testflight` | "The plan run says: \<plan summary\>. Apply will create internal group \<name\> with access to all builds and add \<n\> users holding \<role\>. Nothing is deleted." | "Create the group." |
 | Upload a build | `apple-testflight` | "I'll upload \<configuration\> at `main` \<sha\>, build \<proposed number\>, to internal TestFlight." | "Upload it." / "Deliver." |
 | Device install (Mac) | `device-install` | "I'll build Debug for \<device\> and let Xcode register it and refresh the development profile on team \<team\>." | "Run it on the phone." |
+| Upload the social preview | `github-browser` | "I'll open Settings → General → Social preview on `<owner>/<repo>` in your signed-in browser and upload `build/social-preview/social-preview-<light or dark>.jpg`." | "Upload it." |
 | Browser step | `apple-browser` | "I'll open \<page\> in your signed-in browser to \<create the app record / create the key\> with these values: \<…\>. You will need to type any two-factor code yourself." | "Go ahead in the browser." |
 
 Even with consent, never:

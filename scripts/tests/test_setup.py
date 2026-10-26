@@ -1,3 +1,4 @@
+import importlib.util
 import json
 from pathlib import Path
 import subprocess
@@ -7,6 +8,9 @@ import unittest
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "setup.py"
+spec = importlib.util.spec_from_file_location("setup_command", SCRIPT)
+setup = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(setup)
 
 
 class SetupCommandTests(unittest.TestCase):
@@ -58,7 +62,7 @@ class SetupCommandTests(unittest.TestCase):
     def test_interactive_flow_saves_declines_and_pauses_before_stage(self):
         result = subprocess.run(
             [sys.executable, str(SCRIPT), "--state", str(self.state)],
-            input="n\n" * 6,
+            input="n\n" * len(setup.CONSENTS),
             capture_output=True, text=True, check=False,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
