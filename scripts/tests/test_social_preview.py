@@ -118,5 +118,17 @@ class SocialPreviewTests(unittest.TestCase):
         self.assertIn("No screenshot named nope. Available: theme-dark", errors.getvalue())
 
 
+    def test_frame_paths_resolve_and_missing_frames_stop(self):
+        self.assertIsNone(social_preview.frame_path(None))
+        with self.assertRaises(SystemExit):
+            social_preview.frame_path("build/no-such-frame.png")
+        with tempfile.TemporaryDirectory() as root:
+            frame = Path(root) / "bezel.png"
+            frame.write_bytes(b"png")
+            self.assertEqual(social_preview.frame_path(str(frame)), frame)
+        command = social_preview.renderer_command("light", Path("o.png"), Path("i.png"), "App", None, None, [], [], [], Path("f.png"))
+        self.assertEqual(command[-2:], ["--frame", "f.png"])
+
+
 if __name__ == "__main__":
     unittest.main()

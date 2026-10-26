@@ -166,7 +166,27 @@ def fit_upload_limit(card, limit=1_000_000):
     return card
 
 
-def renderer_command(theme, output, icon, title, tagline, url, chips, features, screens):
+def frame_path(value):
+    """The owner's device frame, relative paths from the repository root. Warns when git would commit it:
+    frames such as Apple's Product Bezels are licensed to the owner, not to the template."""
+    if not value:
+        return None
+    path = Path(value)
+    path = path if path.is_absolute() else ROOT / path
+    if not path.is_file():
+        raise SystemExit(f"frame {value!r} not found; download it and keep it out of git, for example in build/")
+    try:
+        inside = path.resolve().relative_to(ROOT)
+    except ValueError:
+        return path
+    ignored = subprocess.run(["git", "-C", str(ROOT), "check-ignore", "-q", str(inside)], capture_output=True).returncode == 0
+    if not ignored:
+        print(f"warning: {inside} is inside the repository and not ignored by git; keep device frames out of commits",
+              file=sys.stderr)
+    return path
+
+
+def renderer_command(theme, output, icon, title, tagline, url, chips, features, screens, frame=None):
     command = ["swift", str(RENDERER), "--theme", theme, "--output", str(output), "--icon", str(icon), "--title", title]
     if tagline:
         command += ["--tagline", tagline]
@@ -178,6 +198,8 @@ def renderer_command(theme, output, icon, title, tagline, url, chips, features, 
         command += ["--feature", feature]
     for screen in screens:
         command += ["--screen", str(screen)]
+    if frame:
+        command += ["--frame", str(frame)]
     return command
 
 
@@ -194,6 +216,7 @@ def main(argv=None):
     parser.add_argument("--config", type=Path, default=CONFIG, help="card settings (default: .github/social-preview.json)")
     parser.add_argument("--url", help="defaults to github.com/<owner>/<repo> from the origin remote")
     parser.add_argument("--icon", type=Path, help="a PNG to use instead of rendering AppIcon.icon")
+    parser.add_argument("--frame", help="a device frame PNG with a transparent screen, kept out of git (default: the config's frame)")
     parser.add_argument("--readme-icon", type=Path, metavar="PNG",
                         help="only render the app icon at README size (512 px) to this path, then stop")
     args = parser.parse_args(argv)
@@ -211,6 +234,7 @@ def main(argv=None):
         print("No UI test screenshots found; the card will have no screens. Run scripts/test-ios.sh or pass --attachments.",
               file=sys.stderr)
     args.output.mkdir(parents=True, exist_ok=True)
+    frame = frame_path(setting(config, "frame", args.frame))
     topics = [] if args.chip or config.get("chips") is not None or config.get("features") else repository_topics()
     with tempfile.TemporaryDirectory() as scratch:
         icon = args.icon or render_icon(Path(scratch) / "icon.png")
@@ -222,7 +246,7 @@ def main(argv=None):
                 setting(config, "title", args.title) or display_name(),
                 setting(config, "tagline", args.tagline, repository_description),
                 setting(config, "url", args.url, repository_url),
-                choose_chips(args.chip, config, topics), feature_flags(config.get("features", [])), screens), check=True)
+                choose_chips(args.chip, config, topics), feature_flags(config.get("features", [])), screens, frame), check=True)
             fit_upload_limit(args.output / f"social-preview-{theme}.png")
     print(f"Upload one under Settings > General > Social preview: {args.output}")
     return 0

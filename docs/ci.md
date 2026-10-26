@@ -185,6 +185,9 @@ Every field is optional, and the template's file lists them all. `null` (or leav
 | `screens` | `onboarding-welcome`, `welcome-screen`, `settings-screen` | no screenshots |
 | `chips` | the repository's first three topics | no chips |
 | `features` | none | none |
+| `frame` | the script's own drawn phones, fanned | the default |
+
+`frame` is a device image with a transparent screen that you download yourself, such as one of Apple's [Product Bezels](https://developer.apple.com/design/resources/#product-bezels), saved somewhere git ignores (for example `build/frames/`). The screenshots then sit upright behind it, side by side, without tilt or shadow, as Apple's [marketing guidelines](https://developer.apple.com/app-store/marketing/guidelines/) require for its bezels. Apple licenses those images for marketing apps that are on the App Store; check that your use fits before you publish a card with one. The template never ships a frame, and the script warns if the file would be committed.
 
 A card shows feature rows or chips, not both: with `features`, the chips are left off. Feature icons: `modules`, `chat`, `bridge`, `backend`, `lock`, `sparkle`, `globe`, `check`. `"soon": true` adds a SOON tag. The icons are drawn by the script, so the card contains no Apple symbol or emoji artwork.
 
