@@ -5,7 +5,10 @@
 // swift scripts/render-social-preview.swift --theme light|dark --output card.png --icon icon.png
 //     --title "My App" [--tagline "..."] [--url "github.com/me/app"]
 //     [--feature "glyph|label" or "glyph|label|soon" ...] [--chip label ...] [--scale 2]
-//     [--screen front.png --screen middle.png --screen back.png]
+//     [--screen front.png --screen middle.png --screen back.png] [--frame device.png]
+// --frame is a device image with a transparent screen, such as an Apple Product Bezel the owner
+// downloaded for an app on the App Store. Screenshots then sit upright behind it, side by side, with no
+// tilt or shadow, as Apple's marketing guidelines require for its bezels.
 // Glyphs: modules, chat, bridge, backend, lock, sparkle, globe, check. Anything else draws a dot.
 import AppKit
 
@@ -221,15 +224,77 @@ if let url = option("url"), !url.isEmpty {
     attributed(url, 18, .medium, ink.withAlphaComponent(0.42)).draw(at: NSPoint(x: left, y: 30))
 }
 
-// Right: screenshots fanned, the first one in front.
-let fans: [[(x: CGFloat, y: CGFloat, degrees: CGFloat)]] = [
-    [(972, 320, 0)],
-    [(890, 318, 5), (1060, 326, -5)],
-    [(800, 318, 7), (972, 330, 0), (1140, 318, -7)],
-]
-for (index, shot) in screens.enumerated().reversed() {
-    let slot = fans[screens.count - 1][index]
-    phone(shot, center: NSPoint(x: slot.x, y: slot.y), height: 460, degrees: slot.degrees)
+/// The transparent screen area of a device frame, in the frame's pixel coordinates (origin top left):
+/// the connected transparent region around the image centre.
+func screenArea(of frame: CGImage) -> CGRect? {
+    let width = frame.width, height = frame.height
+    var pixels = [UInt8](repeating: 0, count: width * height * 4)
+    guard let context = CGContext(data: &pixels, width: width, height: height, bitsPerComponent: 8,
+                                  bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+    context.draw(frame, in: CGRect(x: 0, y: 0, width: width, height: height))
+    func transparent(_ x: Int, _ y: Int) -> Bool { pixels[(y * width + x) * 4 + 3] < 16 }
+    let start = (width / 2, height / 2)
+    guard transparent(start.0, start.1) else { return nil }
+    var seen = [Bool](repeating: false, count: width * height)
+    var stack = [start]
+    var minX = start.0, maxX = start.0, minY = start.1, maxY = start.1
+    seen[start.1 * width + start.0] = true
+    while let (x, y) = stack.popLast() {
+        minX = min(minX, x); maxX = max(maxX, x); minY = min(minY, y); maxY = max(maxY, y)
+        for (nx, ny) in [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+        where nx >= 0 && ny >= 0 && nx < width && ny < height && !seen[ny * width + nx] && transparent(nx, ny) {
+            seen[ny * width + nx] = true
+            stack.append((nx, ny))
+        }
+    }
+    // Touching the image edge means the "screen" is the outside: not a usable frame.
+    guard minX > 0, minY > 0, maxX < width - 1, maxY < height - 1 else { return nil }
+    // CGContext rows start at the bottom; flip to a top-left origin.
+    return CGRect(x: minX, y: height - 1 - maxY, width: maxX - minX + 1, height: maxY - minY + 1)
+}
+
+/// A screenshot behind an owner-supplied frame, upright and unaltered, `deviceHeight` points tall.
+func framed(_ shot: NSImage, frame: NSImage, screen: CGRect, pixelHeight: CGFloat, at origin: NSPoint, deviceHeight: CGFloat) {
+    let scale = deviceHeight / pixelHeight
+    let frameRect = NSRect(x: origin.x, y: origin.y, width: frame.size.width / frame.size.height * deviceHeight, height: deviceHeight)
+    let screenRect = NSRect(x: frameRect.minX + screen.minX * scale,
+                            y: frameRect.maxY - screen.maxY * scale,
+                            width: screen.width * scale, height: screen.height * scale)
+    shot.draw(in: screenRect)
+    frame.draw(in: frameRect)
+}
+
+if let framePath = option("frame") {
+    let frameImage = image(framePath)
+    guard let cgFrame = frameImage.cgImage(forProposedRect: nil, context: nil, hints: nil),
+          let screen = screenArea(of: cgFrame) else {
+        FileHandle.standardError.write(Data("render-social-preview: \(framePath) has no transparent screen area at its centre\n".utf8))
+        exit(1)
+    }
+    // Upright, side by side, same scale, centred in the right half; no tilt, overlap or shadow.
+    let deviceHeight: CGFloat = 500, gap: CGFloat = 24
+    let deviceWidth = frameImage.size.width / frameImage.size.height * deviceHeight
+    let total = CGFloat(screens.count) * deviceWidth + CGFloat(max(screens.count - 1, 0)) * gap
+    let available = width - (left + column) - 48
+    let fit = min(1, available / max(total, 1))
+    var x = left + column + 24 + (available - total * fit) / 2
+    for shot in screens {
+        framed(shot, frame: frameImage, screen: screen, pixelHeight: CGFloat(cgFrame.height),
+               at: NSPoint(x: x, y: (height - deviceHeight * fit) / 2), deviceHeight: deviceHeight * fit)
+        x += (deviceWidth + gap) * fit
+    }
+} else {
+    // Right: screenshots fanned, the first one in front, in a plain drawn outline.
+    let fans: [[(x: CGFloat, y: CGFloat, degrees: CGFloat)]] = [
+        [(972, 320, 0)],
+        [(890, 318, 5), (1060, 326, -5)],
+        [(800, 318, 7), (972, 330, 0), (1140, 318, -7)],
+    ]
+    for (index, shot) in screens.enumerated().reversed() {
+        let slot = fans[screens.count - 1][index]
+        phone(shot, center: NSPoint(x: slot.x, y: slot.y), height: 460, degrees: slot.degrees)
+    }
 }
 
 NSGraphicsContext.restoreGraphicsState()

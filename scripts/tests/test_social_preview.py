@@ -118,5 +118,33 @@ class SocialPreviewTests(unittest.TestCase):
         self.assertIn("No screenshot named nope. Available: theme-dark", errors.getvalue())
 
 
+    def test_frame_paths_resolve_and_missing_frames_stop(self):
+        self.assertIsNone(social_preview.frame_path(None))
+        with self.assertRaises(SystemExit):
+            social_preview.frame_path("build/no-such-frame.png")
+        with tempfile.TemporaryDirectory() as root:
+            frame = Path(root) / "bezel.png"
+            frame.write_bytes(b"png")
+            self.assertEqual(social_preview.frame_path(str(frame)), frame)
+        command = social_preview.renderer_command("light", Path("o.png"), Path("i.png"), "App", None, None, [], [], [], Path("f.png"))
+        self.assertEqual(command[-2:], ["--frame", "f.png"])
+
+
+    def test_apple_frames_need_a_known_model_a_color_and_the_license(self):
+        self.assertTrue(social_preview.apple_bezel_package("iPhone 17 Pro Max").endswith("Bezel-iPhone-17.dmg"))
+        self.assertTrue(social_preview.apple_bezel_package("iPhone Air").endswith("Bezel-iPhone-17.dmg"))
+        self.assertIsNone(social_preview.apple_bezel_package("Pixel 9"))
+        with tempfile.TemporaryDirectory() as root:
+            cache = Path(root)
+            with self.assertRaises(SystemExit):
+                social_preview.apple_frame("iPhone 17 Pro", accepted=True, cache=cache)  # no colour
+            with self.assertRaises(SystemExit) as stopped:
+                social_preview.apple_frame("iPhone 17 Pro - Silver", accepted=False, cache=cache)
+            self.assertIn("apple_design_resources_license", str(stopped.exception))
+            cached = cache / "iPhone 17 Pro - Silver - Portrait.png"
+            cached.write_bytes(b"png")
+            self.assertEqual(social_preview.apple_frame("iPhone 17 Pro - Silver", accepted=False, cache=cache), cached)
+
+
 if __name__ == "__main__":
     unittest.main()
