@@ -304,10 +304,17 @@ final class StarterAppUITests: XCTestCase {
     /// Waits for the element to become hittable (or not), which outlasts the flow's short transitions.
     /// The limit is generous because on a loaded hosted runner one hierarchy snapshot of the paged flow
     /// has taken over 4 s, so a 5 s wait expired after a single check; a settled element returns at once.
+    /// An element on a page the pager has not laid out yet reports an infinite frame, and asking it for
+    /// `isHittable` then fails the test ("Activation point invalid") instead of answering; on the hosted
+    /// runner that happened to the primer's footnote. Such an element counts as not hittable yet.
     private func waitUntilHittable(_ element: XCUIElement, expected: Bool = true, timeout: TimeInterval = 15) -> Bool {
-        let settled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == %@", NSNumber(value: expected)),
-                                                object: element)
-        return XCTWaiter().wait(for: [settled], timeout: timeout) == .completed
+        let settled = NSPredicate { _, _ in
+            guard element.exists else { return !expected }
+            let frame = element.frame
+            guard frame.minX.isFinite, frame.minY.isFinite, !frame.isEmpty else { return !expected }
+            return element.isHittable == expected
+        }
+        return XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: settled, object: nil)], timeout: timeout) == .completed
     }
 
     /// Any element with this accessibility identifier; containers and combined rows vary in type.
