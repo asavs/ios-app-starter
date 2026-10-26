@@ -2,9 +2,9 @@ name: README icon
 
 # Opt-in: with "readme_icon": "app" in .github/social-preview.json, re-renders docs/images/icon.png
 # from StarterApp/StarterApp/AppIcon.icon when the icon changes on main and opens a pull request with
-# auto-merge. A pull request opened with the workflow token does not trigger workflows, so this job
-# dispatches the required checks on the new branch itself. Needs "Allow GitHub Actions to create and
-# approve pull requests", one of the settings scripts/configure-github-repo.py applies.
+# auto-merge. The pull request's checks wait for the owner's approval ("Approve workflows to run"), and
+# the main ruleset asks for one approving review of a bot's change; then it merges. Needs "Allow GitHub
+# Actions to create and approve pull requests", one of the settings scripts/configure-github-repo.py applies.
 on:
   push:
     branches: [main]
@@ -43,7 +43,6 @@ jobs:
     runs-on: xcode-27
     timeout-minutes: 10
     permissions:
-      actions: write
       contents: write
       pull-requests: write
     env:
@@ -72,7 +71,7 @@ jobs:
             exit 1
           fi
           gh pr merge "$branch" --auto --merge
-          # Required checks: the workflow token's pull request does not start them, so start them here.
-          gh workflow run ios.yml --ref "$branch" -f configuration=starter -f verify_failure_reporting=false
-          gh workflow run apple-diagnostics.yml --ref "$branch"
-          echo "## README icon: pull request opened for $branch" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## README icon: pull request opened for $branch"
+            echo "On the pull request, approve the waiting workflows, then approve the change; auto-merge does the rest."
+          } >> "$GITHUB_STEP_SUMMARY"

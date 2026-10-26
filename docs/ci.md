@@ -210,7 +210,7 @@ It reads the same config, reuses the screenshots from the newest passing iOS run
 
 The README header shows `docs/images/icon.png`. To have it follow your app icon without a Mac, add `"readme_icon": "app"` to `.github/social-preview.json`. The sync opens pull requests, which the [recommended repository settings](#recommended-repository-settings) allow; without them, the workflow stops and says how to turn that on.
 
-Then every change to `StarterApp/StarterApp/AppIcon.icon` on `main` runs the **README icon** workflow: it renders the icon at 512 px and, if `docs/images/icon.png` differs, opens a pull request with auto-merge. A pull request opened with the workflow token does not start other workflows, so the job starts the required iOS and portable checks on its branch itself. Run it by hand with `gh workflow run readme-icon.yml --ref main`. On a Mac, `python3 scripts/social-preview.py --readme-icon docs/images/icon.png` does the same render locally.
+Then every change to `StarterApp/StarterApp/AppIcon.icon` on `main` runs the **README icon** workflow: it renders the icon at 512 px and, if `docs/images/icon.png` differs, opens a pull request with auto-merge. That pull request needs you twice, because a bot made it: click **Approve workflows to run** so its checks start, then approve the change (**Files changed → Review changes → Approve**, or `gh pr review <number> --approve`). It merges when the checks pass. Run it by hand with `gh workflow run readme-icon.yml --ref main`. On a Mac, `python3 scripts/social-preview.py --readme-icon docs/images/icon.png` does the same render locally.
 
 ## Tool-download caching
 
