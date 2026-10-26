@@ -80,6 +80,15 @@ class SocialPreviewTests(unittest.TestCase):
         self.assertEqual(social_preview.choose_chips([], {"chips": ["Config"]}, topics), ["Config"])
         self.assertEqual(social_preview.choose_chips([], {"chips": []}, topics), [])
         self.assertEqual(social_preview.choose_chips([], {}, topics), ["accessibility", "github-actions", "imessage"])
+        self.assertEqual(social_preview.choose_chips([], {"chips": None}, topics), ["accessibility", "github-actions", "imessage"])
+
+    def test_null_means_default_and_empty_means_off(self):
+        default = lambda: "from GitHub"
+        self.assertEqual(social_preview.setting({"tagline": None}, "tagline", default=default), "from GitHub")
+        self.assertEqual(social_preview.setting({}, "tagline", default=default), "from GitHub")
+        self.assertEqual(social_preview.setting({"tagline": ""}, "tagline", default=default), "")
+        self.assertEqual(social_preview.setting({"tagline": "Mine"}, "tagline", default=default), "Mine")
+        self.assertEqual(social_preview.setting({"tagline": "Mine"}, "tagline", "Flag", default), "Flag")
 
     def test_features_become_renderer_values_and_stop_at_four(self):
         features = [{"icon": "modules", "label": "Modules"}, {"icon": "chat", "label": "AI chat", "soon": True}] * 3

@@ -143,7 +143,7 @@ python scripts/configure-github-repo.py --repo <owner>/<repository>
 python scripts/configure-github-repo.py --repo <owner>/<repository> --apply
 ```
 
-The dry run shows current and intended values. `--apply` turns on auto-merge and head-branch deletion, secret scanning with push protection, restricts actions to GitHub-owned and verified creators, requires approval for every fork contributor's workflows, adds a ruleset requiring a pull request with passing `ios-gate` and `portable (...)` checks on the default branch, and limits `apple-credentials` to `main` with no required reviewer. To add a reviewer, use `--require-reviewer` (then `--apply`) or **Settings → Environments → `apple-credentials` → Required reviewers**. The ruleset blocks direct pushes to `main` for everyone, including the owner.
+The dry run shows current and intended values. `--apply` turns on auto-merge and head-branch deletion, secret scanning with push protection, restricts actions to GitHub-owned and verified creators, lets workflows open pull requests (the default token stays read-only), requires approval for every fork contributor's workflows, adds a ruleset requiring a pull request with passing `ios-gate` and `portable (...)` checks on the default branch, and limits `apple-credentials` to `main` with no required reviewer. To add a reviewer, use `--require-reviewer` (then `--apply`) or **Settings → Environments → `apple-credentials` → Required reviewers**. The ruleset blocks direct pushes to `main` for everyone, including the owner.
 
 ## Faster manual iteration
 
@@ -174,7 +174,19 @@ Describe the card once in `.github/social-preview.json`:
 }
 ```
 
-Every field is optional. Without a title or tagline the card uses the Home Screen name in `project.yml` and the repository description. A card shows feature rows or chips, not both: with `features` the chips are left off; without them it shows `chips`, or else the repository's first three topics (`"chips": []` hides them). Feature icons: `modules`, `chat`, `bridge`, `backend`, `lock`, `sparkle`, `globe`, `check`. `"soon": true` adds a SOON tag. The icons are drawn by the script, so the card contains no Apple symbol or emoji artwork.
+Every field is optional, and the template's file lists them all. `null` (or leaving a key out) means the default; an empty value (`""` or `[]`) means leave it off:
+
+| Key | Default | Empty |
+| --- | --- | --- |
+| `readme_icon` | off; `"app"` turns on the [README icon sync](#keep-the-readme-icon-in-sync) | off |
+| `title` | the Home Screen name in `project.yml` | the default |
+| `tagline` | the repository description | no tagline |
+| `url` | `github.com/<owner>/<repo>` | no address line |
+| `screens` | `onboarding-welcome`, `welcome-screen`, `settings-screen` | no screenshots |
+| `chips` | the repository's first three topics | no chips |
+| `features` | none | none |
+
+A card shows feature rows or chips, not both: with `features`, the chips are left off. Feature icons: `modules`, `chat`, `bridge`, `backend`, `lock`, `sparkle`, `globe`, `check`. `"soon": true` adds a SOON tag. The icons are drawn by the script, so the card contains no Apple symbol or emoji artwork.
 
 `screens` names up to three UI test screenshots, front first; the names are the `attach(name:)` names in `StarterAppUITests` (the template's include `welcome-screen`, `onboarding-welcome`, `onboarding-choice`, `onboarding-tour`, `onboarding-permission`, `settings-screen`, `theme-light` and `theme-dark`). Without `screens` the card uses `onboarding-welcome`, `welcome-screen` and `settings-screen`. A name with no screenshot is skipped, and the script lists the names it found. To show a screen of your own, attach a screenshot of it in a UI test.
 
@@ -192,7 +204,13 @@ From Windows or anywhere else, run the **Social preview** workflow:
 gh workflow run social-preview.yml --ref main
 ```
 
-It reads the same config, reuses the screenshots from the newest passing iOS run on `main`, and attaches the cards to the run as the `social-preview` artifact for 7 days; nothing is committed. Upload one under **Settings → General → Social preview**; GitHub has no API for that setting and takes files up to 1 MB, so the script writes a JPEG beside any larger PNG.
+It reads the same config, reuses the screenshots from the newest passing iOS run on `main`, and attaches the cards to the run as the `social-preview` artifact for 7 days, with `app-icon.png` at README size; nothing is committed. Upload one under **Settings → General → Social preview**; GitHub has no API for that setting and takes files up to 1 MB, so the script writes a JPEG beside any larger PNG.
+
+## Keep the README icon in sync
+
+The README header shows `docs/images/icon.png`. To have it follow your app icon without a Mac, add `"readme_icon": "app"` to `.github/social-preview.json`. The sync opens pull requests, which the [recommended repository settings](#recommended-repository-settings) allow; without them, the workflow stops and says how to turn that on.
+
+Then every change to `StarterApp/StarterApp/AppIcon.icon` on `main` runs the **README icon** workflow: it renders the icon at 512 px and, if `docs/images/icon.png` differs, opens a pull request with auto-merge. A pull request opened with the workflow token does not start other workflows, so the job starts the required iOS and portable checks on its branch itself. Run it by hand with `gh workflow run readme-icon.yml --ref main`. On a Mac, `python3 scripts/social-preview.py --readme-icon docs/images/icon.png` does the same render locally.
 
 ## Tool-download caching
 

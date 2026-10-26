@@ -1,0 +1,78 @@
+name: README icon
+
+# Opt-in: with "readme_icon": "app" in .github/social-preview.json, re-renders docs/images/icon.png
+# from StarterApp/StarterApp/AppIcon.icon when the icon changes on main and opens a pull request with
+# auto-merge. A pull request opened with the workflow token does not trigger workflows, so this job
+# dispatches the required checks on the new branch itself. Needs "Allow GitHub Actions to create and
+# approve pull requests", one of the settings scripts/configure-github-repo.py applies.
+on:
+  push:
+    branches: [main]
+    paths: ['StarterApp/StarterApp/AppIcon.icon/**', '.github/social-preview.json']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: readme-icon
+  cancel-in-progress: false
+
+jobs:
+  opted-in:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      enabled: ${{ steps.config.outputs.enabled }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - id: config
+        shell: python
+        run: |
+          import json, os, pathlib
+          path = pathlib.Path('.github/social-preview.json')
+          enabled = path.is_file() and json.loads(path.read_text()).get('readme_icon') == 'app'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write(f"enabled={'true' if enabled else 'false'}\n")
+          if not enabled:
+              print('README icon sync is off. Set "readme_icon": "app" in .github/social-preview.json to turn it on.')
+
+  render:
+    needs: opted-in
+    if: needs.opted-in.outputs.enabled == 'true'
+    runs-on: xcode-27
+    timeout-minutes: 10
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Render the app icon at README size
+        run: python3 scripts/social-preview.py --readme-icon docs/images/icon.png
+      - name: Open a pull request when the icon changed
+        run: |
+          if [ -z "$(git status --porcelain -- docs/images/icon.png)" ]; then
+            echo "docs/images/icon.png already matches the app icon."
+            exit 0
+          fi
+          branch="readme-icon/${GITHUB_SHA::7}"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$branch"
+          git add docs/images/icon.png
+          git commit -m "README icon: match the app icon at ${GITHUB_SHA::7}"
+          git push origin "$branch"
+          if ! gh pr create --head "$branch" --title "README icon: match the app icon" \
+            --body "Rendered from \`StarterApp/StarterApp/AppIcon.icon\` at ${GITHUB_SHA::7} by the README icon workflow."; then
+            echo "::error::Could not open the pull request. Let workflows open pull requests: python scripts/configure-github-repo.py --repo ${GITHUB_REPOSITORY} --apply (or Settings > Actions > General > Allow GitHub Actions to create and approve pull requests). The rendered icon is on branch $branch."
+            exit 1
+          fi
+          gh pr merge "$branch" --auto --merge
+          # Required checks: the workflow token's pull request does not start them, so start them here.
+          gh workflow run ios.yml --ref "$branch" -f configuration=starter -f verify_failure_reporting=false
+          gh workflow run apple-diagnostics.yml --ref "$branch"
+          echo "## README icon: pull request opened for $branch" >> "$GITHUB_STEP_SUMMARY"

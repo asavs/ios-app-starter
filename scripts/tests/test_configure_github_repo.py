@@ -46,6 +46,29 @@ class ConfigureGitHubRepoTests(unittest.TestCase):
         self.assertEqual(intended["branches"], [{"name": "main", "type": "branch"}])
         self.assertTrue(any(path == "user" for path, _, _ in calls))
 
+    def test_workflow_pull_requests_are_a_default_setting_that_keeps_token_permissions(self):
+        calls = []
+
+        def fake_gh_api(path, method="GET", body=None):
+            calls.append((path, method, body))
+            if path.endswith("/actions/permissions/workflow"):
+                return {"default_workflow_permissions": "read", "can_approve_pull_request_reviews": False}
+            if path.endswith("/rulesets"):
+                return []
+            if path.endswith("/environments"):
+                return {"environments": []}
+            if path == "repos/o/r":
+                return {"owner": {"type": "User", "login": "owner"}}
+            return {}
+
+        with patch.object(configure, "gh_api", side_effect=fake_gh_api):
+            label, current, intended, apply = next(item for item in configure.plan("o/r")
+                                                   if item[0] == "Workflows may open pull requests")
+            apply()
+        self.assertEqual((current, intended), (False, True))
+        self.assertIn(("repos/o/r/actions/permissions/workflow", "PUT",
+                       {"default_workflow_permissions": "read", "can_approve_pull_request_reviews": True}), calls)
+
 
 if __name__ == "__main__":
     unittest.main()

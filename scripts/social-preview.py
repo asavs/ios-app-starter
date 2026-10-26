@@ -110,16 +110,22 @@ def repository_topics():
         return []
 
 
+def setting(config, key, flag=None, default=None):
+    """One card setting: a command-line value wins; then the config's value, where null or a missing key
+    means the default and an empty string or list means leave it off; then `default()`."""
+    if flag is not None:
+        return flag
+    if config.get(key) is not None:
+        return config[key]
+    return default() if default else None
+
+
 def choose_chips(flags, config, topics):
     """Chips appear only on a card without feature rows: --chip, then the config's chips (an empty list
     hides them), then the first three topics."""
     if config.get("features"):
         return []
-    if flags:
-        return flags
-    if "chips" in config:
-        return list(config["chips"])
-    return topics[:3]
+    return list(setting(config, "chips", flags or None, lambda: topics[:3]))
 
 
 def repository_description():
@@ -131,8 +137,8 @@ def repository_description():
         return None
 
 
-def render_icon(target):
-    """Render the app icon document to a 1024 px PNG with the same ictool lookup as check-app-icon.py."""
+def render_icon(target, size=1024):
+    """Render the app icon document to a square PNG with the same ictool lookup as check-app-icon.py."""
     spec = importlib.util.spec_from_file_location("check_app_icon", ROOT / "scripts/check-app-icon.py")
     check_app_icon = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(check_app_icon)
@@ -140,7 +146,7 @@ def render_icon(target):
     if ictool is None:
         raise SystemExit("ictool not found: install Xcode 26 or later, or pass --icon with a PNG")
     subprocess.run([str(ictool), str(ICON), "--export-image", "--output-file", str(target), "--platform", "iOS",
-                    "--rendition", "Default", "--width", "1024", "--height", "1024", "--scale", "1"],
+                    "--rendition", "Default", "--width", str(size), "--height", str(size), "--scale", "1"],
                    check=True, capture_output=True)
     return target
 
@@ -188,25 +194,34 @@ def main(argv=None):
     parser.add_argument("--config", type=Path, default=CONFIG, help="card settings (default: .github/social-preview.json)")
     parser.add_argument("--url", help="defaults to github.com/<owner>/<repo> from the origin remote")
     parser.add_argument("--icon", type=Path, help="a PNG to use instead of rendering AppIcon.icon")
+    parser.add_argument("--readme-icon", type=Path, metavar="PNG",
+                        help="only render the app icon at README size (512 px) to this path, then stop")
     args = parser.parse_args(argv)
+    if args.readme_icon:
+        args.readme_icon.parent.mkdir(parents=True, exist_ok=True)
+        render_icon(args.readme_icon, size=512)
+        print(args.readme_icon)
+        return 0
     config = load_config(args.config)
 
     attachments = args.attachments or newest_attachments()
-    names = args.screens or config.get("screens") or DEFAULT_SCREENS
-    screens = pick_screens(attachments, names[:3]) if attachments else []
+    names = setting(config, "screens", args.screens, lambda: DEFAULT_SCREENS)
+    screens = pick_screens(attachments, names[:3]) if attachments and names else []
     if not screens:
         print("No UI test screenshots found; the card will have no screens. Run scripts/test-ios.sh or pass --attachments.",
               file=sys.stderr)
     args.output.mkdir(parents=True, exist_ok=True)
-    topics = [] if args.chip or "chips" in config or config.get("features") else repository_topics()
+    topics = [] if args.chip or config.get("chips") is not None or config.get("features") else repository_topics()
     with tempfile.TemporaryDirectory() as scratch:
         icon = args.icon or render_icon(Path(scratch) / "icon.png")
+        if not args.icon:
+            render_icon(args.output / "app-icon.png", size=512)  # README size, for docs/images/icon.png
         for theme in ("light", "dark"):
             subprocess.run(renderer_command(
                 theme, args.output / f"social-preview-{theme}.png", icon,
-                args.title or config.get("title") or display_name(),
-                args.tagline or config.get("tagline") or repository_description(),
-                args.url or config.get("url") or repository_url(),
+                setting(config, "title", args.title) or display_name(),
+                setting(config, "tagline", args.tagline, repository_description),
+                setting(config, "url", args.url, repository_url),
                 choose_chips(args.chip, config, topics), feature_flags(config.get("features", [])), screens), check=True)
             fit_upload_limit(args.output / f"social-preview-{theme}.png")
     print(f"Upload one under Settings > General > Social preview: {args.output}")
