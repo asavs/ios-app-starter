@@ -17,6 +17,10 @@ import Onboarding
 #endif
 
 struct ContentView: View {
+#if canImport(TabShell)
+    /// Whether the Settings tab is selected; visiting it retires the tip that points at it.
+    var isSettingsTabSelected = false
+#endif
 #if canImport(Settings) && !canImport(TabShell)
     @State private var isShowingSettings = false
 #endif
@@ -49,6 +53,13 @@ struct ContentView: View {
                     StarterSettingsView()
                 }
         }
+#elseif canImport(TabShell) && canImport(Settings) && canImport(Onboarding)
+        welcome
+            // Retired on the way back from Settings: the next tip is a popover, which TipKit presents
+            // only while this tab is on screen.
+            .onChange(of: isSettingsTabSelected) { wasSelected, selected in
+                if wasSelected, !selected { tips.invalidate("settings") } // Done what the tip suggests.
+            }
 #else
         welcome
 #endif

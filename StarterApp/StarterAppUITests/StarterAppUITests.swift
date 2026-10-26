@@ -151,15 +151,23 @@ final class StarterAppUITests: XCTestCase {
         XCTAssertEqual(goals.label, "Building: A product to sell", "The host should receive the final answer")
 
         // Contextual tips follow onboarding one at a time: the inline Settings tip when that module is
-        // enabled, then, once it is closed, the tour tip as a popover on the replay button.
+        // enabled, then, once it is closed (or Settings opened as a tab), the tour tip as a popover on the
+        // replay button.
         let tour = app.staticTexts["See the tour again"]
-        if settingsButton(in: app).waitForExistence(timeout: 5) {
+        let settings = settingsButton(in: app)
+        if settings.waitForExistence(timeout: 5) {
             let settingsTip = app.staticTexts["Settings live here"]
             XCTAssertTrue(settingsTip.waitForExistence(timeout: 10), "The Settings tip should show after onboarding")
             XCTAssertFalse(tour.exists, "Tips show one at a time")
             attach(name: "onboarding-tip-settings")
-            app.buttons["Close"].firstMatch.tap()
-            XCTAssertTrue(waitUntilGone(settingsTip), "Closing a tip should remove it")
+            if settings.identifier == "tabs.settings" {
+                settings.tap() // Opening the tab does what the tip suggests.
+                app.buttons["tabs.welcome"].tap()
+                XCTAssertTrue(waitUntilGone(settingsTip), "Opening the Settings tab should retire its tip")
+            } else {
+                app.buttons["Close"].firstMatch.tap()
+                XCTAssertTrue(waitUntilGone(settingsTip), "Closing a tip should remove it")
+            }
         }
         XCTAssertTrue(tour.waitForExistence(timeout: 10), "The tour tip should show next")
         attach(name: "onboarding-tip-tour")
