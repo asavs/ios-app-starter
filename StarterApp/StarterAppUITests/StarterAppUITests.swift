@@ -92,6 +92,25 @@ final class StarterAppUITests: XCTestCase {
         welcome.tap() // Leave other local runs at the welcome screen.
     }
 
+    /// A launch that restores the Settings tab counts as visiting it: back on Welcome, the Settings tip is
+    /// retired and the tour tip shows. Skips without TabShell, Settings or Onboarding.
+    @MainActor
+    func testSettingsTipRetiredAfterRestoringSettingsTab() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-tabs.selected", "settings", "-onboarding.completedVersion", "99", "-tips.reset", "YES"]
+        app.launch()
+        let welcome = tabButton(in: app, "welcome", title: "Welcome")
+        try requireModuleUI("TabShell", appeared: welcome.waitForExistence(timeout: 10), "no Welcome tab")
+        try requireModuleUI("Settings", appeared: element(app, "settings.appearance").waitForExistence(timeout: 10),
+                            "the Settings tab was not restored")
+        let tour = app.buttons["onboarding.replay"]
+        welcome.tap()
+        try requireModuleUI("Onboarding", appeared: tour.waitForExistence(timeout: 10), "no tour button")
+        XCTAssertTrue(app.staticTexts["See the tour again"].waitForExistence(timeout: 10), "The tour tip should show")
+        XCTAssertFalse(app.staticTexts["Settings has its own tab"].exists, "Visiting Settings should retire its tip")
+        attach(name: "tabs-tip-after-restore")
+    }
+
     /// The Onboarding module's main path: welcome sheet, the choice step (multiple select, answer shown on the
     /// welcome screen), a tour card, the notifications primer against a fake requester, then the welcome
     /// screen with its first contextual tip. Skips when the module is disabled (no Continue button).

@@ -18,8 +18,8 @@ import Onboarding
 
 struct ContentView: View {
 #if canImport(TabShell)
-    /// Whether the Settings tab is selected; visiting it retires the tip that points at it.
-    var isSettingsTabSelected = false
+    /// Whether the Settings tab has been opened in this scene; visiting it retires the tip that points at it.
+    var hasVisitedSettingsTab = false
 #endif
 #if canImport(Settings) && !canImport(TabShell)
     @State private var isShowingSettings = false
@@ -60,10 +60,10 @@ struct ContentView: View {
                 ContextualTipView("settings", in: tips)
                     .padding(.horizontal)
             }
-            // Retired on the way back from Settings: the next tip is a popover, which TipKit presents
-            // only while this tab is on screen.
-            .onChange(of: isSettingsTabSelected) { wasSelected, selected in
-                if wasSelected, !selected { tips.invalidate("settings") } // Done what the tip suggests.
+            // Retired when this tab next appears, including after a launch that restored Settings:
+            // the next tip is a popover, which TipKit presents only while this tab is on screen.
+            .onAppear {
+                if hasVisitedSettingsTab { tips.invalidate("settings") } // Done what the tip suggests.
             }
 #else
         welcome
