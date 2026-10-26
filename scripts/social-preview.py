@@ -254,7 +254,7 @@ def frame_path(value, accepted=False):
     return path
 
 
-def renderer_command(theme, output, icon, title, tagline, url, chips, features, screens, frame=None):
+def renderer_command(theme, output, icon, title, tagline, url, chips, features, screens, frame=None, layout=None):
     command = ["swift", str(RENDERER), "--theme", theme, "--output", str(output), "--icon", str(icon), "--title", title]
     if tagline:
         command += ["--tagline", tagline]
@@ -268,6 +268,8 @@ def renderer_command(theme, output, icon, title, tagline, url, chips, features, 
         command += ["--screen", str(screen)]
     if frame:
         command += ["--frame", str(frame)]
+        if layout:
+            command += ["--layout", layout]
     return command
 
 
@@ -285,6 +287,8 @@ def main(argv=None):
     parser.add_argument("--url", help="defaults to github.com/<owner>/<repo> from the origin remote")
     parser.add_argument("--icon", type=Path, help="a PNG to use instead of rendering AppIcon.icon")
     parser.add_argument("--frame", help="'apple:<model> - <color>' or a device frame PNG kept out of git (default: the config's frame)")
+    parser.add_argument("--layout", choices=["row", "fan"],
+                        help="with a frame: 'row' (upright, Apple's bezel rules; default) or 'fan' (tilted and overlapping)")
     parser.add_argument("--accept-apple-design-resources-license", action="store_true",
                         help="accept the Apple Design Resources License for this run (or set APPLE_DESIGN_RESOURCES_LICENSE=accepted)")
     parser.add_argument("--readme-icon", type=Path, metavar="PNG",
@@ -321,7 +325,7 @@ def main(argv=None):
                 setting(config, "title", args.title) or display_name(),
                 setting(config, "tagline", args.tagline, repository_description),
                 setting(config, "url", args.url, repository_url),
-                choose_chips(args.chip, config, topics), feature_flags(config.get("features", [])), screens, frame), check=True)
+                choose_chips(args.chip, config, topics), feature_flags(config.get("features", [])), screens, frame, setting(config, "layout", args.layout)), check=True)
             fit_upload_limit(args.output / f"social-preview-{theme}.png")
     print(f"Upload one under Settings > General > Social preview: {args.output}")
     return 0
