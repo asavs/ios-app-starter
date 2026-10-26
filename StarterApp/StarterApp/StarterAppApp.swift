@@ -34,8 +34,16 @@ struct StarterAppApp: App {
     /// version 3 added the choice step, whose answer the welcome screen shows).
     @ViewBuilder private var root: some View {
 #if canImport(Onboarding)
-        ContentView()
+        appContent
             .onboardingGate(steps: OnboardingStep.template(onChoice: ContentView.rememberBuildGoals), version: 3)
+#else
+        appContent
+#endif
+    }
+
+    @ViewBuilder private var appContent: some View {
+#if canImport(TabShell)
+        StarterTabsView()
 #else
         ContentView()
 #endif

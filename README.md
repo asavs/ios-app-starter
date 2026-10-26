@@ -19,6 +19,7 @@ A native iPhone and iPad app to start from. Onboarding, theming and settings are
 | **Onboarding** | A first-launch flow you assemble from steps: welcome, tour cards, a question, a permission prompt, or your own view. Shows once, can be skipped, then hands off to tips. |
 | **Theme** | Colors, spacing and text styles in one place, plus buttons and cards that adapt to dark mode and large text. |
 | **Settings** | A settings screen with appearance, app info and Keychain-backed secrets. |
+| **TabShell** | Native tabs whose screens, labels and symbols you choose in Swift, with remembered selection and count badges. Available by local path until the next module release. |
 | **TemplateVersion** | Shows which module version the app was built with. |
 
 Also included:
@@ -47,7 +48,7 @@ Planned, as real apps need them: Sign in with Apple, a SwiftData database layer,
    Don't rename the `StarterApp` targets or scheme; the Home Screen name is separate.
 3. Give it its own icon: `python scripts/personalize-icon.py` ([icon guide](docs/app-icon.md)). To show it at the top of this README, turn on the [README icon sync](docs/ci.md#keep-the-readme-icon-in-sync).
 4. Keep only the modules you want: delete a module's product line under `targets.StarterApp.dependencies` and the app still builds.
-5. Build your screens in `StarterApp/StarterApp/`. `StarterAppApp.swift` sets up the theme and the onboarding steps; `ContentView.swift` is the welcome screen to replace.
+5. Build your screens in `StarterApp/StarterApp/`. `StarterAppApp.swift` sets up the theme and the onboarding steps; `ContentView.swift` is the welcome screen to replace. Choose your tabs in `StarterTab.swift` and their screens in `StarterTabsView.swift`.
 
 How modules work, how to change one and how to move an app to a tagged version: [docs/modules.md](docs/modules.md).
 

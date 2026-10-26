@@ -18,6 +18,7 @@ let package = Package(
         .library(name: "Theme", targets: ["Theme"]),
         .library(name: "Onboarding", targets: ["Onboarding"]),
         .library(name: "Settings", targets: ["Settings"]),
+        .library(name: "TabShell", targets: ["TabShell"]),
     ],
     targets: [
         .target(name: "TemplateVersion", path: "Modules/TemplateVersion/Sources"),
@@ -31,6 +32,8 @@ let package = Package(
         .target(name: "Settings", dependencies: ["Theme"], path: "Modules/Settings/Sources",
                 resources: [.process("Resources")]),
         .testTarget(name: "SettingsTests", dependencies: ["Settings"], path: "Modules/Settings/Tests"),
+        .target(name: "TabShell", dependencies: ["Theme"], path: "Modules/TabShell/Sources"),
+        .testTarget(name: "TabShellTests", dependencies: ["TabShell"], path: "Modules/TabShell/Tests"),
     ],
     swiftLanguageModes: [.v6]
 )

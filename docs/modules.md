@@ -1,6 +1,6 @@
 # Choose and update app features
 
-Each feature of the starter is a module you enable in `project.yml`; keep the ones your app needs and remove the rest. The modules are `TemplateVersion`, `Theme`, `Onboarding` and `Settings`. Authentication and persistence modules are planned.
+Each feature of the starter is a module you enable in `project.yml`; keep the ones your app needs and remove the rest. The modules are `TemplateVersion`, `Theme`, `Onboarding`, `Settings` and `TabShell`. TabShell is unreleased; use the local path until a new tag includes it. Authentication and persistence modules are planned.
 
 "Use this template" copies the app into your repository once. After that, module improvements reach your app as versioned packages: the modules are products of one Swift package in this repository, which the template app depends on by local path and apps created from it by tagged URL. To share an improvement, open a pull request here, release a tag, then update the version in each app that needs it.
 
@@ -25,6 +25,7 @@ Each feature of the starter is a module you enable in `project.yml`; keep the on
 | `Theme` | Design tokens and shared UX elements, following the system by default. | Read `@Environment(\.appTheme)`; customize once at the root with `.appTheme(_:)`. |
 | `Onboarding` | A first-launch flow of typed steps (welcome sheet, choice, tour card, permission primer, custom), remembered per version, and TipKit contextual tips that wait for it. Requires `Theme`. | `ContentView().onboardingGate(steps:version:)`; steps are `OnboardingStep` values. |
 | `Settings` | A settings screen, a stored appearance choice and Keychain-backed secrets. Requires `Theme`. | `SettingsView { }` behind a navigation link; `.storedAppearance()` at the root; `KeychainStore` / `SecureStore`. |
+| `TabShell` | Native tabs with typed, restored selection and host-supplied count badges. Requires `Theme`. | `TabShell(tabs:selection:) { tab in ... }`; own `TabSelection` in scene-root `@State`. Unreleased. |
 
 ### Theme
 
@@ -130,11 +131,50 @@ NavigationStack {
 }
 ```
 
-In the template, under `#if canImport(Settings)`, the welcome screen has a gear button (`settings.open`) that pushes `SettingsView` with an example secret row and, under `#if canImport(Onboarding)`, a "Show the welcome tour on next launch" button that calls `OnboardingRecord().reset()`. The root applies `.storedAppearance()`.
+In the template, `StarterSettingsView` supplies the example secret and onboarding-reset rows. With TabShell it appears in the Settings tab; without TabShell the welcome screen's gear button (`settings.open`) pushes it. The root applies `.storedAppearance()`.
 
 #### Keychain and signing in tests
 
 The simulator Keychain returns `errSecMissingEntitlement` (-34018) to a process without an `application-identifier` entitlement, and an app built with `CODE_SIGNING_ALLOWED=NO` has none. So `scripts/test-ios.sh` signs the app ad hoc (`CODE_SIGN_IDENTITY=-`, no certificate or team needed) with `scripts/simulator-tests.entitlements`, which declares only that identifier, and the UI test `testSettingsScreen` stores and clears a secret in the real simulator Keychain. Xcode's package test host has no identifier either, so the module's three Keychain tests are `.enabled(if:)` a probe write succeeds, and the package lane reports them as skipped with that reason; the in-memory and preference tests run everywhere. Release and device builds are unaffected: they get the identifier from the provisioning profile.
+
+### TabShell
+
+Choose tabs in Swift. `TabItem` takes a stable string-backed enum ID, a `LocalizedStringResource` title, an SF Symbol name and an optional `badgeCount` (zero hides it). The module supplies no destinations. `StarterTab.swift` chooses the demo's Welcome and optional Settings tabs; `StarterTabsView.swift` supplies their existing screens in separate `NavigationStack`s. Without TabShell, the original welcome screen and Settings gear remain available.
+
+```swift
+import SwiftUI
+import TabShell
+
+enum SectionID: String, CaseIterable {
+    case library, activity
+}
+
+struct AppTabs: View {
+    @State private var selection = TabSelection(tabs: SectionID.allCases, defaultTab: .library)
+
+    var body: some View {
+        TabShell(tabs: [
+            TabItem(id: SectionID.library, title: "Library", systemImage: "books.vertical"),
+            TabItem(id: .activity, title: "Activity", systemImage: "bell", badgeCount: 3),
+        ], selection: selection) { tab in
+            switch tab {
+            case .library: NavigationStack { LibraryView() }
+            case .activity: NavigationStack { ActivityView() }
+            }
+        }
+    }
+}
+```
+
+`LibraryView` and `ActivityView` above stand for the app's own screens. Change badge counts by recreating the descriptors from host state; keep their IDs fixed. The shell and selection must have the same unique IDs in the same order. Tabs are fixed for a selection instance's lifetime; create a new instance when the app's available destinations change.
+
+`TabSelection.selectedTab` is observable and writable for native bindings. It remembers the stable raw value in `UserDefaults` under `tabs.selected` (customizable with `storageKey:` and `defaults:`). A missing, unknown or removed stored destination falls back to the host's `defaultTab`. Unavailable assignments are ignored. Each scene owns an independent instance; existing windows navigate independently, while a new scene restores the last saved selection. This persists the selected tab, not navigation paths or app data.
+
+For deep links, first validate and authorize the URL in the app, then call `selection.select(rawValue: "activity")`. It returns `false` without changing selection for an unknown or unavailable ID. URL schemes, domains, authentication, and routes inside a destination belong to the host; the module does not register or accept URLs itself.
+
+The view uses the native `Tab` API on iOS 18 / macOS 15 and later, with `tabItem` confined to the iOS 17 / macOS 14 fallback. Theme supplies its accent; the system supplies material, placement, safe areas and accessibility traits. On iPhone, this allows the system's Liquid Glass tab bar on iOS 26 and later. The module adds no custom glass layer, tab-reordering UI or forced bottom placement on iPad.
+
+UI identifiers are `tabs.<raw value>`, such as `tabs.welcome` and `tabs.settings`. iOS 26.3 leaves tab bar buttons without them (iOS 27 keeps them), so UI tests fall back to the tab's title when the identifier is empty. Existing UI tests force `-tabs.selected welcome` to start consistently. `testTabShellSwitchesAndRestoresSelection` removes that argument on its second launch to verify actual persistence. Module tests cover restoration, removed and invalid destinations, deep-link selection, independent keys/scenes, identity and badge boundaries. Native compilation and runtime acceptance are pending Mac review of the first implementation. [Research and verification boundaries](research/tab-navigation.md).
 
 ## Localization
 
