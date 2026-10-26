@@ -2,6 +2,15 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-26 — Appearance picker labels stack when the scheme switches mid-slide
+
+- **Tools:** Xcode 27.0 on the Mac, iPhone 17 / iOS 27.0 simulator, the owner's iPhone 14 Pro on iOS 26.3. Task `ios-s5.13`.
+- **Symptom:** Tapping Light or Dark in Settings made the segmented control's labels refract into stacked copies, three rows of "Dark", while the glass selection slid. Seen on the phone; reproduced by recording the simulator during `testSettingsScreen` and reading frames around the tap.
+- **Cause (confirmed by the fix):** The picker wrote `settings.appearance` immediately, and `storedAppearance()` switched the window's color scheme while the iOS 26 glass selection was still animating, so its magnified label copies redrew in the new scheme out of place.
+- **Fix:** `SettingsView` binds the picker to local state and writes the stored appearance 400 ms later, after the selection settles. A new tap restarts the wait, so only the last choice applies; a change from elsewhere updates the picker. Recorded frames now show the selection settle in light, then a clean switch to dark. The glass's own edge refraction during the slide remains; it is the system effect.
+- **Verified:** Settings module tests (10 passed, 3 documented unsigned-host Keychain skips) and the app suite 7/7 on the iOS 27.0 simulator.
+- **Remaining:** The 400 ms figure matches the iOS 26/27 slide; a future OS with a longer animation could bring the glitch back. Re-record frames after an Xcode upgrade.
+
 ## 2026-10-24 — Session logs identify two XCTest lifecycle stalls
 
 - **Original termination failure diagnosed:** Native export of the retained bundle's existing diagnostics from [run 40035083640](https://github.com/asavs/ios-app-starter/actions/runs/40035083640), app commit `708db4d`, produced eight files including the XCTest session and testmanagerd logs. The session log records the app's death notification (signal 15) **0.48 seconds** after the termination request. During the slow first launch, the runner had registered token 1 with PID 0 and never updated that token to the real PID 14090. After the app exited, the runner removed the token without recording the usual foreground-to-not-running transition, retained its cached foreground state and waited the full 60 seconds. Passing terminations in the same log bind tokens to real PIDs, record that state transition and finish in 0.2–0.5 seconds. This isolates stale XCTest process tracking for the original failure, rather than an app hang or slow exit. The earlier video alone could not establish this; the session log does. The original bundle contains no crash report or spindump.
