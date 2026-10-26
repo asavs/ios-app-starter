@@ -15,17 +15,10 @@ import Theme
 #if canImport(Onboarding)
 import Onboarding
 #endif
-#if canImport(Settings)
-import Settings
-#endif
 
 struct ContentView: View {
-#if canImport(Settings)
+#if canImport(Settings) && !canImport(TabShell)
     @State private var isShowingSettings = false
-#endif
-#if canImport(Settings) && canImport(Onboarding)
-    @State private var tourResetPending = false
-    @State private var tipsResetPending = false
 #endif
 #if canImport(Onboarding)
     @State private var isReplayingTour = false
@@ -36,7 +29,7 @@ struct ContentView: View {
 #endif
 
     var body: some View {
-#if canImport(Settings)
+#if canImport(Settings) && !canImport(TabShell)
         NavigationStack {
             welcome
                 .toolbar {
@@ -53,7 +46,7 @@ struct ContentView: View {
                     }
                 }
                 .navigationDestination(isPresented: $isShowingSettings) {
-                    settings
+                    StarterSettingsView()
                 }
         }
 #else
@@ -130,57 +123,13 @@ struct ContentView: View {
         var tips: [ContextualTip] = []
 #if canImport(Settings)
         tips.append(ContextualTip(id: "settings", title: "Settings live here",
-                                  message: "Tap the gear to pick light or dark, store secrets and show the tour again.",
+                                  message: "Open Settings to pick light or dark, store secrets and show the tour again.",
                                   systemImage: "gearshape"))
 #endif
         tips.append(ContextualTip(id: "tour", title: "See the tour again",
                                   message: "Replay onboarding any time without resetting it.",
                                   systemImage: "sparkles"))
         return tips
-    }
-#endif
-
-#if canImport(Settings)
-    /// The Settings module's screen with the app's own rows. Replace the example secret with real ones.
-    private var settings: some View {
-        SettingsView {
-            Section("Example secret") {
-                SecureSettingRow("API key", key: "example.apiKey")
-            }
-#if canImport(Onboarding)
-            Section("Welcome tour") {
-                resetButton("Show the welcome tour on next launch", done: "The welcome tour shows on next launch",
-                            isDone: $tourResetPending) {
-                    OnboardingRecord().reset()
-                }
-                .accessibilityIdentifier("settings.onboarding.reset")
-                resetButton("Show tips again on next launch", done: "Tips show again on next launch",
-                            isDone: $tipsResetPending) {
-                    ContextualTips.resetOnNextLaunch()
-                }
-                .accessibilityIdentifier("settings.tips.reset")
-            }
-#endif
-        }
-    }
-#endif
-
-#if canImport(Settings) && canImport(Onboarding)
-    /// A button whose effect only shows after a relaunch: once tapped it says so and turns inactive.
-    private func resetButton(_ title: LocalizedStringResource, done: LocalizedStringResource, isDone: Binding<Bool>,
-                             action: @escaping () -> Void) -> some View {
-        Button {
-            action()
-            isDone.wrappedValue = true
-            AccessibilityNotification.Announcement(String(localized: done)).post()
-        } label: {
-            if isDone.wrappedValue {
-                Label { Text(done) } icon: { Image(systemName: "checkmark") }
-            } else {
-                Text(title)
-            }
-        }
-        .disabled(isDone.wrappedValue)
     }
 #endif
 

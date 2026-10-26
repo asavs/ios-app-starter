@@ -37,6 +37,8 @@ targets:
         product: Onboarding
       - package: StarterModules
         product: Settings
+      - package: StarterModules
+        product: TabShell
     settings:
       base:
         # User-facing name. Spaces are fine; this does not rename Swift modules.
