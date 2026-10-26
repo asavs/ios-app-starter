@@ -146,5 +146,15 @@ class SocialPreviewTests(unittest.TestCase):
             self.assertEqual(social_preview.apple_frame("iPhone 17 Pro - Silver", accepted=False, cache=cache), cached)
 
 
+    def test_a_fitting_card_removes_a_stale_jpeg(self):
+        with tempfile.TemporaryDirectory() as root:
+            card = Path(root) / "social-preview-light.png"
+            card.write_bytes(b"x" * 10)
+            stale = card.with_suffix(".jpg")
+            stale.write_bytes(b"old")
+            self.assertEqual(social_preview.fit_upload_limit(card), card)
+            self.assertFalse(stale.exists())
+
+
 if __name__ == "__main__":
     unittest.main()

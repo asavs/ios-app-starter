@@ -156,8 +156,10 @@ def render_icon(target, size=1024, rendition="Default"):
 
 
 def fit_upload_limit(card, limit=1_000_000):
-    """GitHub rejects social preview uploads over 1 MB; write a JPEG beside a PNG that is too large."""
+    """GitHub rejects social preview uploads over 1 MB; write a JPEG beside a PNG that is too large, and
+    remove a JPEG left by an earlier run when the PNG fits, so the folder never offers a stale card."""
     if card.stat().st_size <= limit:
+        card.with_suffix(".jpg").unlink(missing_ok=True)
         return card
     for quality in (90, 80, 70, 60):
         jpeg = card.with_suffix(".jpg")
