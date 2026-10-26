@@ -61,9 +61,9 @@ final class StarterAppUITests: XCTestCase {
         app.launchArguments = ["-tabs.selected", "welcome", "-onboarding.completedVersion", "99",
                                "-tips.testing", "hideAll"]
         app.launch()
-        let welcome = app.buttons["tabs.welcome"]
+        let welcome = tabButton(in: app, "welcome", title: "Welcome")
         try requireModuleUI("TabShell", appeared: welcome.waitForExistence(timeout: 10), "no Welcome tab")
-        let settings = app.buttons["tabs.settings"]
+        let settings = tabButton(in: app, "settings", title: "Settings")
         try requireModuleUI("Settings", appeared: settings.waitForExistence(timeout: 5), "no Settings tab")
         XCTAssertTrue(waitUntil(welcome, "isSelected == true"))
         XCTAssertEqual(welcome.label, "Welcome")
@@ -151,15 +151,26 @@ final class StarterAppUITests: XCTestCase {
         XCTAssertEqual(goals.label, "Building: A product to sell", "The host should receive the final answer")
 
         // Contextual tips follow onboarding one at a time: the inline Settings tip when that module is
-        // enabled, then, once it is closed, the tour tip as a popover on the replay button.
+        // enabled, then, once it is closed (or Settings opened as a tab), the tour tip as a popover on the
+        // replay button.
         let tour = app.staticTexts["See the tour again"]
-        if settingsButton(in: app).waitForExistence(timeout: 5) {
-            let settingsTip = app.staticTexts["Settings live here"]
+        let settings = settingsButton(in: app)
+        if settings.waitForExistence(timeout: 5) {
+            let tabs = settings.identifier != "settings.open"
+            let settingsTip = app.staticTexts[tabs ? "Settings has its own tab" : "Settings live here"]
             XCTAssertTrue(settingsTip.waitForExistence(timeout: 10), "The Settings tip should show after onboarding")
             XCTAssertFalse(tour.exists, "Tips show one at a time")
             attach(name: "onboarding-tip-settings")
-            app.buttons["Close"].firstMatch.tap()
-            XCTAssertTrue(waitUntilGone(settingsTip), "Closing a tip should remove it")
+            if tabs {
+                XCTAssertLessThan(settings.frame.minY - settingsTip.frame.maxY, 200,
+                                  "The tip should sit just above the tab bar, next to the tab it names")
+                settings.tap() // Opening the tab does what the tip suggests.
+                tabButton(in: app, "welcome", title: "Welcome").tap()
+                XCTAssertTrue(waitUntilGone(settingsTip), "Opening the Settings tab should retire its tip")
+            } else {
+                app.buttons["Close"].firstMatch.tap()
+                XCTAssertTrue(waitUntilGone(settingsTip), "Closing a tip should remove it")
+            }
         }
         XCTAssertTrue(tour.waitForExistence(timeout: 10), "The tour tip should show next")
         attach(name: "onboarding-tip-tour")
@@ -295,7 +306,9 @@ final class StarterAppUITests: XCTestCase {
                       "Skipping should reveal the welcome screen and record completion")
 
         app.terminate()
-        app.launchArguments = ["-onboarding.permissions", "granted", // No override: the stored version decides.
+        // No onboarding override: the stored version decides. The tab is pinned because an earlier
+        // test can leave Settings selected, which TabShell rightly restores.
+        app.launchArguments = ["-tabs.selected", "welcome", "-onboarding.permissions", "granted",
                                "-tips.testing", "hideAll"]
         app.launch()
         XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 10),
@@ -315,7 +328,7 @@ final class StarterAppUITests: XCTestCase {
         app.launch()
         let card = element(app, "welcome.card")
         try requireModuleUI("Theme", appeared: card.waitForExistence(timeout: 10), "no themed card on the welcome screen")
-        let hasSettings = settingsButton(in: app).exists
+        let hasSettings = settingsButton(in: app).waitForExistence(timeout: 5) // The tab bar can land after the card.
         let light = try assertThemedWelcome(app, name: "theme-light")
         if hasSettings {
             XCTAssertGreaterThan(light, 0.5, "The light background should be bright, got luminance \(light)")
@@ -347,7 +360,8 @@ final class StarterAppUITests: XCTestCase {
         attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)
-        return try luminance(of: screenshot.image, atNormalized: CGPoint(x: 0.5, y: 0.93))
+        // Above the bottom edge, where a tab bar's material would be sampled instead of the background.
+        return try luminance(of: screenshot.image, atNormalized: CGPoint(x: 0.5, y: 0.85))
     }
 
     /// Relative luminance (0 dark to 1 bright) of one pixel, given as a fraction of the image size.
@@ -384,7 +398,20 @@ final class StarterAppUITests: XCTestCase {
     /// Settings is a native tab when TabShell is enabled, otherwise the original toolbar button.
     @MainActor
     private func settingsButton(in app: XCUIApplication) -> XCUIElement {
-        app.buttons.matching(NSPredicate(format: "identifier IN %@", ["tabs.settings", "settings.open"])).firstMatch
+        let gear = NSPredicate(format: "identifier == 'settings.open'")
+        return app.buttons.matching(NSCompoundPredicate(orPredicateWithSubpredicates: [gear, tabPredicate("settings", title: "Settings")]))
+            .firstMatch
+    }
+
+    /// A TabShell tab button: by its `tabs.<id>` identifier, or by its English title, because iOS 26.3
+    /// leaves tab bar buttons without the identifier (with both `Tab` and `tabItem`; iOS 27 keeps it).
+    @MainActor
+    private func tabButton(in app: XCUIApplication, _ id: String, title: String) -> XCUIElement {
+        app.tabBars.buttons.matching(tabPredicate(id, title: title)).firstMatch
+    }
+
+    private func tabPredicate(_ id: String, title: String) -> NSPredicate {
+        NSPredicate(format: "identifier == %@ OR (identifier == '' AND label == %@)", "tabs.\(id)", title)
     }
 
     /// Modules the lane built the app with, from `scripts/test-ios.sh` (`TEST_RUNNER_IOS_ENABLED_MODULES`);

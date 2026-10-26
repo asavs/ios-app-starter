@@ -11,7 +11,7 @@ struct StarterTabsView: View {
             switch tab {
             case .welcome:
                 NavigationStack {
-                    ContentView()
+                    ContentView(isSettingsTabSelected: isSettingsSelected)
                         .navigationTitle("Welcome")
                 }
 #if canImport(Settings)
@@ -22,6 +22,14 @@ struct StarterTabsView: View {
 #endif
             }
         }
+    }
+
+    private var isSettingsSelected: Bool {
+#if canImport(Settings)
+        selection.selectedTab == .settings
+#else
+        false
+#endif
     }
 }
 #endif
