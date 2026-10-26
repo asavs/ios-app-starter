@@ -1,9 +1,12 @@
-// Draws a 1280x640 social preview card: icon, title, tagline and chips on the left, up to three
-// screenshots fanned on the right. Called by scripts/social-preview.py, which picks the inputs.
+// Draws a 1280x640 social preview card: the app icon beside the title, a tagline, feature rows with
+// drawn icons, one line of chips, and up to three screenshots fanned on the right.
+// Called by scripts/social-preview.py, which reads .github/social-preview.json and picks the inputs.
 //
 // swift scripts/render-social-preview.swift --theme light|dark --output card.png --icon icon.png
 //     --title "My App" [--tagline "..."] [--url "github.com/me/app"]
-//     [--chip Onboarding ...] [--planned "AI chat" ...] [--screen front.png --screen middle.png --screen back.png]
+//     [--feature "glyph|label" or "glyph|label|soon" ...] [--chip label ...] [--scale 2]
+//     [--screen front.png --screen middle.png --screen back.png]
+// Glyphs: modules, chat, bridge, backend, lock, sparkle, globe, check. Anything else draws a dot.
 import AppKit
 
 var options: [String: [String]] = [:]
@@ -30,11 +33,18 @@ guard let output = option("output"), let iconPath = option("icon"), let title = 
 let dark = option("theme") == "dark"
 let icon = image(iconPath)
 let screens = (options["screen"] ?? []).prefix(3).map(image)
+let features = (options["feature"] ?? []).prefix(4).map { spec -> (glyph: String, label: String, soon: Bool) in
+    let parts = spec.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
+    return (parts[0], parts.count > 1 ? parts[1] : parts[0], parts.count > 2 && parts[2] == "soon")
+}
 
 let width: CGFloat = 1280, height: CGFloat = 640
-let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(width), pixelsHigh: Int(height), bitsPerSample: 8,
-                           samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
-                           bytesPerRow: 0, bitsPerPixel: 0)!
+// Laid out in 1280x640 points and rendered at 2x, so the card stays sharp on high-density screens.
+let scale = CGFloat(Double(option("scale") ?? "2") ?? 2)
+let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(width * scale), pixelsHigh: Int(height * scale),
+                           bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                           colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+rep.size = NSSize(width: width, height: height)
 NSGraphicsContext.saveGraphicsState()
 NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
 
@@ -44,44 +54,102 @@ NSGradient(starting: dark ? NSColor(srgbRed: 0.06, green: 0.09, blue: 0.18, alph
            ending: dark ? NSColor(srgbRed: 0.03, green: 0.05, blue: 0.11, alpha: 1) : NSColor(srgbRed: 0.88, green: 0.93, blue: 0.99, alpha: 1))!
     .draw(in: NSRect(x: 0, y: 0, width: width, height: height), angle: -90)
 
-// The text column is narrower when screenshots take the right half.
 let left: CGFloat = 72
-let column: CGFloat = screens.isEmpty ? width - 2 * left : 580
+let column: CGFloat = screens.isEmpty ? width - 2 * left : 590
 
-/// Draws wrapped text with its top at `top` and returns the y of its bottom edge.
-func paragraph(_ string: String, size: CGFloat, weight: NSFont.Weight, color: NSColor, top: CGFloat) -> CGFloat {
-    let text = NSAttributedString(string: string, attributes: [.font: NSFont.systemFont(ofSize: size, weight: weight),
-                                                               .foregroundColor: color])
-    let bounds = text.boundingRect(with: NSSize(width: column, height: 400), options: [.usesLineFragmentOrigin])
-    text.draw(with: NSRect(x: left, y: top - bounds.height, width: column, height: bounds.height), options: [.usesLineFragmentOrigin])
+func attributed(_ string: String, _ size: CGFloat, _ weight: NSFont.Weight, _ color: NSColor) -> NSAttributedString {
+    NSAttributedString(string: string, attributes: [.font: NSFont.systemFont(ofSize: size, weight: weight), .foregroundColor: color])
+}
+
+/// Draws wrapped text with its top at `top`, from `x` across the rest of the column; returns its bottom y.
+func paragraph(_ text: NSAttributedString, x: CGFloat = left, top: CGFloat) -> CGFloat {
+    let available = left + column - x
+    let bounds = text.boundingRect(with: NSSize(width: available, height: 400), options: [.usesLineFragmentOrigin])
+    text.draw(with: NSRect(x: x, y: top - bounds.height, width: available, height: bounds.height), options: [.usesLineFragmentOrigin])
     return top - bounds.height
 }
 
-/// Rounded labels that wrap within the column; planned features get a dashed outline and "· soon".
-func chips(_ labels: [(String, Bool)], top: CGFloat) {
-    let size: CGFloat = 19, chipHeight = size + 18
-    var x = left, y = top - chipHeight
-    for (label, planned) in labels {
-        let text = NSAttributedString(string: planned ? "\(label) · soon" : label, attributes: [
-            .font: NSFont.systemFont(ofSize: size, weight: .semibold),
-            .foregroundColor: planned ? ink.withAlphaComponent(0.6) : accent])
-        let chipWidth = text.size().width + 30
-        if x + chipWidth > left + column {
-            x = left
-            y -= chipHeight + 10
-        }
-        let path = NSBezierPath(roundedRect: NSRect(x: x, y: y, width: chipWidth, height: chipHeight),
-                                xRadius: chipHeight / 2, yRadius: chipHeight / 2)
-        if planned {
-            path.lineWidth = 1.5
-            path.setLineDash([5, 4], count: 2, phase: 0)
-            ink.withAlphaComponent(0.35).setStroke()
-            path.stroke()
-        } else {
-            accent.withAlphaComponent(dark ? 0.18 : 0.12).setFill()
-            path.fill()
-        }
-        text.draw(at: NSPoint(x: x + 15, y: y + 8))
+/// A simple line glyph drawn into `box`, so the card uses no Apple symbol or emoji artwork.
+func glyph(_ name: String, in box: NSRect) {
+    let s = box.width, x = box.minX, y = box.minY
+    func p(_ px: CGFloat, _ py: CGFloat) -> NSPoint { NSPoint(x: x + px * s, y: y + py * s) }
+    func rounded(_ rx: CGFloat, _ ry: CGFloat, _ rw: CGFloat, _ rh: CGFloat, _ r: CGFloat) -> NSBezierPath {
+        NSBezierPath(roundedRect: NSRect(x: x + rx * s, y: y + ry * s, width: rw * s, height: rh * s), xRadius: r * s, yRadius: r * s)
+    }
+    func bubble(_ rx: CGFloat, _ ry: CGFloat, _ rw: CGFloat, _ rh: CGFloat, tailLeft: Bool) -> NSBezierPath {
+        let path = rounded(rx, ry, rw, rh, 0.14)
+        let tail = NSBezierPath()
+        let tx = tailLeft ? rx + 0.12 : rx + rw - 0.12
+        tail.move(to: p(tx - 0.06, ry + 0.02))
+        tail.line(to: p(tailLeft ? tx - 0.12 : tx + 0.12, ry - 0.12))
+        tail.line(to: p(tx + 0.06, ry + 0.02))
+        path.append(tail)
+        return path
+    }
+    accent.set()
+    var paths: [NSBezierPath] = []
+    var filled: [NSBezierPath] = []
+    switch name {
+    case "modules":
+        paths = [rounded(0.08, 0.52, 0.36, 0.36, 0.08), rounded(0.56, 0.52, 0.36, 0.36, 0.08), rounded(0.08, 0.08, 0.36, 0.36, 0.08)]
+        filled = [rounded(0.56, 0.08, 0.36, 0.36, 0.08)]
+    case "chat":
+        paths = [bubble(0.06, 0.26, 0.88, 0.62, tailLeft: true)]
+        filled = [0.3, 0.5, 0.7].map { NSBezierPath(ovalIn: NSRect(x: x + ($0 - 0.05) * s, y: y + 0.52 * s, width: 0.1 * s, height: 0.1 * s)) }
+    case "bridge":
+        paths = [bubble(0.04, 0.42, 0.56, 0.44, tailLeft: true), bubble(0.40, 0.16, 0.56, 0.44, tailLeft: false)]
+    case "backend":
+        paths = [rounded(0.08, 0.64, 0.84, 0.26, 0.07), rounded(0.08, 0.37, 0.84, 0.26, 0.07), rounded(0.08, 0.10, 0.84, 0.26, 0.07)]
+        filled = [0.77, 0.50, 0.23].map { NSBezierPath(ovalIn: NSRect(x: x + 0.72 * s, y: y + ($0 - 0.04) * s, width: 0.08 * s, height: 0.08 * s)) }
+    case "lock":
+        let shackle = NSBezierPath()
+        shackle.appendArc(withCenter: p(0.5, 0.56), radius: 0.22 * s, startAngle: 0, endAngle: 180)
+        shackle.line(to: p(0.28, 0.46))
+        shackle.move(to: p(0.72, 0.56))
+        shackle.line(to: p(0.72, 0.46))
+        paths = [shackle, rounded(0.14, 0.06, 0.72, 0.44, 0.08)]
+    case "sparkle":
+        let star = NSBezierPath()
+        star.move(to: p(0.5, 0.94))
+        for (px, py) in [(0.6, 0.6), (0.94, 0.5), (0.6, 0.4), (0.5, 0.06), (0.4, 0.4), (0.06, 0.5), (0.4, 0.6)] { star.line(to: p(px, py)) }
+        star.close()
+        filled = [star]
+    case "globe":
+        let meridian = NSBezierPath(ovalIn: NSRect(x: x + 0.3 * s, y: y + 0.08 * s, width: 0.4 * s, height: 0.84 * s))
+        let equator = NSBezierPath()
+        equator.move(to: p(0.08, 0.5))
+        equator.line(to: p(0.92, 0.5))
+        paths = [NSBezierPath(ovalIn: NSRect(x: x + 0.08 * s, y: y + 0.08 * s, width: 0.84 * s, height: 0.84 * s)), meridian, equator]
+    case "check":
+        let tick = NSBezierPath()
+        tick.move(to: p(0.12, 0.5))
+        tick.line(to: p(0.4, 0.22))
+        tick.line(to: p(0.9, 0.78))
+        paths = [tick]
+    default:
+        filled = [NSBezierPath(ovalIn: NSRect(x: x + 0.35 * s, y: y + 0.35 * s, width: 0.3 * s, height: 0.3 * s))]
+    }
+    for path in paths {
+        path.lineWidth = max(2, s * 0.09)
+        path.lineCapStyle = .round
+        path.lineJoinStyle = .round
+        path.stroke()
+    }
+    for path in filled { path.fill() }
+}
+
+/// One line of rounded labels; labels that would overflow the column are left off.
+func chips(_ labels: [String], baseline y: CGFloat) {
+    let size: CGFloat = 17, chipHeight = size + 16
+    var x = left
+    for label in labels {
+        let text = attributed(label, size, .semibold, accent)
+        let chipWidth = text.size().width + 28
+        guard x + chipWidth <= left + column else { break }
+        accent.withAlphaComponent(dark ? 0.18 : 0.12).setFill()
+        NSBezierPath(roundedRect: NSRect(x: x, y: y, width: chipWidth, height: chipHeight),
+                     xRadius: chipHeight / 2, yRadius: chipHeight / 2).fill()
+        text.draw(at: NSPoint(x: x + 14, y: y + 7))
         x += chipWidth + 10
     }
 }
@@ -110,26 +178,57 @@ func phone(_ shot: NSImage, center: NSPoint, height phoneHeight: CGFloat, degree
     NSGraphicsContext.restoreGraphicsState()
 }
 
-// Left column, top down.
-icon.draw(in: NSRect(x: left, y: 430, width: 132, height: 132))
-var cursor = paragraph(title, size: 60, weight: .bold, color: ink, top: 410)
+// Header: app icon with the title beside it.
+let iconSize: CGFloat = 112
+icon.draw(in: NSRect(x: left, y: height - 72 - iconSize, width: iconSize, height: iconSize))
+let titleText = attributed(title, 54, .bold, ink)
+let titleHeight = titleText.boundingRect(with: NSSize(width: column - iconSize - 24, height: 300), options: [.usesLineFragmentOrigin]).height
+var cursor = paragraph(titleText, x: left + iconSize + 24, top: height - 72 - (iconSize - titleHeight) / 2)
+cursor = min(cursor, height - 72 - iconSize) - 22
+
 if let tagline = option("tagline"), !tagline.isEmpty {
-    cursor = paragraph(tagline, size: 26, weight: .regular, color: ink.withAlphaComponent(0.68), top: cursor - 10)
+    cursor = paragraph(attributed(tagline, 25, .regular, ink.withAlphaComponent(0.68)), top: cursor) - 26
 }
-let labels = (options["chip"] ?? []).map { ($0, false) } + (options["planned"] ?? []).map { ($0, true) }
-if !labels.isEmpty {
-    chips(labels, top: cursor - 26)
+
+// Feature rows: a tinted tile with the glyph, then the label, then "soon" for planned ones.
+for feature in features {
+    let tile: CGFloat = 40, rowTop = cursor
+    let tileRect = NSRect(x: left, y: rowTop - tile, width: tile, height: tile)
+    accent.withAlphaComponent(dark ? 0.18 : 0.12).setFill()
+    NSBezierPath(roundedRect: tileRect, xRadius: 10, yRadius: 10).fill()
+    glyph(feature.glyph, in: tileRect.insetBy(dx: 9, dy: 9))
+    let label = attributed(feature.label, 24, .semibold, ink)
+    let labelY = rowTop - tile + (tile - label.size().height) / 2
+    label.draw(at: NSPoint(x: left + tile + 16, y: labelY))
+    if feature.soon {
+        let soon = attributed("SOON", 13, .bold, ink.withAlphaComponent(0.55))
+        let soonX = left + tile + 16 + label.size().width + 12
+        let soonRect = NSRect(x: soonX, y: rowTop - tile + 10, width: soon.size().width + 16, height: 20)
+        let outline = NSBezierPath(roundedRect: soonRect, xRadius: 10, yRadius: 10)
+        outline.lineWidth = 1.5
+        ink.withAlphaComponent(0.3).setStroke()
+        outline.stroke()
+        soon.draw(at: NSPoint(x: soonX + 8, y: soonRect.minY + 2))
+    }
+    cursor = rowTop - tile - 14
+}
+
+let chipLabels = options["chip"] ?? []
+if !chipLabels.isEmpty {
+    chips(chipLabels, baseline: max(72, cursor - 48))
 }
 if let url = option("url"), !url.isEmpty {
-    NSAttributedString(string: url, attributes: [.font: NSFont.systemFont(ofSize: 18, weight: .medium),
-                                                 .foregroundColor: ink.withAlphaComponent(0.42)])
-        .draw(at: NSPoint(x: left, y: 30))
+    attributed(url, 18, .medium, ink.withAlphaComponent(0.42)).draw(at: NSPoint(x: left, y: 30))
 }
 
 // Right: screenshots fanned, the first one in front.
-let fan: [(x: CGFloat, y: CGFloat, degrees: CGFloat)] = [(800, 318, 7), (972, 330, 0), (1140, 318, -7)]
+let fans: [[(x: CGFloat, y: CGFloat, degrees: CGFloat)]] = [
+    [(972, 320, 0)],
+    [(890, 318, 5), (1060, 326, -5)],
+    [(800, 318, 7), (972, 330, 0), (1140, 318, -7)],
+]
 for (index, shot) in screens.enumerated().reversed() {
-    let slot = screens.count == 1 ? (x: CGFloat(972), y: CGFloat(320), degrees: CGFloat(0)) : fan[index]
+    let slot = fans[screens.count - 1][index]
     phone(shot, center: NSPoint(x: slot.x, y: slot.y), height: 460, degrees: slot.degrees)
 }
 

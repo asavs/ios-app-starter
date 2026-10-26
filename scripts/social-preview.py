@@ -2,10 +2,13 @@
 """Make light and dark 1280x640 social preview cards for the repository.
 
 The card shows the app's own icon (StarterApp/StarterApp/AppIcon.icon, rendered by Icon Composer's
-ictool), the title, a tagline, optional chips, and up to three UI test screenshots. Screenshots come
-from the newest local `scripts/test-ios.sh` run, or from `--attachments`, a downloaded
-`ios-test-results-*` artifact's `attachments/` folder. Rendering needs macOS with Xcode 26 or later;
-from Windows, run the manual **Social preview** workflow instead.
+ictool), the title, a tagline, up to four feature rows with drawn icons, one line of chips, and up to
+three UI test screenshots. Text and screenshot choice come from `.github/social-preview.json`;
+anything it leaves out falls back to the Home Screen name, the repository description, the first three
+repository topics and the onboarding, home and settings screenshots.
+Screenshots come from the newest local `scripts/test-ios.sh` run, or from `--attachments`, a
+downloaded `ios-test-results-*` artifact's `attachments/` folder. Rendering needs macOS with Xcode 26
+or later; from Windows, run the manual **Social preview** workflow instead.
 
 Upload one of the results under Settings > General > Social preview; GitHub has no API for it.
 """
@@ -21,6 +24,8 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 ICON = ROOT / "StarterApp/StarterApp/AppIcon.icon"
 RENDERER = ROOT / "scripts/render-social-preview.swift"
+CONFIG = ROOT / ".github/social-preview.json"
+GLYPHS = {"modules", "chat", "bridge", "backend", "lock", "sparkle", "globe", "check"}
 DEFAULT_SCREENS = ["onboarding-welcome", "welcome-screen", "settings-screen"]
 
 
@@ -31,8 +36,8 @@ def newest_attachments(results=ROOT / "build/test-results"):
     return runs[0] / "attachments" if runs else None
 
 
-def pick_screens(attachments, names):
-    """Screenshot paths for the named UI test attachments, in the order asked; missing names are skipped.
+def screenshot_names(attachments):
+    """Each PNG attachment's name mapped to its exported file, first export of a name winning.
 
     `xcresulttool` names each export `<attachment name>_<index>_<uuid>.png`; the manifest maps that
     readable name to the exported file.
@@ -45,6 +50,16 @@ def pick_screens(attachments, names):
             name = re.sub(r"_\d+_[0-9A-Fa-f-]+\.png$", "", readable)
             if name and name not in exported and attachment.get("exportedFileName", "").endswith(".png"):
                 exported[name] = attachments / attachment["exportedFileName"]
+    return exported
+
+
+def pick_screens(attachments, names):
+    """Screenshot paths for the named UI test attachments, in the order asked; missing names are skipped."""
+    exported = screenshot_names(attachments)
+    missing = [name for name in names if name not in exported]
+    if missing:
+        print(f"No screenshot named {', '.join(missing)}. Available: {', '.join(sorted(exported)) or 'none'}",
+              file=sys.stderr)
     return [exported[name] for name in names if name in exported and exported[name].is_file()]
 
 
@@ -63,6 +78,48 @@ def repository_url():
         return None
     match = re.search(r"github\.com[:/]([^/]+/[^/]+?)(?:\.git)?$", remote)
     return f"github.com/{match.group(1)}" if match else None
+
+
+def load_config(path=CONFIG):
+    """The card settings: optional title, tagline, url, chips and features. Missing file means defaults."""
+    if not path.is_file():
+        return {}
+    config = json.loads(path.read_text(encoding="utf-8"))
+    for index, feature in enumerate(config.get("features", [])):
+        if not isinstance(feature, dict) or not feature.get("label"):
+            raise SystemExit(f"{path.name}: features[{index}] needs a label")
+        if feature.get("icon", "") not in GLYPHS:
+            print(f"{path.name}: features[{index}] icon {feature.get('icon')!r} is not one of {sorted(GLYPHS)}; drawing a dot",
+                  file=sys.stderr)
+    return config
+
+
+def feature_flags(features):
+    """`glyph|label` or `glyph|label|soon` values for the renderer's --feature."""
+    return ["|".join([feature.get("icon", ""), feature["label"]] + (["soon"] if feature.get("soon") else []))
+            for feature in features[:4]]
+
+
+def repository_topics():
+    """The repository's GitHub topics through `gh`, in GitHub's order, or [] when gh is unavailable."""
+    try:
+        output = subprocess.run(["gh", "repo", "view", "--json", "repositoryTopics", "--jq", "[.repositoryTopics[].name]"],
+                                cwd=ROOT, capture_output=True, text=True, check=True, timeout=30).stdout
+        return json.loads(output or "[]")
+    except (OSError, subprocess.SubprocessError, json.JSONDecodeError):
+        return []
+
+
+def choose_chips(flags, config, topics):
+    """Chips appear only on a card without feature rows: --chip, then the config's chips (an empty list
+    hides them), then the first three topics."""
+    if config.get("features"):
+        return []
+    if flags:
+        return flags
+    if "chips" in config:
+        return list(config["chips"])
+    return topics[:3]
 
 
 def repository_description():
@@ -88,7 +145,22 @@ def render_icon(target):
     return target
 
 
-def renderer_command(theme, output, icon, title, tagline, url, chips, planned, screens):
+def fit_upload_limit(card, limit=1_000_000):
+    """GitHub rejects social preview uploads over 1 MB; write a JPEG beside a PNG that is too large."""
+    if card.stat().st_size <= limit:
+        return card
+    for quality in (90, 80, 70, 60):
+        jpeg = card.with_suffix(".jpg")
+        subprocess.run(["sips", "-s", "format", "jpeg", "-s", "formatOptions", str(quality), str(card), "--out", str(jpeg)],
+                       check=True, capture_output=True)
+        if jpeg.stat().st_size <= limit:
+            print(f"{card.name} is over GitHub's 1 MB limit; upload {jpeg.name} instead.", file=sys.stderr)
+            return jpeg
+    print(f"{card.name} is over GitHub's 1 MB limit even as a JPEG; use fewer screenshots.", file=sys.stderr)
+    return card
+
+
+def renderer_command(theme, output, icon, title, tagline, url, chips, features, screens):
     command = ["swift", str(RENDERER), "--theme", theme, "--output", str(output), "--icon", str(icon), "--title", title]
     if tagline:
         command += ["--tagline", tagline]
@@ -96,8 +168,8 @@ def renderer_command(theme, output, icon, title, tagline, url, chips, planned, s
         command += ["--url", url]
     for chip in chips:
         command += ["--chip", chip]
-    for chip in planned:
-        command += ["--planned", chip]
+    for feature in features:
+        command += ["--feature", feature]
     for screen in screens:
         command += ["--screen", str(screen)]
     return command
@@ -108,27 +180,35 @@ def main(argv=None):
     parser.add_argument("--output", type=Path, default=ROOT / "build/social-preview", help="folder for the two PNGs")
     parser.add_argument("--attachments", type=Path, help="an attachments/ folder from a test run or downloaded artifact")
     parser.add_argument("--screen", action="append", dest="screens", metavar="NAME",
-                        help=f"UI test attachment name, front first (default: {', '.join(DEFAULT_SCREENS)})")
+                        help=f"UI test attachment name, front first (default: the config's screens, else {', '.join(DEFAULT_SCREENS)})")
     parser.add_argument("--title", help="defaults to the Home Screen name in project.yml")
     parser.add_argument("--tagline", help="defaults to the GitHub repository description")
-    parser.add_argument("--chip", action="append", default=[], help="a feature label; repeat for more")
-    parser.add_argument("--planned", action="append", default=[], help="a planned feature, drawn dashed with '· soon'")
+    parser.add_argument("--chip", action="append", default=[],
+                        help="a chip label; repeat for more (default: the config's chips, else the first three topics)")
+    parser.add_argument("--config", type=Path, default=CONFIG, help="card settings (default: .github/social-preview.json)")
     parser.add_argument("--url", help="defaults to github.com/<owner>/<repo> from the origin remote")
     parser.add_argument("--icon", type=Path, help="a PNG to use instead of rendering AppIcon.icon")
     args = parser.parse_args(argv)
+    config = load_config(args.config)
 
     attachments = args.attachments or newest_attachments()
-    screens = pick_screens(attachments, args.screens or DEFAULT_SCREENS) if attachments else []
+    names = args.screens or config.get("screens") or DEFAULT_SCREENS
+    screens = pick_screens(attachments, names[:3]) if attachments else []
     if not screens:
         print("No UI test screenshots found; the card will have no screens. Run scripts/test-ios.sh or pass --attachments.",
               file=sys.stderr)
     args.output.mkdir(parents=True, exist_ok=True)
+    topics = [] if args.chip or "chips" in config or config.get("features") else repository_topics()
     with tempfile.TemporaryDirectory() as scratch:
         icon = args.icon or render_icon(Path(scratch) / "icon.png")
         for theme in ("light", "dark"):
-            subprocess.run(renderer_command(theme, args.output / f"social-preview-{theme}.png", icon,
-                                            args.title or display_name(), args.tagline or repository_description(),
-                                            args.url or repository_url(), args.chip, args.planned, screens), check=True)
+            subprocess.run(renderer_command(
+                theme, args.output / f"social-preview-{theme}.png", icon,
+                args.title or config.get("title") or display_name(),
+                args.tagline or config.get("tagline") or repository_description(),
+                args.url or config.get("url") or repository_url(),
+                choose_chips(args.chip, config, topics), feature_flags(config.get("features", [])), screens), check=True)
+            fit_upload_limit(args.output / f"social-preview-{theme}.png")
     print(f"Upload one under Settings > General > Social preview: {args.output}")
     return 0
 
