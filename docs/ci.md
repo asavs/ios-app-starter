@@ -204,7 +204,7 @@ From Windows or anywhere else, run the **Social preview** workflow:
 gh workflow run social-preview.yml --ref main
 ```
 
-It reads the same config, reuses the screenshots from the newest passing iOS run on `main`, and attaches the cards to the run as the `social-preview` artifact for 7 days, with `app-icon.png` at README size; nothing is committed. Upload one under **Settings → General → Social preview**; GitHub has no API for that setting and takes files up to 1 MB, so the script writes a JPEG beside any larger PNG.
+It reads the same config, reuses the screenshots from the newest passing iOS run on `main`, and attaches the cards to the run as the `social-preview` artifact for 7 days, with `app-icon.png` at README size; nothing is committed. Upload one under **Settings → General → Social preview**; GitHub has no API for that setting and takes files up to 1 MB, so the script writes a JPEG beside any larger PNG. During setup, an agent with `github-browser` consent can do the upload in your signed-in browser ([onboarding runbook](agent-onboarding.md#stage-a-repository-no-apple-account)).
 
 ## Keep the README icon in sync
 
