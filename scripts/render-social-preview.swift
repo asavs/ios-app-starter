@@ -5,7 +5,7 @@
 // swift scripts/render-social-preview.swift --theme light|dark --output card.png --icon icon.png
 //     --title "My App" [--tagline "..."] [--url "github.com/me/app"]
 //     [--feature "glyph|label" or "glyph|label|soon" ...] [--chip label ...] [--scale 2]
-//     [--screen front.png --screen middle.png --screen back.png] [--frame device.png]
+//     [--screen front.png --screen middle.png --screen back.png] [--frame device.png] [--layout row|fan]
 // --frame is a device image with a transparent screen, such as an Apple Product Bezel the owner
 // downloaded for an app on the App Store. Screenshots then sit upright behind it, side by side, with no
 // tilt or shadow, as Apple's marketing guidelines require for its bezels.
@@ -190,7 +190,7 @@ var cursor = paragraph(titleText, x: left + iconSize + 24, top: height - 72 - (i
 cursor = min(cursor, height - 72 - iconSize) - 22
 
 if let tagline = option("tagline"), !tagline.isEmpty {
-    cursor = paragraph(attributed(tagline, 25, .regular, ink.withAlphaComponent(0.68)), top: cursor) - 26
+    cursor = paragraph(attributed(tagline, 25, .regular, ink.withAlphaComponent(0.68)), top: cursor) - 44
 }
 
 // Feature rows: a tinted tile with the glyph, then the label, then "soon" for planned ones.
@@ -213,7 +213,7 @@ for feature in features {
         outline.stroke()
         soon.draw(at: NSPoint(x: soonX + 8, y: soonRect.minY + 2))
     }
-    cursor = rowTop - tile - 14
+    cursor = rowTop - tile - 22
 }
 
 let chipLabels = options["chip"] ?? []
@@ -224,45 +224,72 @@ if let url = option("url"), !url.isEmpty {
     attributed(url, 18, .medium, ink.withAlphaComponent(0.42)).draw(at: NSPoint(x: left, y: 30))
 }
 
-/// The transparent screen area of a device frame, in the frame's pixel coordinates (origin top left):
-/// the connected transparent region around the image centre.
-func screenArea(of frame: CGImage) -> CGRect? {
+/// The transparent screen of a device frame: its bounding box in pixels (origin top left) and a mask of
+/// exactly those pixels, so a screenshot can be clipped to the screen's rounded corners.
+func screenArea(of frame: CGImage) -> (rect: CGRect, mask: CGImage)? {
     let width = frame.width, height = frame.height
     var pixels = [UInt8](repeating: 0, count: width * height * 4)
     guard let context = CGContext(data: &pixels, width: width, height: height, bitsPerComponent: 8,
                                   bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
                                   bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
     context.draw(frame, in: CGRect(x: 0, y: 0, width: width, height: height))
+    // Rows in `pixels` run top to bottom, like the image.
     func transparent(_ x: Int, _ y: Int) -> Bool { pixels[(y * width + x) * 4 + 3] < 16 }
     let start = (width / 2, height / 2)
     guard transparent(start.0, start.1) else { return nil }
-    var seen = [Bool](repeating: false, count: width * height)
+    var screen = [UInt8](repeating: 0, count: width * height)
     var stack = [start]
     var minX = start.0, maxX = start.0, minY = start.1, maxY = start.1
-    seen[start.1 * width + start.0] = true
+    screen[start.1 * width + start.0] = 255
     while let (x, y) = stack.popLast() {
         minX = min(minX, x); maxX = max(maxX, x); minY = min(minY, y); maxY = max(maxY, y)
         for (nx, ny) in [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
-        where nx >= 0 && ny >= 0 && nx < width && ny < height && !seen[ny * width + nx] && transparent(nx, ny) {
-            seen[ny * width + nx] = true
+        where nx >= 0 && ny >= 0 && nx < width && ny < height && screen[ny * width + nx] == 0 && transparent(nx, ny) {
+            screen[ny * width + nx] = 255
             stack.append((nx, ny))
         }
     }
     // Touching the image edge means the "screen" is the outside: not a usable frame.
-    guard minX > 0, minY > 0, maxX < width - 1, maxY < height - 1 else { return nil }
-    // CGContext rows start at the bottom; flip to a top-left origin.
-    return CGRect(x: minX, y: height - 1 - maxY, width: maxX - minX + 1, height: maxY - minY + 1)
+    guard minX > 0, minY > 0, maxX < width - 1, maxY < height - 1,
+          let provider = CGDataProvider(data: Data(screen) as CFData),
+          let mask = CGImage(width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 8, bytesPerRow: width,
+                             space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGBitmapInfo(rawValue: 0),
+                             provider: provider, decode: nil, shouldInterpolate: true, intent: .defaultIntent) else { return nil }
+    return (CGRect(x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1), mask)
 }
 
-/// A screenshot behind an owner-supplied frame, upright and unaltered, `deviceHeight` points tall.
-func framed(_ shot: NSImage, frame: NSImage, screen: CGRect, pixelHeight: CGFloat, at origin: NSPoint, deviceHeight: CGFloat) {
+/// A screenshot behind an owner-supplied frame, `deviceHeight` points tall, centred on `center` and
+/// rotated by `degrees`. The screenshot is clipped to the frame's screen so no corner shows outside it.
+func framed(_ shot: NSImage, frame: NSImage, screen: (rect: CGRect, mask: CGImage), pixelHeight: CGFloat,
+            center: NSPoint, deviceHeight: CGFloat, degrees: CGFloat = 0, shadow: Bool = false) {
     let scale = deviceHeight / pixelHeight
-    let frameRect = NSRect(x: origin.x, y: origin.y, width: frame.size.width / frame.size.height * deviceHeight, height: deviceHeight)
-    let screenRect = NSRect(x: frameRect.minX + screen.minX * scale,
-                            y: frameRect.maxY - screen.maxY * scale,
-                            width: screen.width * scale, height: screen.height * scale)
+    let deviceWidth = frame.size.width / frame.size.height * deviceHeight
+    let frameRect = NSRect(x: -deviceWidth / 2, y: -deviceHeight / 2, width: deviceWidth, height: deviceHeight)
+    let screenRect = NSRect(x: frameRect.minX + screen.rect.minX * scale,
+                            y: frameRect.maxY - screen.rect.maxY * scale,
+                            width: screen.rect.width * scale, height: screen.rect.height * scale)
+    NSGraphicsContext.saveGraphicsState()
+    let transform = NSAffineTransform()
+    transform.translateX(by: center.x, yBy: center.y)
+    transform.rotate(byDegrees: degrees)
+    transform.concat()
+    if shadow {
+        // Cast the shadow from the device outline only, then draw the device without one.
+        NSGraphicsContext.saveGraphicsState()
+        let drop = NSShadow()
+        drop.shadowBlurRadius = 28
+        drop.shadowOffset = NSSize(width: 0, height: -10)
+        drop.shadowColor = NSColor.black.withAlphaComponent(dark ? 0.55 : 0.22)
+        drop.set()
+        frame.draw(in: frameRect)
+        NSGraphicsContext.restoreGraphicsState()
+    }
+    NSGraphicsContext.saveGraphicsState()
+    NSGraphicsContext.current?.cgContext.clip(to: frameRect, mask: screen.mask)
     shot.draw(in: screenRect)
+    NSGraphicsContext.restoreGraphicsState()
     frame.draw(in: frameRect)
+    NSGraphicsContext.restoreGraphicsState()
 }
 
 if let framePath = option("frame") {
@@ -272,17 +299,33 @@ if let framePath = option("frame") {
         FileHandle.standardError.write(Data("render-social-preview: \(framePath) has no transparent screen area at its centre\n".utf8))
         exit(1)
     }
-    // Upright, side by side, same scale, centred in the right half; no tilt, overlap or shadow.
-    let deviceHeight: CGFloat = 500, gap: CGFloat = 24
-    let deviceWidth = frameImage.size.width / frameImage.size.height * deviceHeight
-    let total = CGFloat(screens.count) * deviceWidth + CGFloat(max(screens.count - 1, 0)) * gap
-    let available = width - (left + column) - 48
-    let fit = min(1, available / max(total, 1))
-    var x = left + column + 24 + (available - total * fit) / 2
-    for shot in screens {
-        framed(shot, frame: frameImage, screen: screen, pixelHeight: CGFloat(cgFrame.height),
-               at: NSPoint(x: x, y: (height - deviceHeight * fit) / 2), deviceHeight: deviceHeight * fit)
-        x += (deviceWidth + gap) * fit
+    let pixelHeight = CGFloat(cgFrame.height)
+    if option("layout") == "fan" {
+        // Fanned and overlapping with shadows, like the drawn phones. Apple's guidelines forbid tilting,
+        // overlapping or shadowing its bezels; the owner chose this layout.
+        let fans: [[(x: CGFloat, y: CGFloat, degrees: CGFloat)]] = [
+            [(972, 320, 0)],
+            [(890, 318, 5), (1060, 326, -5)],
+            [(800, 318, 7), (972, 330, 0), (1140, 318, -7)],
+        ]
+        for (index, shot) in screens.enumerated().reversed() {
+            let slot = fans[screens.count - 1][index]
+            framed(shot, frame: frameImage, screen: screen, pixelHeight: pixelHeight,
+                   center: NSPoint(x: slot.x - 12, y: slot.y), deviceHeight: 448, degrees: slot.degrees, shadow: true)
+        }
+    } else {
+        // Upright, side by side, same scale, centred in the right half; no tilt, overlap or shadow.
+        let deviceHeight: CGFloat = 500, gap: CGFloat = 24
+        let deviceWidth = frameImage.size.width / frameImage.size.height * deviceHeight
+        let total = CGFloat(screens.count) * deviceWidth + CGFloat(max(screens.count - 1, 0)) * gap
+        let available = width - (left + column) - 48
+        let fit = min(1, available / max(total, 1))
+        var x = left + column + 24 + (available - total * fit) / 2 + deviceWidth * fit / 2
+        for shot in screens {
+            framed(shot, frame: frameImage, screen: screen, pixelHeight: pixelHeight,
+                   center: NSPoint(x: x, y: height / 2), deviceHeight: deviceHeight * fit)
+            x += (deviceWidth + gap) * fit
+        }
     }
 } else {
     // Right: screenshots fanned, the first one in front, in a plain drawn outline.

@@ -187,11 +187,14 @@ Every field is optional, and the template's file lists them all. `null` (or leav
 | `features` | none | none |
 | `frame` | the script's own drawn phones, fanned | the default |
 | `apple_design_resources_license` | not accepted | not accepted |
+| `layout` | with a frame, `row`: upright and side by side | the default |
 
 `frame` puts the screenshots inside a real device, upright and side by side, without tilt or shadow, as Apple's [marketing guidelines](https://developer.apple.com/app-store/marketing/guidelines/) require for its bezels. Use either:
 
 - `"apple:<model> - <color>"`, for example `"apple:iPhone 17 Pro - Silver"`: the script downloads Apple's [Product Bezels](https://developer.apple.com/design/resources/#product-bezels) disk image once into `build/frames/` (about 250 MB; the workflow caches it), opens it, and extracts that portrait PNG. A wrong color lists the available ones. The disk image carries the **Apple Design Resources License**, and opening it accepts that license, so the script does so only when you have: set `"apple_design_resources_license": "accepted"` in your own repository's config, pass `--accept-apple-design-resources-license`, set `APPLE_DESIGN_RESOURCES_LICENSE=accepted`, or tick the workflow's checkbox. The license allows mock-ups; Apple licenses its device images for marketing apps that are on the App Store. Accepting it does not widen that, so check your use before publishing a card with a bezel. Maintainers add each year's bezel package to `APPLE_BEZELS` in the script.
 - A path to any PNG with a transparent screen that you keep out of git; the script warns if git would commit it.
+
+`"layout": "fan"` tilts, overlaps and shadows framed phones like the drawn ones. Apple's guidelines forbid tilting, overlapping or shadowing its bezels, so `row` stays the default; choose `fan` knowingly.
 
 The template ships no device frame and leaves the license unaccepted.
 
