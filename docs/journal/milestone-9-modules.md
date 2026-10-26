@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-26 — Onboarding: one sheet for first launch and replay
+
+- **Tools:** Xcode 27.0 on the Mac, iPhone 17 / iOS 27.0 simulator. Task `ios-s5.14`.
+- **Decision:** First launch showed the flow in place of the app, full screen, while "Take the tour" replayed the same steps in a sheet. The owner asked for one presentation, chosen from Apple's guidance. The HIG's Onboarding page asks for a flow that is "fast, fun, and optional", not shown again once skipped, and easy to find later. Its Modality page keeps full screen for in-depth or complex tasks and sheets for narrowly scoped ones, always with an obvious dismissal, and its Sheets page says to support swiping to dismiss. The four short, optional steps are the narrow case, so both now use the sheet. The gate presents it over the app's content, and any dismissal, including a swipe or VoiceOver's escape gesture, records completion like Skip.
+- **Also:** At accessibility text sizes a step's last lines sat cut off at the page dots with no sign of more. Step scroll views now flash their indicators on appear.
+- **Verified:** Onboarding module tests 26/26 and the app suite 11/11 on the iOS 27.0 simulator, including a new swipe-to-skip test that relaunches to confirm the flow stays gone.
+- **Remaining:** An app that must not let people swipe past a step (a required choice) would need `interactiveDismissDisabled`; the template's choice step is optional. iPad sheet sizing and VoiceOver escape are unverified on device.
+
 ## 2026-10-26 — Tab shell on the Mac: iOS 26.3 drops tab identifiers
 
 - **Tools:** Xcode 27.0 on the Mac, XcodeGen 2.46.0, iPhone 17 / iOS 27.0 simulator, the owner's iPhone 14 Pro on iOS 26.3. Branch `claude/tab-shell-review`, stacked on the first pass.

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Shows the onboarding flow in place of its content until the user finishes it once.
+/// Shows the onboarding flow in a sheet over its content until the user finishes it once.
 ///
 /// ```swift
 /// ContentView().onboardingGate(steps: OnboardingStep.templateDefaults)
@@ -10,6 +10,9 @@ import SwiftUI
 /// to users who completed an earlier one. Within a launch the decision is kept in view state, so
 /// finishing releases the gate even when a launch argument pins the stored value. Contextual tips
 /// stay ineligible while the flow is on screen (`ContextualTips.isEligible`).
+///
+/// It is the same sheet a replay uses. Swiping it down, or VoiceOver's escape gesture, counts as
+/// Skip: onboarding is optional, and a dismissed flow is not shown again.
 public extension View {
     func onboardingGate(steps: [OnboardingStep], version: Int = 1,
                         record: OnboardingRecord = OnboardingRecord()) -> some View {
@@ -27,35 +30,36 @@ struct OnboardingGate: ViewModifier {
     let steps: [OnboardingStep]
     let version: Int
     let record: OnboardingRecord
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isComplete: Bool
+    @State private var isPresented: Bool
 
     init(steps: [OnboardingStep], version: Int, record: OnboardingRecord) {
         self.steps = steps
         self.version = version
         self.record = record
-        _isComplete = State(initialValue: steps.isEmpty || record.isComplete(version: version))
+        let complete = steps.isEmpty || record.isComplete(version: version)
+        _isComplete = State(initialValue: complete)
+        _isPresented = State(initialValue: !complete)
     }
 
     func body(content: Content) -> some View {
-        ZStack {
-            if isComplete {
-                content
-                    .transition(.opacity)
-            } else {
+        content
+            // The system sheet animates itself and follows Reduce Motion.
+            .sheet(isPresented: $isPresented, onDismiss: complete) {
                 OnboardingView(steps: steps) {
-                    record.markComplete(version: version)
-                    ContextualTips.isEligible = true
-                    withAnimation(.easeInOut(duration: 0.25)) {
-                        isComplete = true
-                    }
+                    isPresented = false
                 }
-                // Reduce Motion keeps the cross-fade and drops the slide.
-                .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
             }
-        }
-        .onAppear {
-            ContextualTips.isEligible = isComplete
-        }
+            .onAppear {
+                ContextualTips.isEligible = isComplete
+            }
+    }
+
+    /// Runs once the sheet is gone, however it was closed.
+    private func complete() {
+        guard !isComplete else { return }
+        record.markComplete(version: version)
+        isComplete = true
+        ContextualTips.isEligible = true
     }
 }

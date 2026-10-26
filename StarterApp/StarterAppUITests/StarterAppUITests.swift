@@ -354,6 +354,31 @@ final class StarterAppUITests: XCTestCase {
         attach(name: "onboarding-relaunch")
     }
 
+    /// First launch shows onboarding as a sheet; swiping it down skips it for good, like the Skip button.
+    /// Skips when the module is disabled.
+    @MainActor
+    func testSwipingOnboardingAwaySkipsIt() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-tabs.selected", "welcome", "-onboarding.completedVersion", "0", "-onboarding.permissions", "granted",
+                               "-tips.testing", "hideAll"]
+        app.launch()
+        let next = app.buttons["onboarding.next"]
+        try requireModuleUI("Onboarding", appeared: next.waitForExistence(timeout: 10), "no Continue button on launch")
+        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.feature.phone")), "The welcome sheet should be showing")
+        attach(name: "onboarding-sheet")
+        let sheet = element(app, "onboarding.step.welcome")
+        sheet.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1))
+            .press(forDuration: 0.1, thenDragTo: app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1.0)))
+        XCTAssertTrue(waitUntilGone(next), "Swiping the sheet down should close onboarding")
+        XCTAssertTrue(app.buttons["onboarding.replay"].waitForExistence(timeout: 5), "The welcome screen should be under it")
+
+        app.terminate()
+        app.launchArguments = ["-tabs.selected", "welcome", "-onboarding.permissions", "granted", "-tips.testing", "hideAll"]
+        app.launch()
+        XCTAssertTrue(app.buttons["onboarding.replay"].waitForExistence(timeout: 10))
+        XCTAssertFalse(next.waitForExistence(timeout: 3), "A flow swiped away must not show again")
+    }
+
     /// The Theme module's main path: the themed welcome card and primary button render in light and in
     /// dark appearance, with a screenshot of each. Dark is forced through the Settings module's stored
     /// appearance (`-settings.appearance dark`); without Settings only the light pass runs.
