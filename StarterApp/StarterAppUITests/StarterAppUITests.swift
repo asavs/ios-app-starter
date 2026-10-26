@@ -274,7 +274,7 @@ final class StarterAppUITests: XCTestCase {
         for _ in 0..<swipes where !(element.exists && window.frame.contains(element.frame)) {
             app.swipeUp()
         }
-        return waitUntilHittable(element, timeout: 5)
+        return waitUntilHittable(element)
     }
 
     /// Waits until the element's frame overlaps the window and its page has slid in. At the largest text
