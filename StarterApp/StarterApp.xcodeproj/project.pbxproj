@@ -10,14 +10,19 @@
 		08AE3083A6736281670A063E /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 2CC16D61E20130E63B4E85C7 /* AppIcon.icon */; };
 		1D07C887DB8743D47EFEF00C /* StarterAppUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8D93B988D8534CAF4748EAB /* StarterAppUITests.swift */; };
 		264FE5A08BFF4B78E4DBAC2F /* Theme in Frameworks */ = {isa = PBXBuildFile; productRef = 144F0453F5E7CB7218BACDCE /* Theme */; };
+		4373411B683AC6A1449A225B /* StarterTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9218B03F8BC10E8E6907F4D3 /* StarterTab.swift */; };
+		46C0B1C171E433E997E37D77 /* StarterSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C1F23018F09539BF2772719 /* StarterSettingsView.swift */; };
 		5EB40DD72AB95E7B7C111EF0 /* StarterAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD60802B2CF34042A128A2F5 /* StarterAppApp.swift */; };
 		64907FF9954BF68C58B1AB11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 81985762715118C68FC81834 /* Assets.xcassets */; };
+		71EC3E811114F8825AC06772 /* TabShell in Frameworks */ = {isa = PBXBuildFile; productRef = E9C8F87566DEC9C8980FE2CD /* TabShell */; };
+		812BE58E0DB6498B18E2F3AB /* StarterTabsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5864471EC8F0242C38AA7E /* StarterTabsView.swift */; };
 		8ACBD7534E01CDE5045806DD /* Onboarding in Frameworks */ = {isa = PBXBuildFile; productRef = 62CD511B7596E8CDAA0489CD /* Onboarding */; };
 		9107E9765A60C6B4A906D978 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C993C2D64191E0D24B90D89 /* ContentView.swift */; };
 		A84DA15EE809FFE0CB3047CA /* Settings in Frameworks */ = {isa = PBXBuildFile; productRef = 5067BD6B2C63627070B6F3EE /* Settings */; };
 		AC1E853E30DD139D9A2B642E /* TemplateVersion in Frameworks */ = {isa = PBXBuildFile; productRef = 26545B50428408ABA4C4100D /* TemplateVersion */; };
 		CF5E0A1BBE6C12667668261E /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 62AC33BBAB421DF93083B243 /* Localizable.xcstrings */; };
 		D10ED263A335E0800B3E1C26 /* StarterAppUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 208BC1917057466CB928A5D6 /* StarterAppUITestsLaunchTests.swift */; };
+		E9F33202AB227077B286A4DE /* NextLaunchResetButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CCD6ADA8856F313C21A74C1 /* NextLaunchResetButton.swift */; };
 		F24148395D75C0C443626A30 /* StarterAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505187150B7A25E42E197DFD /* StarterAppTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -39,6 +44,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0A5864471EC8F0242C38AA7E /* StarterTabsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterTabsView.swift; sourceTree = "<group>"; };
 		16EC34682757DEACAF1D2E00 /* StarterAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = StarterAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		208BC1917057466CB928A5D6 /* StarterAppUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterAppUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		2C993C2D64191E0D24B90D89 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -46,7 +52,10 @@
 		4DD58F84F9D7BEE99037FB79 /* StarterAppUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = StarterAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		505187150B7A25E42E197DFD /* StarterAppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterAppTests.swift; sourceTree = "<group>"; };
 		62AC33BBAB421DF93083B243 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		6C1F23018F09539BF2772719 /* StarterSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterSettingsView.swift; sourceTree = "<group>"; };
 		81985762715118C68FC81834 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		9218B03F8BC10E8E6907F4D3 /* StarterTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterTab.swift; sourceTree = "<group>"; };
+		9CCD6ADA8856F313C21A74C1 /* NextLaunchResetButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextLaunchResetButton.swift; sourceTree = "<group>"; };
 		BD60802B2CF34042A128A2F5 /* StarterAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterAppApp.swift; sourceTree = "<group>"; };
 		E8D93B988D8534CAF4748EAB /* StarterAppUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterAppUITests.swift; sourceTree = "<group>"; };
 		FBF5C48B8DEE60F1BE83C0C8 /* StarterApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = StarterApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -61,6 +70,7 @@
 				264FE5A08BFF4B78E4DBAC2F /* Theme in Frameworks */,
 				8ACBD7534E01CDE5045806DD /* Onboarding in Frameworks */,
 				A84DA15EE809FFE0CB3047CA /* Settings in Frameworks */,
+				71EC3E811114F8825AC06772 /* TabShell in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -74,7 +84,11 @@
 				81985762715118C68FC81834 /* Assets.xcassets */,
 				2C993C2D64191E0D24B90D89 /* ContentView.swift */,
 				62AC33BBAB421DF93083B243 /* Localizable.xcstrings */,
+				9CCD6ADA8856F313C21A74C1 /* NextLaunchResetButton.swift */,
 				BD60802B2CF34042A128A2F5 /* StarterAppApp.swift */,
+				6C1F23018F09539BF2772719 /* StarterSettingsView.swift */,
+				9218B03F8BC10E8E6907F4D3 /* StarterTab.swift */,
+				0A5864471EC8F0242C38AA7E /* StarterTabsView.swift */,
 			);
 			path = StarterApp;
 			sourceTree = "<group>";
@@ -137,6 +151,7 @@
 				144F0453F5E7CB7218BACDCE /* Theme */,
 				62CD511B7596E8CDAA0489CD /* Onboarding */,
 				5067BD6B2C63627070B6F3EE /* Settings */,
+				E9C8F87566DEC9C8980FE2CD /* TabShell */,
 			);
 			productName = StarterApp;
 			productReference = FBF5C48B8DEE60F1BE83C0C8 /* StarterApp.app */;
@@ -188,13 +203,16 @@
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					77BB0999D503BC959EC52252 = {
+						DevelopmentTeam = 9L6Y9T3PPW;
 						ProvisioningStyle = Automatic;
 					};
 					804528C1CF4C645211E71031 = {
+						DevelopmentTeam = 9L6Y9T3PPW;
 						ProvisioningStyle = Automatic;
 						TestTargetID = 77BB0999D503BC959EC52252;
 					};
 					D8CDD9BCDE41C375B5B95E91 = {
+						DevelopmentTeam = 9L6Y9T3PPW;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -259,7 +277,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				9107E9765A60C6B4A906D978 /* ContentView.swift in Sources */,
+				E9F33202AB227077B286A4DE /* NextLaunchResetButton.swift in Sources */,
 				5EB40DD72AB95E7B7C111EF0 /* StarterAppApp.swift in Sources */,
+				46C0B1C171E433E997E37D77 /* StarterSettingsView.swift in Sources */,
+				4373411B683AC6A1449A225B /* StarterTab.swift in Sources */,
+				812BE58E0DB6498B18E2F3AB /* StarterTabsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -288,7 +310,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.StarterAppTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.asaschaeffer.starterappdemo.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/StarterApp.app/StarterApp";
@@ -313,7 +335,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.StarterApp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.asaschaeffer.starterappdemo;
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -340,7 +362,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.StarterApp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.asaschaeffer.starterappdemo;
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -386,6 +408,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 9L6Y9T3PPW;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -418,7 +441,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.StarterAppTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.asaschaeffer.starterappdemo.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/StarterApp.app/StarterApp";
@@ -434,7 +457,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.StarterAppUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.asaschaeffer.starterappdemo.uitests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = StarterApp;
@@ -450,7 +473,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.StarterAppUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.asaschaeffer.starterappdemo.uitests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = StarterApp;
@@ -494,6 +517,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 9L6Y9T3PPW;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -588,6 +612,10 @@
 		62CD511B7596E8CDAA0489CD /* Onboarding */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Onboarding;
+		};
+		E9C8F87566DEC9C8980FE2CD /* TabShell */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TabShell;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

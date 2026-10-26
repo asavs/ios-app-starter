@@ -295,7 +295,9 @@ final class StarterAppUITests: XCTestCase {
                       "Skipping should reveal the welcome screen and record completion")
 
         app.terminate()
-        app.launchArguments = ["-onboarding.permissions", "granted", // No override: the stored version decides.
+        // No onboarding override: the stored version decides. The tab is pinned because an earlier
+        // test can leave Settings selected, which TabShell rightly restores.
+        app.launchArguments = ["-tabs.selected", "welcome", "-onboarding.permissions", "granted",
                                "-tips.testing", "hideAll"]
         app.launch()
         XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 10),
@@ -315,7 +317,7 @@ final class StarterAppUITests: XCTestCase {
         app.launch()
         let card = element(app, "welcome.card")
         try requireModuleUI("Theme", appeared: card.waitForExistence(timeout: 10), "no themed card on the welcome screen")
-        let hasSettings = settingsButton(in: app).exists
+        let hasSettings = settingsButton(in: app).waitForExistence(timeout: 5) // The tab bar can land after the card.
         let light = try assertThemedWelcome(app, name: "theme-light")
         if hasSettings {
             XCTAssertGreaterThan(light, 0.5, "The light background should be bright, got luminance \(light)")
@@ -347,7 +349,8 @@ final class StarterAppUITests: XCTestCase {
         attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)
-        return try luminance(of: screenshot.image, atNormalized: CGPoint(x: 0.5, y: 0.93))
+        // Above the bottom edge, where a tab bar's material would be sampled instead of the background.
+        return try luminance(of: screenshot.image, atNormalized: CGPoint(x: 0.5, y: 0.85))
     }
 
     /// Relative luminance (0 dark to 1 bright) of one pixel, given as a fraction of the image size.
