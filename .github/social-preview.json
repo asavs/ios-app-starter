@@ -1,7 +1,10 @@
 {
+  "readme_icon": null,
   "title": "iOS App Starter",
-  "tagline": "Build an idiomatic Swift app from any OS, from tested foundations to AI and iMessage.",
+  "tagline": null,
+  "url": null,
   "screens": ["onboarding-welcome", "welcome-screen", "settings-screen"],
+  "chips": null,
   "features": [
     {"icon": "modules", "label": "Onboarding, theming & settings"},
     {"icon": "lock", "label": "Authentication & persistence"},

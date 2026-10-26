@@ -66,8 +66,11 @@ jobs:
           git add docs/images/icon.png
           git commit -m "README icon: match the app icon at ${GITHUB_SHA::7}"
           git push origin "$branch"
-          gh pr create --head "$branch" --title "README icon: match the app icon" \
-            --body "Rendered from \`StarterApp/StarterApp/AppIcon.icon\` at ${GITHUB_SHA::7} by the README icon workflow."
+          if ! gh pr create --head "$branch" --title "README icon: match the app icon" \
+            --body "Rendered from \`StarterApp/StarterApp/AppIcon.icon\` at ${GITHUB_SHA::7} by the README icon workflow."; then
+            echo "::error::Could not open the pull request. Let workflows open pull requests: python scripts/configure-github-repo.py --repo ${GITHUB_REPOSITORY} --allow-workflow-prs --apply (or Settings > Actions > General > Allow GitHub Actions to create and approve pull requests). The rendered icon is on branch $branch."
+            exit 1
+          fi
           gh pr merge "$branch" --auto --merge
           # Required checks: the workflow token's pull request does not start them, so start them here.
           gh workflow run ios.yml --ref "$branch" -f configuration=starter -f verify_failure_reporting=false

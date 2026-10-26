@@ -174,7 +174,19 @@ Describe the card once in `.github/social-preview.json`:
 }
 ```
 
-Every field is optional. The card's bottom line shows `github.com/<owner>/<repo>`; set `url` to change it, or `"url": ""` to leave it off. Without a title or tagline the card uses the Home Screen name in `project.yml` and the repository description. A card shows feature rows or chips, not both: with `features` the chips are left off; without them it shows `chips`, or else the repository's first three topics (`"chips": []` hides them). Feature icons: `modules`, `chat`, `bridge`, `backend`, `lock`, `sparkle`, `globe`, `check`. `"soon": true` adds a SOON tag. The icons are drawn by the script, so the card contains no Apple symbol or emoji artwork.
+Every field is optional, and the template's file lists them all. `null` (or leaving a key out) means the default; an empty value (`""` or `[]`) means leave it off:
+
+| Key | Default | Empty |
+| --- | --- | --- |
+| `readme_icon` | off; `"app"` turns on the [README icon sync](#keep-the-readme-icon-in-sync) | off |
+| `title` | the Home Screen name in `project.yml` | the default |
+| `tagline` | the repository description | no tagline |
+| `url` | `github.com/<owner>/<repo>` | no address line |
+| `screens` | `onboarding-welcome`, `welcome-screen`, `settings-screen` | no screenshots |
+| `chips` | the repository's first three topics | no chips |
+| `features` | none | none |
+
+A card shows feature rows or chips, not both: with `features`, the chips are left off. Feature icons: `modules`, `chat`, `bridge`, `backend`, `lock`, `sparkle`, `globe`, `check`. `"soon": true` adds a SOON tag. The icons are drawn by the script, so the card contains no Apple symbol or emoji artwork.
 
 `screens` names up to three UI test screenshots, front first; the names are the `attach(name:)` names in `StarterAppUITests` (the template's include `welcome-screen`, `onboarding-welcome`, `onboarding-choice`, `onboarding-tour`, `onboarding-permission`, `settings-screen`, `theme-light` and `theme-dark`). Without `screens` the card uses `onboarding-welcome`, `welcome-screen` and `settings-screen`. A name with no screenshot is skipped, and the script lists the names it found. To show a screen of your own, attach a screenshot of it in a UI test.
 

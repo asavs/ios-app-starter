@@ -110,16 +110,22 @@ def repository_topics():
         return []
 
 
+def setting(config, key, flag=None, default=None):
+    """One card setting: a command-line value wins; then the config's value, where null or a missing key
+    means the default and an empty string or list means leave it off; then `default()`."""
+    if flag is not None:
+        return flag
+    if config.get(key) is not None:
+        return config[key]
+    return default() if default else None
+
+
 def choose_chips(flags, config, topics):
     """Chips appear only on a card without feature rows: --chip, then the config's chips (an empty list
     hides them), then the first three topics."""
     if config.get("features"):
         return []
-    if flags:
-        return flags
-    if "chips" in config:
-        return list(config["chips"])
-    return topics[:3]
+    return list(setting(config, "chips", flags or None, lambda: topics[:3]))
 
 
 def repository_description():
@@ -199,13 +205,13 @@ def main(argv=None):
     config = load_config(args.config)
 
     attachments = args.attachments or newest_attachments()
-    names = args.screens or config.get("screens") or DEFAULT_SCREENS
-    screens = pick_screens(attachments, names[:3]) if attachments else []
+    names = setting(config, "screens", args.screens, lambda: DEFAULT_SCREENS)
+    screens = pick_screens(attachments, names[:3]) if attachments and names else []
     if not screens:
         print("No UI test screenshots found; the card will have no screens. Run scripts/test-ios.sh or pass --attachments.",
               file=sys.stderr)
     args.output.mkdir(parents=True, exist_ok=True)
-    topics = [] if args.chip or "chips" in config or config.get("features") else repository_topics()
+    topics = [] if args.chip or config.get("chips") is not None or config.get("features") else repository_topics()
     with tempfile.TemporaryDirectory() as scratch:
         icon = args.icon or render_icon(Path(scratch) / "icon.png")
         if not args.icon:
@@ -213,9 +219,9 @@ def main(argv=None):
         for theme in ("light", "dark"):
             subprocess.run(renderer_command(
                 theme, args.output / f"social-preview-{theme}.png", icon,
-                args.title or config.get("title") or display_name(),
-                args.tagline or config.get("tagline") or repository_description(),
-                args.url if args.url is not None else config["url"] if "url" in config else repository_url(),
+                setting(config, "title", args.title) or display_name(),
+                setting(config, "tagline", args.tagline, repository_description),
+                setting(config, "url", args.url, repository_url),
                 choose_chips(args.chip, config, topics), feature_flags(config.get("features", [])), screens), check=True)
             fit_upload_limit(args.output / f"social-preview-{theme}.png")
     print(f"Upload one under Settings > General > Social preview: {args.output}")
