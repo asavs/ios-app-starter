@@ -16,6 +16,7 @@ Add a row the day an agent or document says "only you can do this", and update i
 | Category | Grants | Used by |
 | --- | --- | --- |
 | `github-settings` | Repository settings, rulesets, environments, secrets metadata | `configure-github-repo.py`, main-only environment policy; optional reviewer setup |
+| `github-browser` | Computer-use agent acts in the user's signed-in GitHub tab for settings the API cannot change | social preview upload |
 | `apple-read` | Read-only App Store Connect API calls | diagnostics, feedback reader, build inventory |
 | `apple-provisioning` | Xcode automatic signing may create or refresh profiles and certificates for the named team | signing, delivery, `run-on-device` |
 | `apple-testflight` | Create or modify beta groups, assign builds, set build attributes | dev-group automation, compliance attribute |
@@ -34,6 +35,7 @@ The owner chooses which to grant. `python scripts/setup.py` records the six yes/
 | Transfer `.p8` into the GitHub environment | Scripted | API / CLI (`github-settings`) | Done: `bootstrap-apple-credentials.py` sends it over stdin and verifies metadata only. |
 | Create the `apple-credentials` environment with a `main`-only policy | Scripted | API / CLI (`github-settings`) | Done: `configure-github-repo.py` applies exactly one `main` branch policy and no required reviewer by default. To require a reviewer, pass `--require-reviewer` or add one in repository Settings → Environments → `apple-credentials`. |
 | Repository settings and `main` ruleset | Scripted | API / CLI (`github-settings`) | Done: `configure-github-repo.py --apply`. |
+| Upload the social preview image | Human in browser | Browser agent (`github-browser`) | GitHub has no API for it (GraphQL `openGraphImageUrl` is read-only). `social-preview.py` or the **Social preview** workflow makes the card; the agent uploads it under Settings → General → Social preview, or the owner does. |
 | `gh auth login` | Human (device code in browser) | Human, once | The user logs in. The runbook asks for it first and verifies it with `gh auth status`. |
 | Register the App ID / bundle identifier | Human in portal | API / CLI (`apple-provisioning`) | The pinned CLI has `bundle-ids` create, and Xcode automatic signing registers the ID on the first signed build. Preview before creating; reuse an existing one (issue #4). |
 | Create the App Store Connect app record | Human in browser | Browser agent (`apple-browser`) | The public API does not create apps (verify at implementation). Confirm name, bundle ID, SKU and language first; handle a name collision (issue #4). |

@@ -2,6 +2,13 @@
 
 Entries for the fresh-repository onboarding path, consent model, and resumable setup command. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-25 — A bot's pull request needs the owner twice
+
+- **Context:** First run of the opt-in README icon sync (`readme-icon.yml`), GitHub-hosted runners, gh CLI on macOS. The workflow opened [PR #119](https://github.com/asavs/ios-app-starter/pull/119) with the workflow token and dispatched `ios.yml` and `apple-diagnostics.yml` on its branch so the required checks would report.
+- **Symptom (confirmed):** All four required checks passed on the head commit and auto-merge was on, yet the PR stayed `BLOCKED` ("the base branch policy prohibits the merge"). The PR's own `pull_request` runs sat at `action_required`: the fork-contributor approval policy (all outside contributors) treats `github-actions[bot]` as an outsider. The `main` ruleset also carries `require_extra_approval_for_unattributed_changes: true`, which GitHub set by default; `configure-github-repo.py` never asked for it.
+- **Fix:** The owner approved the change (`gh pr review 119 --approve`), which alone did not unblock it, then clicked **Approve workflows to run**. Both `pull_request` runs passed and the PR merged within minutes. The dispatched runs did not satisfy the merge by themselves, so the workflow no longer dispatches them; the docs now say the owner approves the runs and the change.
+- **Remaining uncertainty:** Whether the review approval is needed in addition to the run approval was not isolated; both were given. Keep both safeguards: a bot's change merges only after a person has looked at it.
+
 ## 2026-10-19 — Script the Apple credentials environment policy
 
 - **Context:** The onboarding guide and human-step ledger still described `apple-credentials` creation as a manual GitHub UI step, although GitHub's REST API supports environment reviewers and deployment branch policies. Relevant command versions were not queried in this local implementation session.

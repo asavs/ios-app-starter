@@ -15,11 +15,14 @@ Upload one of the results under Settings > General > Social preview; GitHub has 
 import argparse
 import importlib.util
 import json
+import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
+import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
 ICON = ROOT / "StarterApp/StarterApp/AppIcon.icon"
@@ -137,8 +140,9 @@ def repository_description():
         return None
 
 
-def render_icon(target, size=1024):
-    """Render the app icon document to a square PNG with the same ictool lookup as check-app-icon.py."""
+def render_icon(target, size=1024, rendition="Default"):
+    """Render the app icon document to a square PNG with the same ictool lookup as check-app-icon.py.
+    `rendition` is an Icon Composer appearance: Default (light) or Dark."""
     spec = importlib.util.spec_from_file_location("check_app_icon", ROOT / "scripts/check-app-icon.py")
     check_app_icon = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(check_app_icon)
@@ -146,14 +150,16 @@ def render_icon(target, size=1024):
     if ictool is None:
         raise SystemExit("ictool not found: install Xcode 26 or later, or pass --icon with a PNG")
     subprocess.run([str(ictool), str(ICON), "--export-image", "--output-file", str(target), "--platform", "iOS",
-                    "--rendition", "Default", "--width", str(size), "--height", str(size), "--scale", "1"],
+                    "--rendition", rendition, "--width", str(size), "--height", str(size), "--scale", "1"],
                    check=True, capture_output=True)
     return target
 
 
 def fit_upload_limit(card, limit=1_000_000):
-    """GitHub rejects social preview uploads over 1 MB; write a JPEG beside a PNG that is too large."""
+    """GitHub rejects social preview uploads over 1 MB; write a JPEG beside a PNG that is too large, and
+    remove a JPEG left by an earlier run when the PNG fits, so the folder never offers a stale card."""
     if card.stat().st_size <= limit:
+        card.with_suffix(".jpg").unlink(missing_ok=True)
         return card
     for quality in (90, 80, 70, 60):
         jpeg = card.with_suffix(".jpg")
@@ -166,7 +172,91 @@ def fit_upload_limit(card, limit=1_000_000):
     return card
 
 
-def renderer_command(theme, output, icon, title, tagline, url, chips, features, screens):
+# Apple Product Bezels by model name prefix, from developer.apple.com/design/resources/#product-bezels.
+# Maintainers: add each year's package when Apple publishes it; newest first.
+APPLE_BEZELS = [
+    ("iPhone 18", "https://devimages-cdn.apple.com/design/resources/download/Bezel-iPhone-18.dmg"),
+    ("iPhone 17", "https://devimages-cdn.apple.com/design/resources/download/Bezel-iPhone-17.dmg"),
+    ("iPhone Air", "https://devimages-cdn.apple.com/design/resources/download/Bezel-iPhone-17.dmg"),
+    ("iPhone 16", "https://devimages-cdn.apple.com/design/resources/download/Bezel-iPhone-16.dmg"),
+]
+LICENSE_KEY = "apple_design_resources_license"
+FRAME_CACHE = ROOT / "build/frames"
+
+
+def apple_bezel_package(model):
+    """The download for an Apple bezel model name such as 'iPhone 17 Pro', or None."""
+    return next((url for prefix, url in APPLE_BEZELS if model.startswith(prefix)), None)
+
+
+def apple_frame(spec, accepted, cache=FRAME_CACHE):
+    """`apple:<model> - <color>`, e.g. 'apple:iPhone 17 Pro - Silver': the portrait bezel PNG, downloaded
+    and extracted once into build/frames/. The bezel disk image carries the Apple Design Resources License,
+    and opening it means agreeing; the script agrees only when the owner has set
+    "apple_design_resources_license": "accepted" in the config."""
+    model, _, color = spec.partition(" - ")
+    model, color = model.strip(), color.strip()
+    package = apple_bezel_package(model)
+    if not package or not color:
+        known = ", ".join(prefix for prefix, _ in APPLE_BEZELS)
+        raise SystemExit(f"frame 'apple:{spec}': use 'apple:<model> - <color>', e.g. 'apple:iPhone 17 Pro - Silver' "
+                         f"(models starting with {known})")
+    png = cache / f"{model} - {color} - Portrait.png"
+    if png.is_file():
+        return png
+    if not accepted:
+        raise SystemExit("Apple's bezels come with the Apple Design Resources License, which opening them accepts. "
+                         "Read it (developer.apple.com/design/resources, in each download) and, if you accept it, add "
+                         f'"{LICENSE_KEY}": "accepted" to .github/social-preview.json, or pass --accept-apple-design-resources-license '
+                         "for one run. It allows mock-ups; marketing use "
+                         "is for apps on the App Store under Apple's marketing guidelines.")
+    if sys.platform != "darwin":
+        raise SystemExit("Extracting Apple's bezel disk image needs macOS; run this on a Mac or in the Social preview workflow.")
+    cache.mkdir(parents=True, exist_ok=True)
+    image = cache / package.rsplit("/", 1)[1]
+    if not image.is_file():
+        print(f"Downloading {image.name} (about 250 MB, once)...", file=sys.stderr)
+        partial = image.with_suffix(".part")
+        urllib.request.urlretrieve(package, partial)
+        partial.rename(image)
+    with tempfile.TemporaryDirectory() as mount:
+        # hdiutil shows the license and waits for Y; the config's acceptance answers it.
+        subprocess.run(["hdiutil", "attach", "-nobrowse", "-readonly", "-noautoopen", "-mountpoint", mount, str(image)],
+                       input="Y\n" * 200, text=True, check=True, capture_output=True)
+        try:
+            source = Path(mount) / "PNG" / model / png.name
+            if not source.is_file():
+                colors = sorted(path.name.split(" - ")[1] for path in (Path(mount) / "PNG" / model).glob("* - Portrait.png"))
+                raise SystemExit(f"No {model} bezel in {color!r}. Colors: {', '.join(colors) or 'none (check the model name)'}")
+            shutil.copyfile(source, png)
+        finally:
+            subprocess.run(["hdiutil", "detach", mount, "-quiet"], check=False)
+    return png
+
+
+def frame_path(value, accepted=False):
+    """The owner's device frame: `apple:<model> - <color>` or a PNG path, relative paths from the repository
+    root. Warns when git would commit it: frames are licensed to the owner, not to the template."""
+    if not value:
+        return None
+    if value.startswith("apple:"):
+        return apple_frame(value[len("apple:"):], accepted)
+    path = Path(value)
+    path = path if path.is_absolute() else ROOT / path
+    if not path.is_file():
+        raise SystemExit(f"frame {value!r} not found; download it and keep it out of git, for example in build/")
+    try:
+        inside = path.resolve().relative_to(ROOT)
+    except ValueError:
+        return path
+    ignored = subprocess.run(["git", "-C", str(ROOT), "check-ignore", "-q", str(inside)], capture_output=True).returncode == 0
+    if not ignored:
+        print(f"warning: {inside} is inside the repository and not ignored by git; keep device frames out of commits",
+              file=sys.stderr)
+    return path
+
+
+def renderer_command(theme, output, icon, title, tagline, url, chips, features, screens, frame=None, layout=None):
     command = ["swift", str(RENDERER), "--theme", theme, "--output", str(output), "--icon", str(icon), "--title", title]
     if tagline:
         command += ["--tagline", tagline]
@@ -178,6 +268,10 @@ def renderer_command(theme, output, icon, title, tagline, url, chips, features, 
         command += ["--feature", feature]
     for screen in screens:
         command += ["--screen", str(screen)]
+    if frame:
+        command += ["--frame", str(frame)]
+        if layout:
+            command += ["--layout", layout]
     return command
 
 
@@ -194,6 +288,11 @@ def main(argv=None):
     parser.add_argument("--config", type=Path, default=CONFIG, help="card settings (default: .github/social-preview.json)")
     parser.add_argument("--url", help="defaults to github.com/<owner>/<repo> from the origin remote")
     parser.add_argument("--icon", type=Path, help="a PNG to use instead of rendering AppIcon.icon")
+    parser.add_argument("--frame", help="'apple:<model> - <color>' or a device frame PNG kept out of git (default: the config's frame)")
+    parser.add_argument("--layout", choices=["row", "fan"],
+                        help="with a frame: 'row' (upright, Apple's bezel rules; default) or 'fan' (tilted and overlapping)")
+    parser.add_argument("--accept-apple-design-resources-license", action="store_true",
+                        help="accept the Apple Design Resources License for this run (or set APPLE_DESIGN_RESOURCES_LICENSE=accepted)")
     parser.add_argument("--readme-icon", type=Path, metavar="PNG",
                         help="only render the app icon at README size (512 px) to this path, then stop")
     args = parser.parse_args(argv)
@@ -211,18 +310,24 @@ def main(argv=None):
         print("No UI test screenshots found; the card will have no screens. Run scripts/test-ios.sh or pass --attachments.",
               file=sys.stderr)
     args.output.mkdir(parents=True, exist_ok=True)
+    accepted = (args.accept_apple_design_resources_license or config.get(LICENSE_KEY) == "accepted"
+                or os.environ.get("APPLE_DESIGN_RESOURCES_LICENSE") == "accepted")
+    frame = frame_path(setting(config, "frame", args.frame), accepted)
     topics = [] if args.chip or config.get("chips") is not None or config.get("features") else repository_topics()
     with tempfile.TemporaryDirectory() as scratch:
-        icon = args.icon or render_icon(Path(scratch) / "icon.png")
+        # The icon in the opposite appearance stands out on each card: dark icon on the light card.
+        icons = ({"light": args.icon, "dark": args.icon} if args.icon else
+                 {"light": render_icon(Path(scratch) / "icon-dark.png", rendition="Dark"),
+                  "dark": render_icon(Path(scratch) / "icon-light.png")})
         if not args.icon:
             render_icon(args.output / "app-icon.png", size=512)  # README size, for docs/images/icon.png
         for theme in ("light", "dark"):
             subprocess.run(renderer_command(
-                theme, args.output / f"social-preview-{theme}.png", icon,
+                theme, args.output / f"social-preview-{theme}.png", icons[theme],
                 setting(config, "title", args.title) or display_name(),
                 setting(config, "tagline", args.tagline, repository_description),
                 setting(config, "url", args.url, repository_url),
-                choose_chips(args.chip, config, topics), feature_flags(config.get("features", [])), screens), check=True)
+                choose_chips(args.chip, config, topics), feature_flags(config.get("features", [])), screens, frame, setting(config, "layout", args.layout)), check=True)
             fit_upload_limit(args.output / f"social-preview-{theme}.png")
     print(f"Upload one under Settings > General > Social preview: {args.output}")
     return 0

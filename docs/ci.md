@@ -185,6 +185,20 @@ Every field is optional, and the template's file lists them all. `null` (or leav
 | `screens` | `onboarding-welcome`, `welcome-screen`, `settings-screen` | no screenshots |
 | `chips` | the repository's first three topics | no chips |
 | `features` | none | none |
+| `frame` | the script's own drawn phones, fanned | the default |
+| `apple_design_resources_license` | not accepted | not accepted |
+| `layout` | with a frame, `row`: upright and side by side | the default |
+
+`frame` puts the screenshots inside a real device, upright and side by side, without tilt or shadow, as Apple's [marketing guidelines](https://developer.apple.com/app-store/marketing/guidelines/) require for its bezels. Use either:
+
+- `"apple:<model> - <color>"`, for example `"apple:iPhone 17 Pro - Silver"`: the script downloads Apple's [Product Bezels](https://developer.apple.com/design/resources/#product-bezels) disk image once into `build/frames/` (about 250 MB; the workflow caches it), opens it, and extracts that portrait PNG. A wrong color lists the available ones. The disk image carries the **Apple Design Resources License**, and opening it accepts that license, so the script does so only when you have: set `"apple_design_resources_license": "accepted"` in your own repository's config, pass `--accept-apple-design-resources-license`, set `APPLE_DESIGN_RESOURCES_LICENSE=accepted`, or tick the workflow's checkbox. The license allows mock-ups; Apple licenses its device images for marketing apps that are on the App Store. Accepting it does not widen that, so check your use before publishing a card with a bezel. Maintainers add each year's bezel package to `APPLE_BEZELS` in the script.
+- A path to any PNG with a transparent screen that you keep out of git; the script warns if git would commit it.
+
+`"layout": "fan"` tilts, overlaps and shadows framed phones like the drawn ones. Apple's guidelines forbid tilting, overlapping or shadowing its bezels, so `row` stays the default; choose `fan` knowingly.
+
+The template ships no device frame and leaves the license unaccepted.
+
+The app icon appears in the opposite appearance on each card, the dark icon on the light card and the light icon on the dark card, so it stands out on both.
 
 A card shows feature rows or chips, not both: with `features`, the chips are left off. Feature icons: `modules`, `chat`, `bridge`, `backend`, `lock`, `sparkle`, `globe`, `check`. `"soon": true` adds a SOON tag. The icons are drawn by the script, so the card contains no Apple symbol or emoji artwork.
 
@@ -204,13 +218,13 @@ From Windows or anywhere else, run the **Social preview** workflow:
 gh workflow run social-preview.yml --ref main
 ```
 
-It reads the same config, reuses the screenshots from the newest passing iOS run on `main`, and attaches the cards to the run as the `social-preview` artifact for 7 days, with `app-icon.png` at README size; nothing is committed. Upload one under **Settings → General → Social preview**; GitHub has no API for that setting and takes files up to 1 MB, so the script writes a JPEG beside any larger PNG.
+It reads the same config, reuses the screenshots from the newest passing iOS run on `main`, and attaches the cards to the run as the `social-preview` artifact for 7 days, with `app-icon.png` at README size; nothing is committed. Upload one under **Settings → General → Social preview**; GitHub has no API for that setting and takes files up to 1 MB, so the script writes a JPEG beside any larger PNG. During setup, an agent with `github-browser` consent can do the upload in your signed-in browser ([onboarding runbook](agent-onboarding.md#stage-a-repository-no-apple-account)).
 
 ## Keep the README icon in sync
 
 The README header shows `docs/images/icon.png`. To have it follow your app icon without a Mac, add `"readme_icon": "app"` to `.github/social-preview.json`. The sync opens pull requests, which the [recommended repository settings](#recommended-repository-settings) allow; without them, the workflow stops and says how to turn that on.
 
-Then every change to `StarterApp/StarterApp/AppIcon.icon` on `main` runs the **README icon** workflow: it renders the icon at 512 px and, if `docs/images/icon.png` differs, opens a pull request with auto-merge. A pull request opened with the workflow token does not start other workflows, so the job starts the required iOS and portable checks on its branch itself. Run it by hand with `gh workflow run readme-icon.yml --ref main`. On a Mac, `python3 scripts/social-preview.py --readme-icon docs/images/icon.png` does the same render locally.
+Then every change to `StarterApp/StarterApp/AppIcon.icon` on `main` runs the **README icon** workflow: it renders the icon at 512 px and, if `docs/images/icon.png` differs, opens a pull request with auto-merge. That pull request needs you twice, because a bot made it: click **Approve workflows to run** so its checks start, then approve the change (**Files changed → Review changes → Approve**, or `gh pr review <number> --approve`). It merges when the checks pass. Run it by hand with `gh workflow run readme-icon.yml --ref main`. On a Mac, `python3 scripts/social-preview.py --readme-icon docs/images/icon.png` does the same render locally.
 
 ## Tool-download caching
 

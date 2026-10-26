@@ -18,6 +18,14 @@ on:
         description: Chip labels, comma-separated (blank uses .github/social-preview.json, else the first three topics)
         type: string
         default: ''
+      frame:
+        description: Device frame, e.g. "apple:iPhone 17 Pro - Silver" (blank uses .github/social-preview.json)
+        type: string
+        default: ''
+      accept_apple_design_resources_license:
+        description: I have read and accept the Apple Design Resources License (needed for apple:* frames)
+        type: boolean
+        default: false
 
 permissions:
   actions: read
@@ -26,7 +34,7 @@ permissions:
 jobs:
   render:
     runs-on: xcode-27
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
       GH_TOKEN: ${{ github.token }}
@@ -46,18 +54,26 @@ jobs:
             echo "ATTACHMENTS=$(dirname "$attachments")" >> "$GITHUB_ENV"
             echo "Screenshots from run $run_id"
           fi
+      - name: Restore downloaded device frames
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/frames
+          key: social-preview-frames-${{ hashFiles('scripts/social-preview.py') }}
+          restore-keys: social-preview-frames-
       - name: Render the cards
         shell: python
         env:
           TITLE: ${{ inputs.title }}
           TAGLINE: ${{ inputs.tagline }}
           CHIPS: ${{ inputs.chips }}
+          FRAME: ${{ inputs.frame }}
+          APPLE_DESIGN_RESOURCES_LICENSE: ${{ inputs.accept_apple_design_resources_license && 'accepted' || '' }}
         run: |
           import os, subprocess
           command = ['python3', 'scripts/social-preview.py', '--output', os.environ['RUNNER_TEMP'] + '/social-preview']
           if os.environ.get('ATTACHMENTS'):
               command += ['--attachments', os.environ['ATTACHMENTS']]
-          for flag, name in (('--title', 'TITLE'), ('--tagline', 'TAGLINE')):
+          for flag, name in (('--title', 'TITLE'), ('--tagline', 'TAGLINE'), ('--frame', 'FRAME')):
               if os.environ[name].strip():
                   command += [flag, os.environ[name].strip()]
           for label in filter(None, (part.strip() for part in os.environ['CHIPS'].split(','))):

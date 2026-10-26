@@ -5,6 +5,9 @@
   "url": null,
   "screens": ["onboarding-welcome", "welcome-screen", "settings-screen"],
   "chips": null,
+  "frame": null,
+  "layout": null,
+  "apple_design_resources_license": null,
   "features": [
     {"icon": "modules", "label": "Onboarding, theming & settings"},
     {"icon": "lock", "label": "Authentication & persistence"},
