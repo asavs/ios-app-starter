@@ -156,11 +156,14 @@ final class StarterAppUITests: XCTestCase {
         let tour = app.staticTexts["See the tour again"]
         let settings = settingsButton(in: app)
         if settings.waitForExistence(timeout: 5) {
-            let settingsTip = app.staticTexts["Settings live here"]
+            let tabs = settings.identifier != "settings.open"
+            let settingsTip = app.staticTexts[tabs ? "Settings has its own tab" : "Settings live here"]
             XCTAssertTrue(settingsTip.waitForExistence(timeout: 10), "The Settings tip should show after onboarding")
             XCTAssertFalse(tour.exists, "Tips show one at a time")
             attach(name: "onboarding-tip-settings")
-            if settings.identifier != "settings.open" {
+            if tabs {
+                XCTAssertLessThan(settings.frame.minY - settingsTip.frame.maxY, 200,
+                                  "The tip should sit just above the tab bar, next to the tab it names")
                 settings.tap() // Opening the tab does what the tip suggests.
                 tabButton(in: app, "welcome", title: "Welcome").tap()
                 XCTAssertTrue(waitUntilGone(settingsTip), "Opening the Settings tab should retire its tip")

@@ -55,6 +55,11 @@ struct ContentView: View {
         }
 #elseif canImport(TabShell) && canImport(Settings) && canImport(Onboarding)
         welcome
+            // Just above the tab bar, next to the Settings tab it points at.
+            .safeAreaInset(edge: .bottom) {
+                ContextualTipView("settings", in: tips)
+                    .padding(.horizontal)
+            }
             // Retired on the way back from Settings: the next tip is a popover, which TipKit presents
             // only while this tab is on screen.
             .onChange(of: isSettingsTabSelected) { wasSelected, selected in
@@ -70,7 +75,7 @@ struct ContentView: View {
         GeometryReader { proxy in
             ScrollView {
                 VStack(spacing: 16) {
-#if canImport(Onboarding) && canImport(Settings)
+#if canImport(Onboarding) && canImport(Settings) && !canImport(TabShell)
                     // Inline, because a popover anchored to a toolbar button does not appear on iOS 26.
                     ContextualTipView("settings", in: tips)
 #endif
@@ -132,7 +137,11 @@ struct ContentView: View {
     /// The template's tips. The Settings tip comes first when that module is enabled.
     private static var tips: [ContextualTip] {
         var tips: [ContextualTip] = []
-#if canImport(Settings)
+#if canImport(Settings) && canImport(TabShell)
+        tips.append(ContextualTip(id: "settings", title: "Settings has its own tab",
+                                  message: "Tap Settings below to pick light or dark, store secrets and show the tour again.",
+                                  systemImage: "gearshape"))
+#elseif canImport(Settings)
         tips.append(ContextualTip(id: "settings", title: "Settings live here",
                                   message: "Open Settings to pick light or dark, store secrets and show the tour again.",
                                   systemImage: "gearshape"))
