@@ -143,7 +143,7 @@ python scripts/configure-github-repo.py --repo <owner>/<repository>
 python scripts/configure-github-repo.py --repo <owner>/<repository> --apply
 ```
 
-The dry run shows current and intended values. `--apply` turns on auto-merge and head-branch deletion, secret scanning with push protection, restricts actions to GitHub-owned and verified creators, requires approval for every fork contributor's workflows, adds a ruleset requiring a pull request with passing `ios-gate` and `portable (...)` checks on the default branch, and limits `apple-credentials` to `main` with no required reviewer. To add a reviewer, use `--require-reviewer` (then `--apply`) or **Settings → Environments → `apple-credentials` → Required reviewers**. The ruleset blocks direct pushes to `main` for everyone, including the owner.
+The dry run shows current and intended values. `--apply` turns on auto-merge and head-branch deletion, secret scanning with push protection, restricts actions to GitHub-owned and verified creators, lets workflows open pull requests (the default token stays read-only), requires approval for every fork contributor's workflows, adds a ruleset requiring a pull request with passing `ios-gate` and `portable (...)` checks on the default branch, and limits `apple-credentials` to `main` with no required reviewer. To add a reviewer, use `--require-reviewer` (then `--apply`) or **Settings → Environments → `apple-credentials` → Required reviewers**. The ruleset blocks direct pushes to `main` for everyone, including the owner.
 
 ## Faster manual iteration
 
@@ -208,12 +208,7 @@ It reads the same config, reuses the screenshots from the newest passing iOS run
 
 ## Keep the README icon in sync
 
-The README header shows `docs/images/icon.png`. To have it follow your app icon without a Mac, add `"readme_icon": "app"` to `.github/social-preview.json` and let workflows open pull requests:
-
-```sh
-python scripts/configure-github-repo.py --repo <owner>/<repository> --allow-workflow-prs
-python scripts/configure-github-repo.py --repo <owner>/<repository> --allow-workflow-prs --apply
-```
+The README header shows `docs/images/icon.png`. To have it follow your app icon without a Mac, add `"readme_icon": "app"` to `.github/social-preview.json`. The sync opens pull requests, which the [recommended repository settings](#recommended-repository-settings) allow; without them, the workflow stops and says how to turn that on.
 
 Then every change to `StarterApp/StarterApp/AppIcon.icon` on `main` runs the **README icon** workflow: it renders the icon at 512 px and, if `docs/images/icon.png` differs, opens a pull request with auto-merge. A pull request opened with the workflow token does not start other workflows, so the job starts the required iOS and portable checks on its branch itself. Run it by hand with `gh workflow run readme-icon.yml --ref main`. On a Mac, `python3 scripts/social-preview.py --readme-icon docs/images/icon.png` does the same render locally.
 

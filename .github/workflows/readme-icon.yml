@@ -4,7 +4,7 @@ name: README icon
 # from StarterApp/StarterApp/AppIcon.icon when the icon changes on main and opens a pull request with
 # auto-merge. A pull request opened with the workflow token does not trigger workflows, so this job
 # dispatches the required checks on the new branch itself. Needs "Allow GitHub Actions to create and
-# approve pull requests" (scripts/configure-github-repo.py --allow-workflow-prs).
+# approve pull requests", one of the settings scripts/configure-github-repo.py applies.
 on:
   push:
     branches: [main]
@@ -68,7 +68,7 @@ jobs:
           git push origin "$branch"
           if ! gh pr create --head "$branch" --title "README icon: match the app icon" \
             --body "Rendered from \`StarterApp/StarterApp/AppIcon.icon\` at ${GITHUB_SHA::7} by the README icon workflow."; then
-            echo "::error::Could not open the pull request. Let workflows open pull requests: python scripts/configure-github-repo.py --repo ${GITHUB_REPOSITORY} --allow-workflow-prs --apply (or Settings > Actions > General > Allow GitHub Actions to create and approve pull requests). The rendered icon is on branch $branch."
+            echo "::error::Could not open the pull request. Let workflows open pull requests: python scripts/configure-github-repo.py --repo ${GITHUB_REPOSITORY} --apply (or Settings > Actions > General > Allow GitHub Actions to create and approve pull requests). The rendered icon is on branch $branch."
             exit 1
           fi
           gh pr merge "$branch" --auto --merge

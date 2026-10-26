@@ -125,7 +125,7 @@ def apple_environment_plan(repo, required_reviewer=False):
     return current_value, intended, apply
 
 
-def plan(repo, required_reviewer=False, allow_workflow_prs=False):
+def plan(repo, required_reviewer=False):
     """Return (label, current, intended, apply_callable) for every managed setting."""
     base = f"repos/{repo}"
     meta = gh_api(base)
@@ -133,6 +133,7 @@ def plan(repo, required_reviewer=False, allow_workflow_prs=False):
     actions = gh_api(f"{base}/actions/permissions")
     selected = gh_api(f"{base}/actions/permissions/selected-actions") if actions.get("allowed_actions") == "selected" else {}
     fork = gh_api(f"{base}/actions/permissions/fork-pr-contributor-approval")
+    workflow = gh_api(f"{base}/actions/permissions/workflow")
     rulesets = gh_api(f"{base}/rulesets")
     existing = next((item for item in rulesets if item.get("name") == RULESET_NAME), None)
     environment_current, environment_intended, apply_environment = apple_environment_plan(repo, required_reviewer)
@@ -155,6 +156,12 @@ def plan(repo, required_reviewer=False, allow_workflow_prs=False):
                         {"github_owned_allowed": True, "verified_allowed": True, "patterns_allowed": []})),
         ("Fork pull request workflow approval", fork.get("approval_policy"), "all_external_contributors",
          lambda: gh_api(f"{base}/actions/permissions/fork-pr-contributor-approval", "PUT", {"approval_policy": "all_external_contributors"})),
+        # Lets a workflow that asks for write access open a pull request (the README icon sync); the
+        # default token stays read-only and the ruleset still requires checks before anything merges.
+        ("Workflows may open pull requests", workflow.get("can_approve_pull_request_reviews"), True,
+         lambda: gh_api(f"{base}/actions/permissions/workflow", "PUT",
+                        {"default_workflow_permissions": workflow.get("default_workflow_permissions", "read"),
+                         "can_approve_pull_request_reviews": True})),
         (f"Ruleset '{RULESET_NAME}' on the default branch",
          "present" if existing else "absent", "present (pull request + required checks: " + ", ".join(REQUIRED_CHECKS) + ")",
          lambda: gh_api(f"{base}/rulesets", "POST", ruleset_body())),
@@ -162,13 +169,6 @@ def plan(repo, required_reviewer=False, allow_workflow_prs=False):
          f"{'required reviewer' if required_reviewer else 'no required reviewer'})",
          environment_current, environment_intended, apply_environment),
     ]
-    if allow_workflow_prs:
-        workflow = gh_api(f"{base}/actions/permissions/workflow")
-        items.append(
-            ("Workflows may open pull requests (for the README icon sync)", workflow.get("can_approve_pull_request_reviews"), True,
-             lambda: gh_api(f"{base}/actions/permissions/workflow", "PUT",
-                            {"default_workflow_permissions": workflow.get("default_workflow_permissions", "read"),
-                             "can_approve_pull_request_reviews": True})))
     return items
 
 
@@ -177,13 +177,11 @@ def main():
     parser.add_argument("--repo", required=True, help="owner/repository to configure")
     parser.add_argument("--require-reviewer", action="store_true",
                         help="Require the authenticated GitHub user to review apple-credentials deployments (default: off; main-only policy still applies)")
-    parser.add_argument("--allow-workflow-prs", action="store_true",
-                        help="Let workflows open pull requests, which the opt-in README icon sync needs (default: off)")
     parser.add_argument("--apply", action="store_true", help="Change settings that differ; default is a dry run")
     args = parser.parse_args()
     if not REPO_NAME.fullmatch(args.repo):
         raise ConfigError("Use owner/repository form.")
-    items = plan(args.repo, args.require_reviewer, args.allow_workflow_prs)
+    items = plan(args.repo, args.require_reviewer)
     changes = 0
     for label, current, intended, apply in items:
         differs = current != intended and not (isinstance(intended, str) and intended.startswith("present") and current == "present")
