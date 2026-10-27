@@ -1,0 +1,7 @@
+# Progress ring
+
+Checked 2026-10-27. A: Apple; B: developer tutorial. Recommendation: app-specific ring first; extract a theme component only after another use needs the same semantics.
+
+A foreground `Circle` trimmed to a clamped 0...1 fraction, stroked with round caps over a background circle, is a common approach ([Cindori, B](https://cindori.com/developer/swiftui-animation-rings)). Rotate the start to the top if desired; round caps visually extend short arcs, and zero/complete states need explicit inspection. Apple's circular `ProgressView` can be indeterminate where a determinate circular style is unavailable ([Apple, A](https://developer.apple.com/documentation/swiftui/progressviewstyle/circular)).
+
+Derive the fraction from the session clock, not animation completion. Smooth linear interpolation can look continuous but must be corrected after pause, phase change or resume; stepped updates reduce motion and work. Honor `accessibilityReduceMotion` and avoid unnecessary animation ([Apple, A](https://developer.apple.com/documentation/swiftui/accessible-appearance)). Expose one meaningful accessibility element with phase and localized remaining duration, not color alone or a stream of announcements every 50 ms. Announce phase transitions sparingly; check VoiceOver focus and Dynamic Type on device. Test color contrast and zero/short durations. APIs used here are available on iOS 17.

@@ -1,0 +1,3 @@
+# Later session features
+
+Checked 2026-10-27. A: Apple. A Live Activity may show a running interval on the Lock Screen and Dynamic Island, using a deadline rather than frequent app wakeups. ActivityKit lifecycle, authorization, stale state and maximum duration require separate design and device tests ([Apple, A](https://developer.apple.com/documentation/activitykit)). It does not guarantee background cue execution. Session history is app-owned structured data: record completed or interrupted sessions only with an explicit retention and privacy policy, and migrate it with the database plan. Neither warrants a starter module until another app needs it. Live Activities are available by iOS 17; AlarmKit is iOS 26+.
