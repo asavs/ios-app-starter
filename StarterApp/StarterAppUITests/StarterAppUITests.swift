@@ -126,6 +126,81 @@ final class StarterAppUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 5))
     }
 
+    /// The Edit sheet: set the work phase to 0:30 with the hours, minutes and seconds wheels and add a round; the ring and
+    /// step count follow, and the times survive a relaunch. Skips when DurationPicker is disabled.
+    @MainActor
+    func testTimerEditsAPlan() throws {
+        let app = XCUIApplication()
+        // No timer.* arguments: they would outrank what the editor stores.
+        app.launchArguments = ["-tabs.selected", "timer", "-onboarding.completedVersion", "99",
+                               "-tips.testing", "hideAll"]
+        app.launch()
+        let ring = element(app, "timer.ring")
+        try requireModuleUI("SessionTimer", appeared: ring.waitForExistence(timeout: 10), "no timer ring on the Timer tab")
+        let edit = app.buttons["timer.edit"]
+        try requireModuleUI("DurationPicker", appeared: edit.waitForExistence(timeout: 5), "no Edit button on the Timer tab")
+        element(app, "timer.plan").buttons["Intervals"].tap()
+        edit.tap()
+
+        let work = app.buttons["timer.edit.work"]
+        XCTAssertTrue(work.waitForExistence(timeout: 10))
+        work.tap()
+        // Hours, minutes and seconds, as in the Clock app.
+        let wheels = app.pickerWheels
+        XCTAssertTrue(wheels.element(boundBy: 2).waitForExistence(timeout: 5), "Tapping the row should show three wheels")
+        wheels.element(boundBy: 0).adjust(toPickerWheelValue: "0")
+        wheels.element(boundBy: 1).adjust(toPickerWheelValue: "0")
+        wheels.element(boundBy: 2).adjust(toPickerWheelValue: "30")
+        XCTAssertTrue(waitUntil(work, "value == '30 seconds'"), "The row should show the new length")
+        let rounds = element(app, "timer.edit.rounds")
+        rounds.buttons.element(boundBy: 1).tap() // Increment.
+        let roundCount = try XCTUnwrap(Int(try XCTUnwrap(rounds.label.split(separator: " ").last)))
+        attach(name: "timer-edit")
+        app.buttons["timer.edit.done"].tap()
+
+        XCTAssertTrue(waitUntil(ring, "value == '30 seconds remaining'"))
+        let step = element(app, "timer.step")
+        XCTAssertEqual(step.label, "Step 1 of \(2 * roundCount - 1)")
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(ring.waitForExistence(timeout: 10))
+        XCTAssertEqual(ring.value as? String, "30 seconds remaining", "Edited times should survive a relaunch")
+    }
+
+    /// The Cues section in Settings: turning Sounds off disables "Play in silent mode", and the
+    /// choice survives a relaunch. Leaves Sounds on. Skips when the Cues module is disabled.
+    @MainActor
+    func testCueSettings() throws {
+        let app = XCUIApplication()
+        // No cues.* arguments: an argument would outrank what the toggles store.
+        app.launchArguments = ["-tabs.selected", "settings", "-onboarding.completedVersion", "99",
+                               "-tips.testing", "hideAll"]
+        app.launch()
+        let sound = app.switches["cues.sound"]
+        try requireModuleUI("Cues", appeared: scroll(app, to: sound), "no Sounds toggle in Settings")
+        let silentMode = app.switches["cues.silentMode"]
+        // A Toggle's identifier lands on a switch spanning the row, whose center is the label; tap
+        // the switch inside it. The section sits near the floating tab bar, so keep it clear first.
+        func flip(_ toggle: XCUIElement) {
+            if waitUntilHittable(toggle.switches.firstMatch, timeout: 2) == false { app.swipeUp() }
+            toggle.switches.firstMatch.tap()
+        }
+        if sound.value as? String == "0" { flip(sound) }
+        XCTAssertTrue(waitUntil(sound, "value == '1'"))
+        XCTAssertTrue(silentMode.isEnabled)
+
+        flip(sound)
+        XCTAssertTrue(waitUntil(sound, "value == '0'"))
+        XCTAssertTrue(waitUntil(silentMode, "isEnabled == false"), "Silent mode only applies with sounds on")
+        attach(name: "cues-settings-off")
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(scroll(app, to: sound))
+        XCTAssertEqual(sound.value as? String, "0", "Sounds off should survive a relaunch")
+        flip(sound)
+        XCTAssertTrue(waitUntil(sound, "value == '1'"))
+    }
+
     /// At the largest accessibility text size the Timer tab scrolls to its controls and stacks Skip
     /// above Reset rather than wrapping their labels. Skips when the timer modules are disabled.
     @MainActor
@@ -149,8 +224,9 @@ final class StarterAppUITests: XCTestCase {
     @MainActor
     func testTimerRunsAPlan() throws {
         let app = XCUIApplication()
+        // Pin the plans' times: testTimerEditsAPlan stores its own.
         app.launchArguments = ["-tabs.selected", "timer", "-onboarding.completedVersion", "99",
-                               "-tips.testing", "hideAll"]
+                               "-tips.testing", "hideAll", "-timer.intervals", "20,10,3", "-timer.focus", "1500,300,4"]
         app.launch()
         let ring = element(app, "timer.ring")
         try requireModuleUI("SessionTimer", appeared: ring.waitForExistence(timeout: 10), "no timer ring on the Timer tab")

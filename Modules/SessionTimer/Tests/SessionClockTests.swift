@@ -132,4 +132,13 @@ struct SessionClockTests {
         clock.start(at: t0 + .seconds(10))
         #expect(clock.snapshot(at: t0).elapsed == .zero)
     }
+
+    @Test func pausingTheMomentItStartsIsPaused() {
+        var clock = SessionClock(plan: plan)
+        clock.start(at: t0)
+        clock.pause(at: t0)
+        #expect(clock.snapshot(at: t0 + .seconds(5)).status == .paused)
+        clock.reset()
+        #expect(clock.snapshot(at: t0 + .seconds(5)).status == .ready)
+    }
 }

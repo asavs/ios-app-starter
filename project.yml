@@ -57,6 +57,10 @@ targets:
         product: SessionTimer
       - package: StarterModules
         product: TimerRing
+      - package: StarterModules
+        product: Cues
+      - package: StarterModules
+        product: DurationPicker
     settings:
       base:
         # XcodeGen writes info.path relative to this file but resolves the setting from StarterApp/.

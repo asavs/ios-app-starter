@@ -21,6 +21,8 @@ let package = Package(
         .library(name: "TabShell", targets: ["TabShell"]),
         .library(name: "SessionTimer", targets: ["SessionTimer"]),
         .library(name: "TimerRing", targets: ["TimerRing"]),
+        .library(name: "Cues", targets: ["Cues"]),
+        .library(name: "DurationPicker", targets: ["DurationPicker"]),
     ],
     targets: [
         .target(name: "TemplateVersion", path: "Modules/TemplateVersion/Sources"),
@@ -41,6 +43,12 @@ let package = Package(
         .target(name: "TimerRing", dependencies: ["Theme"], path: "Modules/TimerRing/Sources",
                 resources: [.process("Resources")]),
         .testTarget(name: "TimerRingTests", dependencies: ["TimerRing"], path: "Modules/TimerRing/Tests"),
+        .target(name: "Cues", path: "Modules/Cues/Sources",
+                resources: [.process("Resources")]),
+        .testTarget(name: "CuesTests", dependencies: ["Cues"], path: "Modules/Cues/Tests"),
+        .target(name: "DurationPicker", dependencies: ["Theme"], path: "Modules/DurationPicker/Sources",
+                resources: [.process("Resources")]),
+        .testTarget(name: "DurationPickerTests", dependencies: ["DurationPicker"], path: "Modules/DurationPicker/Tests"),
     ],
     swiftLanguageModes: [.v6]
 )

@@ -17,7 +17,7 @@ public struct TimerRing: View {
     private let tint: Color?
 
     @Environment(\.appTheme) private var theme
-    @ScaledMetric(relativeTo: .largeTitle) private var lineWidth: CGFloat = 14
+    @ScaledMetric(relativeTo: .largeTitle) private var lineWidth = 14.0
 
     /// `fractionRemaining` runs from 1 (a full ring) to 0 and is clamped to that range. `tint`
     /// defaults to the theme's accent.
@@ -34,14 +34,15 @@ public struct TimerRing: View {
         let spoken = shown.formatted(.units(allowed: [.hours, .minutes, .seconds], width: .wide))
         ZStack {
             Circle()
-                .stroke(color.opacity(0.2), lineWidth: lineWidth)
+                .stroke(color.quaternary, lineWidth: lineWidth)
             Circle()
                 .trim(from: 0, to: fractionRemaining)
                 .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             VStack(spacing: theme.spacing.extraSmall) {
                 Text(shown, format: .time(pattern: shown >= .seconds(3600) ? .hourMinuteSecond : .minuteSecond))
-                    .font(.system(.largeTitle, design: .rounded, weight: .semibold))
+                    .font(.system(.largeTitle, design: .rounded))
+                    .bold()
                     .monospacedDigit()
                     .foregroundStyle(theme.colors.textPrimary)
                 Text(title)

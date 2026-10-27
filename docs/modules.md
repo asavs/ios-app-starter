@@ -28,6 +28,8 @@ Each feature of the starter is a module you enable in `project.yml`; keep the on
 | `TabShell` | Native tabs with typed, restored selection and host-supplied count badges. Requires `Theme`. | `TabShell(tabs:selection:) { tab in ... }`; own `TabSelection` in scene-root `@State`. Unreleased. |
 | `SessionTimer` | A session plan of timed phases and a clock that can't drift: start, pause, skip, reset, and a snapshot of where the session is. No UI or other module. | `SessionTimer(plan:)` in a view's `@State`; read `timer.snapshot`. Unreleased. |
 | `TimerRing` | One ring that empties as a phase runs out, with its remaining time and title, read by VoiceOver as one element. Requires `Theme`. | `TimerRing(fractionRemaining:title:remaining:)` fed from a `SessionSnapshot`. Unreleased. |
+| `Cues` | Foreground sounds for a session (a start tone, a beep per phase, a chime at the end), mixed with music, with a Sounds section for Settings. | `CuePlayer().play(.phaseChange)`; `CueSettingsSection()` in `SettingsView { }`. Unreleased. |
+| `DurationPicker` | A form row for minutes and seconds that opens native wheels, kept inside a range and on a step. Requires `Theme`. | `DurationPickerRow("Work", value: $duration)`. Unreleased. |
 
 ### Theme
 
@@ -135,7 +137,17 @@ NavigationStack {
 }
 ```
 
-In the template, `StarterSettingsView` supplies the example secret and onboarding-reset rows. With TabShell it appears in the Settings tab; without TabShell the welcome screen's gear button (`settings.open`) pushes it. The root applies `.storedAppearance()`.
+In the template, `StarterSettingsView` supplies the Cues sounds section, the example secret and onboarding-reset rows. With TabShell it appears in the Settings tab; without TabShell the welcome screen's gear button (`settings.open`) pushes it. The root applies `.storedAppearance()`.
+
+#### Settings from other modules
+
+Settings doesn't depend on feature modules, and feature modules don't depend on Settings. A module with something people can change follows the Cues pattern, and the app composes the pieces:
+
+- **Keys and defaults in one value type** in the module, such as `CuePreferences`: keys namespaced by module (`cues.sound`, `cues.playsInSilentMode`), each default a `static let`, and an `init(defaults:)` that reads stored values or falls back to those defaults. Code that acts on a setting reads it at the moment it acts, so a change applies at once.
+- **A form section the module exports**, such as `CueSettingsSection(defaults:)`, using `@AppStorage` with the same keys and defaults. It's a plain `Section`, so it works in `SettingsView`'s builder or any other form.
+- **The app places it**: `StarterSettingsView` lists `CueSettingsSection()` under `#if canImport(Cues)`, so removing the module's product line removes its settings with it.
+- Preferences stay in `UserDefaults`; secrets go through `SecureStore`. Tests inject a defaults suite. UI tests must not pass a module's keys as launch arguments, because the argument domain outranks what a toggle stores and the toggle would seem not to stick.
+
 
 #### Keychain and signing in tests
 
@@ -203,15 +215,29 @@ struct FocusView: View {
 }
 ```
 
-`SessionClock` is the value underneath: it stores when the session last started and how long it had run before that, and derives the phase, remaining time and status from the instant it's asked about, so time is never added up tick by tick. It uses `ContinuousClock`, which keeps counting while the phone sleeps. A boundary belongs to the next phase; pauses don't count; skipping from the last phase finishes; a finished session stays finished until `reset()`. Tests pass fixed instants (`clock.snapshot(at: t0 + .seconds(25))`) instead of waiting. `SessionTimer` is the `@MainActor @Observable` driver: `snapshot` refreshes every 100 ms while running (set `refreshInterval:`) and stops refreshing when paused or finished. A late refresh never loses time, but nothing runs while the app is suspended: cues with the screen locked need scheduling that the research is still settling ([background cues](research/background-audio.md)). `snapshot` is `Equatable`, so `.sensoryFeedback(trigger: snapshot)` can tap on phase changes, as the template does.
+`SessionClock` is the value underneath: it stores when the session last started and how long it had run before that, and derives the phase, remaining time and status from the instant it's asked about, so time is never added up tick by tick. It uses `ContinuousClock`, which keeps counting while the phone sleeps. A boundary belongs to the next phase; pauses don't count; skipping from the last phase finishes; a finished session stays finished until `reset()`. Tests pass fixed instants (`clock.snapshot(at: t0 + .seconds(25))`) instead of waiting. `SessionTimer` is the `@MainActor @Observable` driver: `snapshot` refreshes every 100 ms while running (set `refreshInterval:`) and stops refreshing when paused or finished. It takes `now:` so tests control the clock instead of sleeping. A late refresh never loses time, but nothing runs while the app is suspended: cues with the screen locked need scheduling that the research is still settling ([background cues](research/background-audio.md)). `snapshot` is `Equatable`, so `.sensoryFeedback(trigger: snapshot)` can tap on phase changes, as the template does.
 
-The template's Timer tab (`StarterTimerView.swift`, shown with TabShell) runs two plans through the same modules: three rounds of 20 s work and 10 s rest, and four 25-minute focus blocks. It taps on each phase change and on finishing, and keeps the screen awake only while a session runs on that screen. Identifiers: `timer.plan`, `timer.ring`, `timer.step`, `timer.primary`, `timer.skip`, `timer.reset`. `testTimerRunsAPlan` starts, pauses (the countdown must not move), skips through every phase to Done, resets and switches to the focus plan. Module tests cover phase derivation, boundaries, crossing several phases in one late snapshot, pause accounting, repeated calls, finishing once, skip while running and paused, reset and the driver's refresh. [Research](research/interval-timing.md).
+The template's Timer tab (`StarterApp/StarterApp/Timer/`, shown with TabShell) runs two plans through the same modules: three rounds of 20 s work and 10 s rest, and four 25-minute focus blocks. **Edit** (`timer.edit`, with DurationPicker) opens a sheet for the chosen plan's work and rest lengths and rounds, disabled while a session is underway; `TimerScreenModel` holds the tab's logic (plan choice, stored times, the primary button, which cue each change plays) so `TimerScreenModelTests` can check it against an isolated defaults suite and a controlled clock; the views only lay it out. Times are stored per plan in `UserDefaults` (`timer.intervals`, `timer.focus` as `work,rest,rounds` seconds) until the database module saves plans. It taps on each phase change and on finishing, and keeps the screen awake only while a session runs on that screen. Identifiers: `timer.plan`, `timer.ring`, `timer.step`, `timer.primary`, `timer.skip`, `timer.reset`. `testTimerEditsAPlan` sets the work phase to 0:30 with the hours, minutes and seconds wheels, adds a round and checks the ring, step count and a relaunch; `testTimerRunsAPlan` pins both plans' times with launch arguments, starts, pauses (the countdown must not move), skips through every phase to Done, resets and switches to the focus plan. Module tests cover phase derivation, boundaries, crossing several phases in one late snapshot, pause accounting, repeated calls, finishing once, skip while running and paused, reset and the driver's refresh. [Research](research/interval-timing.md).
 
 ### TimerRing
 
 `TimerRing(fractionRemaining:title:remaining:tint:)` draws what it's given and keeps no time: pass `snapshot.phaseFractionRemaining`, the phase title and `snapshot.phaseRemaining` on every update. The fraction is clamped to 0...1 (non-finite values draw an empty ring), and the time shows whole seconds rounded up, so a 20-second phase reads 0:20 for its first second and 0:00 only when it ends. `tint` defaults to Theme's accent; the template tints rests with `success`. It's a single ring on purpose: the HIG reserves concentric Activity rings for Move, Exercise and Stand and says not to imitate them.
 
 VoiceOver reads one element, the title as its label and "45 seconds remaining" as its value, when someone moves to it, never on every update. The line width scales with Dynamic Type; the time and title shrink to fit inside the ring rather than overflow it, so at the largest text sizes they stay inside the circle while the screen around it scrolls. Module text ("%@ remaining") is in its string catalog. [Research](research/progress-ring.md), including the open-source rings compared.
+
+### Cues
+
+`CuePlayer().play(.start)` plays two quick rising notes, `.phaseChange` a short beep and `.finished` a rising chime. The tones are generated in code (`Tone`), so the module ships no audio files. Sounds mix with music and podcasts and never lower them. With "Play in silent mode" on (the default, like the Clock app's timer) they use the playback audio category and sound through the Ring/Silent switch; off, they use the ambient category and the switch silences them. "Sounds" off plays nothing. `CuePlayer` reads `CuePreferences` from `UserDefaults` on every cue.
+
+Cues play only while the app is open: the module declares no background mode and keeps nothing running, because a silent keep-alive loop risks App Review rejection under guideline 2.5.4 ([research](research/background-audio.md)). Locked-screen cues wait on phone measurements of the notification budget (`ios-1mo`); speech and countdown beeps join this module after that.
+
+The template's Timer tab plays them from `SessionSnapshot.transition(from:)`, which reports `.started` (from the beginning, or again after finishing), `.resumed`, `.phaseStarted(index:)` while running and `.finished`, once each, and nothing for pauses, skips while paused, resets or plan changes. Start and resume play `.start`. The same transition drives the haptics. `testCueSettings` turns Sounds off, checks "Play in silent mode" is disabled and that the choice survives a relaunch; the sound itself is checked on the phone. Module tests cover the preferences, that sound off plays nothing, that a changed setting applies to the next cue, the WAV data and the tone envelope. [Research](research/background-audio.md) and [cue preferences research](research/cue-preferences.md).
+
+### DurationPicker
+
+`DurationPickerRow(_:value:range:step:)` is a form row for a `Duration`, laid out like the Clock app's timer: hours, minutes and seconds wheels with "hours", "min" and "sec" fixed beside the selection. It shows the title and value; tapping it opens the wheels below it, the way a date row opens in Calendar, so a form can hold several (the template's Work and Rest). Apple doesn't offer Clock's picker to other apps (`UIDatePicker`'s countdown mode has no seconds), so the row puts three native `.wheel` pickers side by side, each clipped so their touches don't overlap. Unlike Clock, each wheel draws its own selection highlight, since SwiftUI has no way to replace it with one band.
+
+The range defaults to 0:01 ... 23:59:59 (Clock's limit, also the most it accepts); the hours wheel is hidden when the range stays under an hour. Seconds move in `step`s, one second by default (it must divide a minute). Every value it writes is inside the range and on a step. VoiceOver reads the row's value in words ("30 seconds") and adjusts each wheel natively ("Number of minutes, 0"). `DurationOptions` holds the arithmetic and is what the module tests cover: wheel choices, the Clock default, clamping and rounding to a step, splitting and combining hours, minutes and seconds, odd ranges and steps. [Research](research/duration-picker.md).
 
 ## Localization
 

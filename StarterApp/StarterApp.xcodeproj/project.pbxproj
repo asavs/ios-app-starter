@@ -8,11 +8,15 @@
 
 /* Begin PBXBuildFile section */
 		08AE3083A6736281670A063E /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 2CC16D61E20130E63B4E85C7 /* AppIcon.icon */; };
+		0DB09FFE2416E966BA4CCEBF /* TimerSecondaryButtons.swift in Sources */ = {isa = PBXBuildFile; fileRef = B75557F66D9B480D7047D4A8 /* TimerSecondaryButtons.swift */; };
 		1D07C887DB8743D47EFEF00C /* StarterAppUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8D93B988D8534CAF4748EAB /* StarterAppUITests.swift */; };
 		264FE5A08BFF4B78E4DBAC2F /* Theme in Frameworks */ = {isa = PBXBuildFile; productRef = 144F0453F5E7CB7218BACDCE /* Theme */; };
+		2C369462D8BDAC8760DCEF97 /* TimerScreenModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 489A34A242107532646D5E81 /* TimerScreenModelTests.swift */; };
 		338C33E092092319761BC3EE /* TimerRing in Frameworks */ = {isa = PBXBuildFile; productRef = 9045CC256BB4DEC8AB599588 /* TimerRing */; };
 		4373411B683AC6A1449A225B /* StarterTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9218B03F8BC10E8E6907F4D3 /* StarterTab.swift */; };
 		46C0B1C171E433E997E37D77 /* StarterSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C1F23018F09539BF2772719 /* StarterSettingsView.swift */; };
+		4C1A198402FFB26972BB5E9E /* Cues in Frameworks */ = {isa = PBXBuildFile; productRef = 018B4E5F2D881F40E68BD1EB /* Cues */; };
+		591FD65C1477F79BD667A33B /* TimerPlanEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45ADA6D7788892C1B0D25777 /* TimerPlanEditor.swift */; };
 		5EB40DD72AB95E7B7C111EF0 /* StarterAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD60802B2CF34042A128A2F5 /* StarterAppApp.swift */; };
 		604B783C86A6AC5B9F0FDBDF /* SessionTimer in Frameworks */ = {isa = PBXBuildFile; productRef = A864AA5ECBBD6DAD34E5AB65 /* SessionTimer */; };
 		64907FF9954BF68C58B1AB11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 81985762715118C68FC81834 /* Assets.xcassets */; };
@@ -20,14 +24,19 @@
 		812BE58E0DB6498B18E2F3AB /* StarterTabsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5864471EC8F0242C38AA7E /* StarterTabsView.swift */; };
 		8ACBD7534E01CDE5045806DD /* Onboarding in Frameworks */ = {isa = PBXBuildFile; productRef = 62CD511B7596E8CDAA0489CD /* Onboarding */; };
 		9107E9765A60C6B4A906D978 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C993C2D64191E0D24B90D89 /* ContentView.swift */; };
+		949B7F99B198CA0893897F1E /* DurationPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 9E1CE64E7084D7884445BB73 /* DurationPicker */; };
 		A84DA15EE809FFE0CB3047CA /* Settings in Frameworks */ = {isa = PBXBuildFile; productRef = 5067BD6B2C63627070B6F3EE /* Settings */; };
+		A8C521C6837D605D12B9BCA1 /* StarterTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 386EE368F8097B8E57069E68 /* StarterTimerView.swift */; };
 		AA85815535849E1F54B586D4 /* DeepLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCAAD5B3D9897A4CFA6CD55C /* DeepLink.swift */; };
 		AC1E853E30DD139D9A2B642E /* TemplateVersion in Frameworks */ = {isa = PBXBuildFile; productRef = 26545B50428408ABA4C4100D /* TemplateVersion */; };
+		B7F1AB69FFE6731C41773593 /* TimerControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E216E14C4A7B18659825B63 /* TimerControls.swift */; };
 		CF5E0A1BBE6C12667668261E /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 62AC33BBAB421DF93083B243 /* Localizable.xcstrings */; };
 		D10ED263A335E0800B3E1C26 /* StarterAppUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 208BC1917057466CB928A5D6 /* StarterAppUITestsLaunchTests.swift */; };
+		D3657EF16E779BDBAE1C2930 /* TimerScreenModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FE5C816C9BD410ACA5944AC /* TimerScreenModel.swift */; };
 		D7B5AD8FB970F8134A61427B /* DeepLinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654F33A3879B95B64B8167EA /* DeepLinkTests.swift */; };
+		E87C1035C99E480FA66FA58C /* PlanTimes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFA89F2A8E976E6C61DE308B /* PlanTimes.swift */; };
 		E9F33202AB227077B286A4DE /* NextLaunchResetButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CCD6ADA8856F313C21A74C1 /* NextLaunchResetButton.swift */; };
-		F0D2236557B5236CC2A51CC0 /* StarterTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CB46CFD582756D45629F994 /* StarterTimerView.swift */; };
+		EEA850E7281C6DDE300A37C9 /* TimerPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7693B07DAD1FFA3DD0B95C56 /* TimerPlan.swift */; };
 		F24148395D75C0C443626A30 /* StarterAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505187150B7A25E42E197DFD /* StarterAppTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -51,19 +60,26 @@
 /* Begin PBXFileReference section */
 		0A5864471EC8F0242C38AA7E /* StarterTabsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterTabsView.swift; sourceTree = "<group>"; };
 		16EC34682757DEACAF1D2E00 /* StarterAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = StarterAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		1CB46CFD582756D45629F994 /* StarterTimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterTimerView.swift; sourceTree = "<group>"; };
 		208BC1917057466CB928A5D6 /* StarterAppUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterAppUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		2C993C2D64191E0D24B90D89 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		2CC16D61E20130E63B4E85C7 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = AppIcon.icon; sourceTree = "<group>"; };
+		386EE368F8097B8E57069E68 /* StarterTimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterTimerView.swift; sourceTree = "<group>"; };
+		3FE5C816C9BD410ACA5944AC /* TimerScreenModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerScreenModel.swift; sourceTree = "<group>"; };
+		45ADA6D7788892C1B0D25777 /* TimerPlanEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerPlanEditor.swift; sourceTree = "<group>"; };
+		489A34A242107532646D5E81 /* TimerScreenModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerScreenModelTests.swift; sourceTree = "<group>"; };
 		4DD58F84F9D7BEE99037FB79 /* StarterAppUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = StarterAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		505187150B7A25E42E197DFD /* StarterAppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterAppTests.swift; sourceTree = "<group>"; };
 		62AC33BBAB421DF93083B243 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		654F33A3879B95B64B8167EA /* DeepLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkTests.swift; sourceTree = "<group>"; };
 		6C1F23018F09539BF2772719 /* StarterSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterSettingsView.swift; sourceTree = "<group>"; };
+		7693B07DAD1FFA3DD0B95C56 /* TimerPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerPlan.swift; sourceTree = "<group>"; };
+		7E216E14C4A7B18659825B63 /* TimerControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerControls.swift; sourceTree = "<group>"; };
 		81985762715118C68FC81834 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9218B03F8BC10E8E6907F4D3 /* StarterTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterTab.swift; sourceTree = "<group>"; };
 		9CCD6ADA8856F313C21A74C1 /* NextLaunchResetButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextLaunchResetButton.swift; sourceTree = "<group>"; };
+		B75557F66D9B480D7047D4A8 /* TimerSecondaryButtons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerSecondaryButtons.swift; sourceTree = "<group>"; };
 		BD60802B2CF34042A128A2F5 /* StarterAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterAppApp.swift; sourceTree = "<group>"; };
+		BFA89F2A8E976E6C61DE308B /* PlanTimes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanTimes.swift; sourceTree = "<group>"; };
 		E8D93B988D8534CAF4748EAB /* StarterAppUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterAppUITests.swift; sourceTree = "<group>"; };
 		FBF5C48B8DEE60F1BE83C0C8 /* StarterApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = StarterApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FCAAD5B3D9897A4CFA6CD55C /* DeepLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLink.swift; sourceTree = "<group>"; };
@@ -81,6 +97,8 @@
 				71EC3E811114F8825AC06772 /* TabShell in Frameworks */,
 				604B783C86A6AC5B9F0FDBDF /* SessionTimer in Frameworks */,
 				338C33E092092319761BC3EE /* TimerRing in Frameworks */,
+				4C1A198402FFB26972BB5E9E /* Cues in Frameworks */,
+				949B7F99B198CA0893897F1E /* DurationPicker in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -100,7 +118,7 @@
 				6C1F23018F09539BF2772719 /* StarterSettingsView.swift */,
 				9218B03F8BC10E8E6907F4D3 /* StarterTab.swift */,
 				0A5864471EC8F0242C38AA7E /* StarterTabsView.swift */,
-				1CB46CFD582756D45629F994 /* StarterTimerView.swift */,
+				69AAEE0948589B04E8F0EA68 /* Timer */,
 			);
 			path = StarterApp;
 			sourceTree = "<group>";
@@ -113,6 +131,20 @@
 				4DD58F84F9D7BEE99037FB79 /* StarterAppUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		69AAEE0948589B04E8F0EA68 /* Timer */ = {
+			isa = PBXGroup;
+			children = (
+				BFA89F2A8E976E6C61DE308B /* PlanTimes.swift */,
+				386EE368F8097B8E57069E68 /* StarterTimerView.swift */,
+				7E216E14C4A7B18659825B63 /* TimerControls.swift */,
+				7693B07DAD1FFA3DD0B95C56 /* TimerPlan.swift */,
+				45ADA6D7788892C1B0D25777 /* TimerPlanEditor.swift */,
+				3FE5C816C9BD410ACA5944AC /* TimerScreenModel.swift */,
+				B75557F66D9B480D7047D4A8 /* TimerSecondaryButtons.swift */,
+			);
+			path = Timer;
 			sourceTree = "<group>";
 		};
 		86E543BF154DCFCE66B61433 = {
@@ -130,6 +162,7 @@
 			children = (
 				654F33A3879B95B64B8167EA /* DeepLinkTests.swift */,
 				505187150B7A25E42E197DFD /* StarterAppTests.swift */,
+				489A34A242107532646D5E81 /* TimerScreenModelTests.swift */,
 			);
 			path = StarterAppTests;
 			sourceTree = "<group>";
@@ -167,6 +200,8 @@
 				E9C8F87566DEC9C8980FE2CD /* TabShell */,
 				A864AA5ECBBD6DAD34E5AB65 /* SessionTimer */,
 				9045CC256BB4DEC8AB599588 /* TimerRing */,
+				018B4E5F2D881F40E68BD1EB /* Cues */,
+				9E1CE64E7084D7884445BB73 /* DurationPicker */,
 			);
 			productName = StarterApp;
 			productReference = FBF5C48B8DEE60F1BE83C0C8 /* StarterApp.app */;
@@ -273,6 +308,7 @@
 			files = (
 				D7B5AD8FB970F8134A61427B /* DeepLinkTests.swift in Sources */,
 				F24148395D75C0C443626A30 /* StarterAppTests.swift in Sources */,
+				2C369462D8BDAC8760DCEF97 /* TimerScreenModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -292,11 +328,17 @@
 				9107E9765A60C6B4A906D978 /* ContentView.swift in Sources */,
 				AA85815535849E1F54B586D4 /* DeepLink.swift in Sources */,
 				E9F33202AB227077B286A4DE /* NextLaunchResetButton.swift in Sources */,
+				E87C1035C99E480FA66FA58C /* PlanTimes.swift in Sources */,
 				5EB40DD72AB95E7B7C111EF0 /* StarterAppApp.swift in Sources */,
 				46C0B1C171E433E997E37D77 /* StarterSettingsView.swift in Sources */,
 				4373411B683AC6A1449A225B /* StarterTab.swift in Sources */,
 				812BE58E0DB6498B18E2F3AB /* StarterTabsView.swift in Sources */,
-				F0D2236557B5236CC2A51CC0 /* StarterTimerView.swift in Sources */,
+				A8C521C6837D605D12B9BCA1 /* StarterTimerView.swift in Sources */,
+				B7F1AB69FFE6731C41773593 /* TimerControls.swift in Sources */,
+				EEA850E7281C6DDE300A37C9 /* TimerPlan.swift in Sources */,
+				591FD65C1477F79BD667A33B /* TimerPlanEditor.swift in Sources */,
+				D3657EF16E779BDBAE1C2930 /* TimerScreenModel.swift in Sources */,
+				0DB09FFE2416E966BA4CCEBF /* TimerSecondaryButtons.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -616,6 +658,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		018B4E5F2D881F40E68BD1EB /* Cues */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Cues;
+		};
 		144F0453F5E7CB7218BACDCE /* Theme */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Theme;
@@ -635,6 +681,10 @@
 		9045CC256BB4DEC8AB599588 /* TimerRing */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TimerRing;
+		};
+		9E1CE64E7084D7884445BB73 /* DurationPicker */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DurationPicker;
 		};
 		A864AA5ECBBD6DAD34E5AB65 /* SessionTimer */ = {
 			isa = XCSwiftPackageProductDependency;

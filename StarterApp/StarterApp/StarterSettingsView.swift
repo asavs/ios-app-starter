@@ -4,6 +4,9 @@ import Settings
 #if canImport(Onboarding)
 import Onboarding
 #endif
+#if canImport(Cues)
+import Cues
+#endif
 
 /// The same host-owned Settings content is used in a tab or, without TabShell, behind the gear.
 struct StarterSettingsView: View {
@@ -30,6 +33,10 @@ struct StarterSettingsView: View {
                 }
                 .accessibilityIdentifier("settings.tips.reset")
             }
+#endif
+            // Each feature module brings its own section; Settings doesn't depend on any of them.
+#if canImport(Cues)
+            CueSettingsSection()
 #endif
         }
     }
