@@ -22,6 +22,10 @@ struct StarterTabsView: View {
 #endif
             }
         }
+        // starterapp://settings selects that tab; see DeepLink for what is accepted.
+        .onOpenURL { url in
+            if let tab = DeepLink.tab(in: url) { selection.select(rawValue: tab) }
+        }
     }
 }
 #endif

@@ -7,6 +7,10 @@ packages:
   StarterModules:
     path: ..
 
+settings:
+  base:
+    APP_URL_SCHEME: pocketnotes
+
 targets:
   StarterApp:
     settings:

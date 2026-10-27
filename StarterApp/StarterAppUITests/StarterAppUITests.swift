@@ -92,6 +92,40 @@ final class StarterAppUITests: XCTestCase {
         welcome.tap() // Leave other local runs at the welcome screen.
     }
 
+    /// The app's own link selects a tab; a link with a route, query or unknown tab changes nothing.
+    /// `open(_:)` relaunches the app with the URL and the same launch arguments, so each link starts from
+    /// the pinned tab: this covers links that launch the app. Skips without TabShell or Settings.
+    @MainActor
+    func testDeepLinkSelectsTab() throws {
+        let scheme = try XCTUnwrap(Bundle(for: Self.self).object(forInfoDictionaryKey: "StarterAppURLScheme") as? String,
+                                   "project.yml should pass APP_URL_SCHEME to the UI tests")
+        let app = XCUIApplication()
+        let welcome = tabButton(in: app, "welcome", title: "Welcome")
+        let settings = tabButton(in: app, "settings", title: "Settings")
+        func open(_ link: String, from tab: String) throws {
+            app.launchArguments = ["-tabs.selected", tab, "-onboarding.completedVersion", "99", "-tips.testing", "hideAll"]
+            app.open(try XCTUnwrap(URL(string: link)))
+            try requireModuleUI("TabShell", appeared: welcome.waitForExistence(timeout: 10), "no Welcome tab")
+            try requireModuleUI("Settings", appeared: settings.waitForExistence(timeout: 5), "no Settings tab")
+        }
+
+        try open("\(scheme)://settings", from: "welcome")
+        XCTAssertTrue(waitUntil(settings, "isSelected == true"), "The link should select Settings")
+        XCTAssertTrue(element(app, "settings.appearance").waitForExistence(timeout: 10))
+        attach(name: "deep-link-settings")
+
+        // The first two would select Welcome if the app accepted them; the last names no tab.
+        for ignored in ["\(scheme)://welcome/secrets", "\(scheme)://welcome?reset=tips", "\(scheme)://nowhere"] {
+            try open(ignored, from: "settings")
+            XCTAssertTrue(waitUntil(settings, "isSelected == true"), "The pinned tab should load")
+            XCTAssertFalse(waitUntil(welcome, "isSelected == true", timeout: 3), "\(ignored) should change nothing")
+        }
+
+        try open("\(scheme)://welcome", from: "settings")
+        XCTAssertTrue(waitUntil(welcome, "isSelected == true"), "The link should select Welcome")
+        XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 5))
+    }
+
     /// The Onboarding module's main path: welcome sheet, the choice step (multiple select, answer shown on the
     /// welcome screen), a tour card, the notifications primer against a fake requester, then the welcome
     /// screen with its first contextual tip. Skips when the module is disabled (no Continue button).

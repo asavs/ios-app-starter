@@ -32,6 +32,8 @@ cases = [
      "scheme must include"),
     ("unconfigured-capability", {"targets": {"StarterApp": {"attributes": {
         "SystemCapabilities": {"com.apple.Push": {"enabled": 1}}}}}}, "account capabilities"),
+    ("invalid-url-scheme", {"settings": {"base": {"APP_URL_SCHEME": "Starter App"}}}, "APP_URL_SCHEME"),
+    ("reserved-url-scheme", {"settings": {"base": {"APP_URL_SCHEME": "https"}}}, "APP_URL_SCHEME"),
     ("missing-source", {"targets": {"StarterApp": {"sources:REPLACE": ["not-a-real-source"]}}}, None),
 ]
 if sys.argv[1:]:

@@ -19,6 +19,7 @@ checks = {
     'CFBundleIdentifier': expected['bundleIdentifier'],
     'MinimumOSVersion': expected['minimumIOS'],
     'UIDeviceFamily': sorted(int(part.strip()) for part in expected['deviceFamilies'].split(',')),
+    'CFBundleURLSchemes': [expected['urlScheme']],
 }
 # Xcode 16.2 does not copy INFOPLIST_KEY_ITSAppUsesNonExemptEncryption into the
 # generated plist. Keep checking the declaration on other toolchains; for this
@@ -26,6 +27,8 @@ checks = {
 encryption_key = 'ITSAppUsesNonExemptEncryption'
 if actual.get(encryption_key) is not None or os.environ.get('IOS_XCODE_VERSION') != '16.2':
     checks[encryption_key] = False
+actual['CFBundleURLSchemes'] = [scheme for kind in actual.get('CFBundleURLTypes', [])
+                                for scheme in kind.get('CFBundleURLSchemes', [])]
 for key, value in checks.items():
     if actual.get(key) != value:
         sys.exit(f"Built app {key}: expected {value!r}, found {actual.get(key)!r}")
@@ -47,6 +50,7 @@ if os.environ.get('GITHUB_STEP_SUMMARY'):
         f"- Display name: `{checks['CFBundleDisplayName']}`\n"
         f"- Bundle identifier: `{checks['CFBundleIdentifier']}`\n"
         f"- Minimum OS: `{checks['MinimumOSVersion']}`; device families: `{checks['UIDeviceFamily']}`\n"
+        f"- Link scheme: `{checks['CFBundleURLSchemes'][0]}://`\n"
         f'- Simulator destination: `{runtime}`\n'
         f'- Test artifacts: {artifact_link}\n'
     )
