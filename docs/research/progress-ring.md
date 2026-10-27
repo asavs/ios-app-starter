@@ -1,5 +1,7 @@
 # Progress ring
 
+Built as the `TimerRing` module (2026-10-27); see [modules.md](../modules.md#timerring) for what shipped and what is still open.
+
 Checked 2026-10-27. A: Apple; B: developer tutorial. Recommendation: propose an optional reusable TimerRing view, usable by interval workouts, Pomodoro sessions and meditation.
 
 A foreground `Circle` trimmed to a clamped 0...1 fraction, stroked with round caps over a background circle, is a common approach ([Cindori, B](https://cindori.com/developer/swiftui-animation-rings)). Rotate the start to the top if desired; round caps visually extend short arcs, and zero/complete states need explicit inspection. Apple's circular `ProgressView` can be indeterminate where a determinate circular style is unavailable ([Apple, A](https://developer.apple.com/documentation/swiftui/progressviewstyle/circular)).

@@ -126,6 +126,83 @@ final class StarterAppUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 5))
     }
 
+    /// At the largest accessibility text size the Timer tab scrolls to its controls and stacks Skip
+    /// above Reset rather than wrapping their labels. Skips when the timer modules are disabled.
+    @MainActor
+    func testTimerAtLargestTextSize() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL",
+                               "-tabs.selected", "timer", "-onboarding.completedVersion", "99", "-tips.testing", "hideAll"]
+        app.launch()
+        let ring = element(app, "timer.ring")
+        try requireModuleUI("SessionTimer", appeared: ring.waitForExistence(timeout: 10), "no timer ring on the Timer tab")
+        attach(name: "timer-large-ring")
+        let skip = element(app, "timer.skip")
+        let reset = element(app, "timer.reset")
+        XCTAssertTrue(scroll(app, to: reset), "The Timer tab should scroll to Reset")
+        XCTAssertLessThan(skip.frame.maxY, reset.frame.minY, "Skip should sit above Reset at this size")
+        attach(name: "timer-large-controls")
+    }
+
+    /// The Timer tab's main path: run the interval plan, pause, skip through every phase to done,
+    /// reset, then switch to the focus plan. Skips when the timer modules are disabled.
+    @MainActor
+    func testTimerRunsAPlan() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-tabs.selected", "timer", "-onboarding.completedVersion", "99",
+                               "-tips.testing", "hideAll"]
+        app.launch()
+        let ring = element(app, "timer.ring")
+        try requireModuleUI("SessionTimer", appeared: ring.waitForExistence(timeout: 10), "no timer ring on the Timer tab")
+        let primary = element(app, "timer.primary")
+        let skip = element(app, "timer.skip")
+        let reset = element(app, "timer.reset")
+        let step = element(app, "timer.step")
+        XCTAssertEqual(ring.label, "Work")
+        XCTAssertEqual(ring.value as? String, "20 seconds remaining")
+        XCTAssertEqual(step.label, "Step 1 of 5")
+        XCTAssertEqual(primary.label, "Start")
+        XCTAssertFalse(skip.isEnabled)
+        XCTAssertFalse(reset.isEnabled)
+
+        primary.tap()
+        XCTAssertTrue(waitUntil(primary, "label == 'Pause'"))
+        XCTAssertTrue(waitUntil(ring, "value != '20 seconds remaining'", timeout: 10), "The countdown should run")
+        attach(name: "timer-running")
+
+        primary.tap()
+        XCTAssertTrue(waitUntil(primary, "label == 'Resume'"))
+        let paused = ring.value as? String
+        Thread.sleep(forTimeInterval: 2)
+        XCTAssertEqual(ring.value as? String, paused, "A paused countdown should not move")
+
+        primary.tap()
+        XCTAssertTrue(waitUntil(primary, "label == 'Pause'"))
+        skip.tap()
+        XCTAssertTrue(waitUntil(step, "label == 'Step 2 of 5'"))
+        XCTAssertEqual(ring.label, "Rest")
+        for next in 3...5 {
+            skip.tap()
+            XCTAssertTrue(waitUntil(step, "label == 'Step \(next) of 5'"))
+        }
+        XCTAssertEqual(ring.label, "Work")
+        skip.tap()
+        XCTAssertTrue(waitUntil(ring, "label == 'Done'"))
+        XCTAssertEqual(ring.value as? String, "0 seconds remaining")
+        XCTAssertEqual(primary.label, "Start again")
+        XCTAssertFalse(skip.isEnabled)
+        attach(name: "timer-done")
+
+        reset.tap()
+        XCTAssertTrue(waitUntil(primary, "label == 'Start'"))
+        XCTAssertEqual(step.label, "Step 1 of 5")
+        element(app, "timer.plan").buttons["Focus"].tap()
+        XCTAssertTrue(waitUntil(ring, "label == 'Focus'"))
+        XCTAssertEqual(ring.value as? String, "25 minutes remaining")
+        XCTAssertEqual(step.label, "Step 1 of 7")
+        attach(name: "timer-focus")
+    }
+
     /// The Onboarding module's main path: welcome sheet, the choice step (multiple select, answer shown on the
     /// welcome screen), a tour card, the notifications primer against a fake requester, then the welcome
     /// screen with its first contextual tip. Skips when the module is disabled (no Continue button).

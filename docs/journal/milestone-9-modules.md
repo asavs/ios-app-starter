@@ -2,6 +2,15 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-27 — Timer modules: SessionTimer and TimerRing, with the research they came from
+
+- **Tools:** Xcode 27.0 on the Mac, iPhone 17 / iOS 27.0 simulator. Task `ios-s8.2`; research `ios-cts` (Codex, two passes, 85 sources) lands in the same pull request, because research merges with the code that uses it.
+- **Decision (Asa):** reusable pieces of Val Time (app two) are researched and built as template modules before the port, not lifted from it later. A pomodoro, meditation or workout app uses the same plan, clock and ring.
+- **Change:** `SessionTimer` (Foundation only, runs under `swift test` on the Mac) derives the phase from a `ContinuousClock` anchor plus banked time, so a late refresh after backgrounding loses nothing; `TimerRing` is one ring (not an Activity rings imitation, per the HIG) that VoiceOver reads as one element. The template gains a Timer tab with an interval plan and a focus plan.
+- **Findings (confirmed):** (1) `check-module-strings.py` keys an interpolation by the literal text inside the parentheses unless it is a plain `\(name)`; a formatted call inline became the key, so the ring formats into a local first and the key is `%@ remaining`. (2) The app string catalog isn't rewritten by `xcodebuild`; new template strings were added to `Localizable.xcstrings` by hand, as earlier tabs did. (3) At the accessibility text sizes Skip and Reset side by side hyphenated "Re-set"; they stack there now, covered by `testTimerAtLargestTextSize`.
+- **Verified:** 17 SessionTimer tests and 12 TimerRing cases on the host and the simulator; the full UI suite on the iOS 27.0 simulator (see the PR for CI).
+- **Remaining:** cues with the screen locked and the notification budget wait on `ios-1mo` (phone measurements); sound and speech cues with Settings toggles become a cues module after it; the database module (`ios-s8.1`) saves timer plans on this tab next.
+
 ## 2026-10-26 — Deep links select a tab: XcodeGen info plist paths
 
 - **Tools:** Xcode 27.0 on the Mac, XcodeGen 2.46.0, iPhone 17 / iOS 27.0 simulator. Task `ios-s5.12`, branch `claude/tab-deep-links`.

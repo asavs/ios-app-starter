@@ -26,6 +26,8 @@ Each feature of the starter is a module you enable in `project.yml`; keep the on
 | `Onboarding` | A first-launch flow of typed steps (welcome sheet, choice, tour card, permission primer, custom), remembered per version, and TipKit contextual tips that wait for it. Requires `Theme`. | `ContentView().onboardingGate(steps:version:)`; steps are `OnboardingStep` values. |
 | `Settings` | A settings screen, a stored appearance choice and Keychain-backed secrets. Requires `Theme`. | `SettingsView { }` behind a navigation link; `.storedAppearance()` at the root; `KeychainStore` / `SecureStore`. |
 | `TabShell` | Native tabs with typed, restored selection and host-supplied count badges. Requires `Theme`. | `TabShell(tabs:selection:) { tab in ... }`; own `TabSelection` in scene-root `@State`. Unreleased. |
+| `SessionTimer` | A session plan of timed phases and a clock that can't drift: start, pause, skip, reset, and a snapshot of where the session is. No UI or other module. | `SessionTimer(plan:)` in a view's `@State`; read `timer.snapshot`. Unreleased. |
+| `TimerRing` | One ring that empties as a phase runs out, with its remaining time and title, read by VoiceOver as one element. Requires `Theme`. | `TimerRing(fractionRemaining:title:remaining:)` fed from a `SessionSnapshot`. Unreleased. |
 
 ### Theme
 
@@ -177,6 +179,39 @@ For deep links, first validate and authorize the URL in the app, then call `sele
 The view uses the native `Tab` API on iOS 18 / macOS 15 and later, with `tabItem` confined to the iOS 17 / macOS 14 fallback. Theme supplies its accent; the system supplies material, placement, safe areas and accessibility traits. On iPhone, this allows the system's Liquid Glass tab bar on iOS 26 and later. The module adds no custom glass layer, tab-reordering UI or forced bottom placement on iPad.
 
 UI identifiers are `tabs.<raw value>`, such as `tabs.welcome` and `tabs.settings`. iOS 26.3 leaves tab bar buttons without them (iOS 27 keeps them), so UI tests fall back to the tab's title when the identifier is empty. Existing UI tests force `-tabs.selected welcome` to start consistently. `testTabShellSwitchesAndRestoresSelection` removes that argument on its second launch to verify actual persistence. Module tests cover restoration, removed and invalid destinations, deep-link selection, independent keys/scenes, identity and badge boundaries. Native compilation and runtime acceptance are pending Mac review of the first implementation. [Research and verification boundaries](research/tab-navigation.md).
+
+### SessionTimer
+
+A session is a `SessionPlan` of `SessionPhase`s, each with a stable `kind` (never shown), a `LocalizedStringResource` title and a positive `Duration`. `SessionPlan.intervals(work:rest:rounds:)` builds rounds with a rest between them and none after the last, so a session ends on work. The same types fit an interval workout, a Pomodoro (25 minutes focus, 5 minutes break) or a meditation with a lead-in and a closing phase.
+
+```swift
+import SessionTimer
+
+struct FocusView: View {
+    @State private var timer = SessionTimer(plan: .intervals(
+        work: SessionPhase(kind: "work", title: "Focus", duration: .seconds(25 * 60)),
+        rest: SessionPhase(kind: "rest", title: "Break", duration: .seconds(5 * 60)),
+        rounds: 4))
+
+    var body: some View {
+        let snapshot = timer.snapshot
+        Text(snapshot.phaseRemaining, format: .time(pattern: .minuteSecond))
+        Button(snapshot.status == .running ? "Pause" : "Start") {
+            snapshot.status == .running ? timer.pause() : timer.start()
+        }
+    }
+}
+```
+
+`SessionClock` is the value underneath: it stores when the session last started and how long it had run before that, and derives the phase, remaining time and status from the instant it's asked about, so time is never added up tick by tick. It uses `ContinuousClock`, which keeps counting while the phone sleeps. A boundary belongs to the next phase; pauses don't count; skipping from the last phase finishes; a finished session stays finished until `reset()`. Tests pass fixed instants (`clock.snapshot(at: t0 + .seconds(25))`) instead of waiting. `SessionTimer` is the `@MainActor @Observable` driver: `snapshot` refreshes every 100 ms while running (set `refreshInterval:`) and stops refreshing when paused or finished. A late refresh never loses time, but nothing runs while the app is suspended: cues with the screen locked need scheduling that the research is still settling ([background cues](research/background-audio.md)). `snapshot` is `Equatable`, so `.sensoryFeedback(trigger: snapshot)` can tap on phase changes, as the template does.
+
+The template's Timer tab (`StarterTimerView.swift`, shown with TabShell) runs two plans through the same modules: three rounds of 20 s work and 10 s rest, and four 25-minute focus blocks. It taps on each phase change and on finishing, and keeps the screen awake only while a session runs on that screen. Identifiers: `timer.plan`, `timer.ring`, `timer.step`, `timer.primary`, `timer.skip`, `timer.reset`. `testTimerRunsAPlan` starts, pauses (the countdown must not move), skips through every phase to Done, resets and switches to the focus plan. Module tests cover phase derivation, boundaries, crossing several phases in one late snapshot, pause accounting, repeated calls, finishing once, skip while running and paused, reset and the driver's refresh. [Research](research/interval-timing.md).
+
+### TimerRing
+
+`TimerRing(fractionRemaining:title:remaining:tint:)` draws what it's given and keeps no time: pass `snapshot.phaseFractionRemaining`, the phase title and `snapshot.phaseRemaining` on every update. The fraction is clamped to 0...1 (non-finite values draw an empty ring), and the time shows whole seconds rounded up, so a 20-second phase reads 0:20 for its first second and 0:00 only when it ends. `tint` defaults to Theme's accent; the template tints rests with `success`. It's a single ring on purpose: the HIG reserves concentric Activity rings for Move, Exercise and Stand and says not to imitate them.
+
+VoiceOver reads one element, the title as its label and "45 seconds remaining" as its value, when someone moves to it, never on every update. The line width scales with Dynamic Type; the time and title shrink to fit inside the ring rather than overflow it, so at the largest text sizes they stay inside the circle while the screen around it scrolls. Module text ("%@ remaining") is in its string catalog. [Research](research/progress-ring.md), including the open-source rings compared.
 
 ## Localization
 

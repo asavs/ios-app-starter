@@ -53,6 +53,10 @@ targets:
         product: Settings
       - package: StarterModules
         product: TabShell
+      - package: StarterModules
+        product: SessionTimer
+      - package: StarterModules
+        product: TimerRing
     settings:
       base:
         # XcodeGen writes info.path relative to this file but resolves the setting from StarterApp/.

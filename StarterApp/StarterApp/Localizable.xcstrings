@@ -12,6 +12,17 @@
         }
       }
     },
+    "Break": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Break"
+          }
+        }
+      }
+    },
     "Building: %@": {
       "extractionState": "manual",
       "localizations": {
@@ -19,6 +30,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Building: %@"
+          }
+        }
+      }
+    },
+    "Done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
           }
         }
       }
@@ -34,6 +56,17 @@
         }
       }
     },
+    "Focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Focus"
+          }
+        }
+      }
+    },
     "Hello, world!": {
       "extractionState": "manual",
       "localizations": {
@@ -41,6 +74,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hello, world!"
+          }
+        }
+      }
+    },
+    "Intervals": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intervals"
           }
         }
       }
@@ -67,6 +111,28 @@
         }
       }
     },
+    "Pause": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause"
+          }
+        }
+      }
+    },
+    "Plan": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan"
+          }
+        }
+      }
+    },
     "Replace this screen in ContentView.swift.": {
       "extractionState": "manual",
       "localizations": {
@@ -85,6 +151,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Replay onboarding any time without resetting it."
+          }
+        }
+      }
+    },
+    "Reset": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset"
+          }
+        }
+      }
+    },
+    "Rest": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rest"
+          }
+        }
+      }
+    },
+    "Resume": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume"
           }
         }
       }
@@ -144,6 +243,50 @@
         }
       }
     },
+    "Skip": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip"
+          }
+        }
+      }
+    },
+    "Start": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start"
+          }
+        }
+      }
+    },
+    "Start again": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start again"
+          }
+        }
+      }
+    },
+    "Step %lld of %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Step %1$lld of %2$lld"
+          }
+        }
+      }
+    },
     "Take the tour": {
       "extractionState": "manual",
       "localizations": {
@@ -162,6 +305,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "The welcome tour shows on next launch"
+          }
+        }
+      }
+    },
+    "Timer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timer"
           }
         }
       }
@@ -195,6 +349,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Welcome tour"
+          }
+        }
+      }
+    },
+    "Work": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Work"
           }
         }
       }

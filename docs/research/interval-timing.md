@@ -1,5 +1,7 @@
 # Interval timing
 
+Built as the `SessionTimer` module (2026-10-27); see [modules.md](../modules.md#sessiontimer) for what shipped and what is still open.
+
 Checked 2026-10-27. A: Apple documentation; B: independent practitioner. Recommendation: propose an optional clock-driven session module for workouts, Pomodoro and meditation. The host owns its phase content and cue policy.
 
 A `ContinuousClock` anchor plus phase boundaries derives elapsed time from the clock rather than adding 50 ms on each wake. Apple contrasts this clock, which advances during device sleep, with `SuspendingClock`, which stops while the machine sleeps ([WWDC22, A](https://developer.apple.com/videos/play/wwdc2022/110355/)). A wake loop is only a sampling mechanism: scheduling, suspension and tolerance mean it is not a deadline guarantee. Derive current phase on resume, decide explicitly whether to skip or coalesce missed cues, and track cue IDs to avoid duplicate playback after a late wake. Inject a controllable clock to test exact boundaries, pauses, multiple missed phases and cancellation. A monotonic instant should not be treated as a durable wall-clock timestamp across reboot or process death; persist an appropriate wall-clock deadline and session state separately if recovery is required, with a policy for clock changes.
