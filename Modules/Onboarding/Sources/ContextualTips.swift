@@ -18,9 +18,13 @@ public enum ContextualTips {
     ///
     /// TipKit can only reset its datastore before it is configured, so a reset requested from a
     /// settings screen waits for the next launch. A second call in one process is ignored.
+    /// Returns whether this call forgot the tips' history, so the host can tell this launch asked to see
+    /// them again; for example, a tab restored from before the reset is not a visit a tip should count.
+    @discardableResult
     public static func configure(displayFrequency: Tips.ConfigurationOption.DisplayFrequency = .immediate,
-                                 defaults: UserDefaults = .standard) {
-        if defaults.bool(forKey: resetKey) {
+                                 defaults: UserDefaults = .standard) -> Bool {
+        let reset = defaults.bool(forKey: resetKey)
+        if reset {
             try? Tips.resetDatastore()
             defaults.removeObject(forKey: resetKey)
         }
@@ -31,6 +35,7 @@ public enum ContextualTips {
         }
         // Throws only when TipKit is already configured, which leaves the first configuration in place.
         try? Tips.configure([.displayFrequency(displayFrequency)])
+        return reset
     }
 
     /// Shows every tip again from the next launch, for a settings screen.

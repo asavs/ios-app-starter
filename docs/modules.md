@@ -77,7 +77,7 @@ The module also wraps TipKit for the contextual tips that follow onboarding:
 - `ContextualTip(id:title:message:systemImage:maxDisplayCount:)` describes a tip as values. Every tip waits for `ContextualTips.isEligible`, which the onboarding gate turns off while its flow is on screen.
 - Show one tip with `.contextualTip(tip)` (a popover) or `ContextualTipView(tip)` (inline). Show several one at a time with `@State var tips = ContextualTipSequence([...])` and `.contextualTip("id", in: tips)` or `ContextualTipView("id", in: tips)`. The sequence is a `TipGroup(.ordered)` on iOS 18; iOS 17 has no `TipGroup`, so only the first tip shows there.
 - Call `tips.invalidate("id")` when the user does what a tip suggests.
-- TipKit resets its datastore only before configuring, so `ContextualTips.resetOnNextLaunch()` (the template's Settings row "Show tips again on next launch") takes effect at the next launch.
+- TipKit resets its datastore only before configuring, so `ContextualTips.resetOnNextLaunch()` (the template's Settings row "Show tips again on next launch") takes effect at the next launch. `configure()` returns whether it reset, so a host can tell that launch apart; the template's tab view uses it so the restored Settings tab, where the reset row is, does not count as a visit that retires the Settings tip.
 - Launch arguments for tests: `-tips.reset YES` forgets every tip's history, `-tips.testing hideAll` keeps tips off screens a test inspects, `-tips.testing showAll` ignores the display rules.
 - A popover anchored to a toolbar button did not appear on iOS 26.5, so make tips about toolbar items inline.
 
