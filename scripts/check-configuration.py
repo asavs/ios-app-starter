@@ -12,6 +12,8 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = {"StarterApp", "StarterAppTests", "StarterAppUITests"}
 TEAM_ID = re.compile(r"[A-Z0-9]{10}\Z")
+# Web and system schemes another app or the system already handles.
+RESERVED_SCHEMES = {"http", "https", "file", "ftp", "mailto", "tel", "sms", "facetime", "maps", "itms-apps", "app-settings"}
 
 
 def manifest_scalars(path, stack=()):
@@ -228,6 +230,11 @@ def check(project):
         name = app.get("INFOPLIST_KEY_CFBundleDisplayName", "")
         if not name.strip() or any(ord(c) < 32 for c in name):
             raise ValueError(f"{config}: INFOPLIST_KEY_CFBundleDisplayName must contain a name without control characters")
+        # RFC 3986 scheme syntax, lowercase; reserved schemes would claim links meant for other apps.
+        scheme = app.get("APP_URL_SCHEME", "")
+        if not re.fullmatch(r"[a-z][a-z0-9+.-]*", scheme) or scheme in RESERVED_SCHEMES:
+            raise ValueError(f"{config}: APP_URL_SCHEME must be the app's own lowercase scheme, such as "
+                             "starterapp (letters, digits, +, - and .), not a web or system scheme")
         for flag in ("SUPPORTS_MACCATALYST", "SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD", "SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD"):
             if app.get(flag, "NO") != "NO":
                 raise ValueError(f"{config}: {flag} is not supported yet; keep it NO")
@@ -235,7 +242,7 @@ def check(project):
                         "bundleIdentifier": app["PRODUCT_BUNDLE_IDENTIFIER"],
                         "teamIdentifier": app.get("DEVELOPMENT_TEAM", "").strip(),
                         "minimumIOS": app["IPHONEOS_DEPLOYMENT_TARGET"],
-                        "deviceFamilies": app["TARGETED_DEVICE_FAMILY"], "sdk": sdk,
+                        "deviceFamilies": app["TARGETED_DEVICE_FAMILY"], "sdk": sdk, "urlScheme": scheme,
                         "marketingVersion": app.get("MARKETING_VERSION", ""),
                         "buildNumber": app.get("CURRENT_PROJECT_VERSION", "")})
     return records

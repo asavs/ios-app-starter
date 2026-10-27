@@ -42,6 +42,7 @@ Planned, as real apps need them: Sign in with Apple, a SwiftData database layer,
    | Name of development builds | `targets.StarterApp.settings.base.DEV_DISPLAY_NAME` | `"Notes Dev"` |
    | App identifier | `targets.StarterApp.settings.base.PRODUCT_BUNDLE_IDENTIFIER` | `org.example.pocketnotes` |
    | Test identifiers | The same setting under `StarterAppTests` and `StarterAppUITests` | `org.example.pocketnotes.tests` |
+   | Link scheme (`pocketnotes://settings` opens that tab) | `settings.base.APP_URL_SCHEME` | `pocketnotes` |
    | Minimum iOS | `options.deploymentTarget.iOS` | `"17.0"` |
    | Devices | `targets.StarterApp.settings.base.TARGETED_DEVICE_FAMILY` | `"1,2"` both, `"1"` iPhone, `"2"` iPad |
 

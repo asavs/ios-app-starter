@@ -14,6 +14,9 @@ settings:
     GENERATE_INFOPLIST_FILE: YES
     CURRENT_PROJECT_VERSION: 1
     MARKETING_VERSION: "1.0"
+    # The app's link scheme: starterapp://settings opens the Settings tab. Lowercase letters, digits,
+    # +, - and .; make it unique to the app, since iOS picks arbitrarily between apps sharing a scheme.
+    APP_URL_SCHEME: starterapp
 
 # The module library in this repository (Package.swift, Modules/<Name>/). The template depends on it
 # by path; an app created from the template switches to `url:` + `from:` and a tag. docs/modules.md.
@@ -26,7 +29,18 @@ targets:
     type: application
     platform: iOS
     sources:
-      - StarterApp/StarterApp
+      - path: StarterApp/StarterApp
+        excludes: [Info.plist] # Read through INFOPLIST_FILE, not copied as a resource.
+    # Merged with the generated Info.plist: only what has no INFOPLIST_KEY_ build setting.
+    info:
+      path: StarterApp/StarterApp/Info.plist
+      properties:
+        # XcodeGen writes fixed defaults for these; keep them on the build settings releases bump.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleURLTypes:
+          - CFBundleURLName: $(PRODUCT_BUNDLE_IDENTIFIER)
+            CFBundleURLSchemes: [$(APP_URL_SCHEME)]
     # Enabled modules: one product line each. Remove a line to disable that module.
     dependencies:
       - package: StarterModules
@@ -41,6 +55,8 @@ targets:
         product: TabShell
     settings:
       base:
+        # XcodeGen writes info.path relative to this file but resolves the setting from StarterApp/.
+        INFOPLIST_FILE: StarterApp/Info.plist
         # User-facing name. Spaces are fine; this does not rename Swift modules.
         INFOPLIST_KEY_CFBundleDisplayName: "Starter App"
         # Name of Debug builds (run-on-device, simulator tests), so a development install on the
@@ -78,11 +94,17 @@ targets:
     type: bundle.ui-testing
     platform: iOS
     sources:
-      - StarterApp/StarterAppUITests
+      - path: StarterApp/StarterAppUITests
+        excludes: [Info.plist]
+    info:
+      path: StarterApp/StarterAppUITests/Info.plist
+      properties:
+        StarterAppURLScheme: $(APP_URL_SCHEME) # The deep-link test opens the app's own scheme.
     dependencies:
       - target: StarterApp
     settings:
       base:
+        INFOPLIST_FILE: StarterAppUITests/Info.plist # Relative to StarterApp/, like the app's.
         PRODUCT_BUNDLE_IDENTIFIER: com.example.StarterAppUITests
 
 schemes:

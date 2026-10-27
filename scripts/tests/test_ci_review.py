@@ -311,13 +311,14 @@ class CIReviewTests(unittest.TestCase):
             config.write_text(json.dumps([{
                 "configuration": "Debug", "displayName": "Starter App",
                 "bundleIdentifier": "com.example.StarterApp", "minimumIOS": "17.0",
-                "deviceFamilies": "1,2",
+                "deviceFamilies": "1,2", "urlScheme": "starterapp",
             }]), encoding="utf-8")
             with (app / "Info.plist").open("wb") as output:
                 plistlib.dump({
                     "CFBundleDisplayName": "Starter App",
                     "CFBundleIdentifier": "com.example.StarterApp",
                     "MinimumOSVersion": "17.0", "UIDeviceFamily": [1, 2], "ITSAppUsesNonExemptEncryption": False,
+                    "CFBundleURLTypes": [{"CFBundleURLSchemes": ["starterapp"]}],
                 }, output)
             summary = root / "step-summary.md"
             env = os.environ.copy()
@@ -336,6 +337,7 @@ class CIReviewTests(unittest.TestCase):
             content = summary.read_text(encoding="utf-8")
             self.assertIn("com.example.StarterApp", content)
             self.assertIn("iPhone 17,OS=27.0", content)
+            self.assertIn("`starterapp://`", content)
             self.assertIn("[ios-test-results-starter](https://github.com/owner/repo/actions/runs/123)", content)
 
 

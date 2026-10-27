@@ -2,6 +2,15 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-26 — Deep links select a tab: XcodeGen info plist paths
+
+- **Tools:** Xcode 27.0 on the Mac, XcodeGen 2.46.0, iPhone 17 / iOS 27.0 simulator. Task `ios-s5.12`, branch `claude/tab-deep-links`.
+- **Change:** `APP_URL_SCHEME` in `project.yml` (default `starterapp`, Pocket Notes `pocketnotes`) is registered through `CFBundleURLTypes`, which has no `INFOPLIST_KEY_` build setting, so the app target gains an XcodeGen `info:` plist merged with the generated one. `DeepLink.tab(in:)` accepts only `<scheme>://<tab>`; `check-configuration.py` rejects an invalid or web/system scheme, and `check-built-app.py` confirms the built app registers it.
+- **Failures (confirmed):** (1) XcodeGen writes `info.path` relative to `project.yml` but sets `INFOPLIST_FILE` to the same string, which Xcode resolves from the generated project folder `StarterApp/`: "Build input file cannot be found: StarterApp/StarterApp/StarterApp/Info.plist". Setting `INFOPLIST_FILE: StarterApp/Info.plist` explicitly fixes the path. (2) XcodeGen then no longer recognizes the file as the target's plist and adds it to Copy Bundle Resources: "Multiple commands produce .../Info.plist". `excludes: [Info.plist]` on the sources fixes it. (3) XcodeGen's plist hardcodes `CFBundleShortVersionString` 1.0 and `CFBundleVersion` 1, which would override `MARKETING_VERSION` and the TestFlight build number; the properties now point back at both settings.
+- **Test finding:** `XCUIApplication.open(_:)` relaunches the app with the URL and the same launch arguments, so `testDeepLinkSelectsTab` covers links that launch the app, and each check pins the opposite tab so a no-op link is distinguishable.
+- **Verified:** See the PR for the app suite on the iOS 27.0 simulator; the built Debug app's plist lists `starterapp` with version 1.0 (1) from the build settings.
+- **Remaining:** Links that reach an already running app go through the same `onOpenURL` but are not exercised by the UI test. Universal links need an associated domain and signing, later.
+
 ## 2026-10-26 — No Settings tip for the Settings tab
 
 - **Tools:** Xcode 27.0 on the Mac, iPhone 17 / iOS 27.0 simulator, the owner's iPhone 14 Pro on iOS 26.3. Task `ios-s5.12`, on the `ios-s5.14` branch.
