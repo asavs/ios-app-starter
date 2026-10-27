@@ -2,13 +2,13 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
-## 2026-10-26 — Settings tip skipped after "Show tips again"
+## 2026-10-26 — No Settings tip for the Settings tab
 
-- **Tools:** Xcode 27.0 on the Mac, iPhone 17 / iOS 27.0 simulator, the owner's iPhone 14 Pro on iOS 26.3. Task `ios-s5.12`, fixed on the `ios-s5.14` branch.
-- **Symptom (owner, on the phone):** After the Settings resets and a relaunch, the "See the tour again" tip showed but the Settings tip never did.
-- **Cause (confirmed by a failing test):** The reset rows are on the Settings tab, so the next launch restores that tab, and the tab view counted a restored Settings tab as a visit. Back on Welcome it retired the Settings tip before it showed. The old restore test launched exactly that way (`-tips.reset YES` with Settings restored) and asserted the retirement.
-- **Fix:** `ContextualTips.configure()` returns whether it reset the datastore; the tab view counts the restored tab only when it did not. The restore test now opens Settings in one launch and checks the next, and a new test covers the reset launch. The new test fails without the fix.
-- **Remaining:** Only the tips reset is covered. A tab restored after a tour-only reset still counts, which is right: that tip was already retired.
+- **Tools:** Xcode 27.0 on the Mac, iPhone 17 / iOS 27.0 simulator, the owner's iPhone 14 Pro on iOS 26.3. Task `ios-s5.12`, on the `ios-s5.14` branch.
+- **Symptom (owner, on the phone):** The tab layout's Settings tip, pinned just above the tab bar, looked out of place. After the Settings resets it also never showed: the relaunch restored the Settings tab, which counted as a visit and retired the tip unseen.
+- **Decision:** The HIG's Offering help page says tips suit "new or less obvious features" and to avoid "explaining how standard components or patterns work"; Tab bars says nothing about tips. A labeled Settings tab is a standard component, so the tab layout drops the tip and the visit tracking, accessibility-size placement and their tests with it. The tour tip, a popover on its own button, stays as the template's example. The gear layout keeps its Settings tip, since an unlabeled gear is less obvious.
+- **Verified:** See the PR for the app suite on the iOS 27.0 simulator.
+- **Remaining:** The owner expects to revisit tips as features arrive and may drop the tour button later.
 
 ## 2026-10-26 — Onboarding: one sheet for first launch and replay
 

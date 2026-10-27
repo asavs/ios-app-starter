@@ -111,17 +111,6 @@
         }
       }
     },
-    "Settings has its own tab": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Settings has its own tab"
-          }
-        }
-      }
-    },
     "Settings live here": {
       "extractionState": "manual",
       "localizations": {
@@ -162,17 +151,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Take the tour"
-          }
-        }
-      }
-    },
-    "Tap Settings below to pick light or dark, store secrets and show the tour again.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tap Settings below to pick light or dark, store secrets and show the tour again."
           }
         }
       }

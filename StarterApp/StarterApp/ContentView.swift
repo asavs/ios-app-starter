@@ -17,13 +17,6 @@ import Onboarding
 #endif
 
 struct ContentView: View {
-#if canImport(TabShell) && canImport(Settings) && canImport(Onboarding)
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-#endif
-#if canImport(TabShell)
-    /// Whether the Settings tab has been opened in this scene; visiting it retires the tip that points at it.
-    var hasVisitedSettingsTab = false
-#endif
 #if canImport(Settings) && !canImport(TabShell)
     @State private var isShowingSettings = false
 #endif
@@ -56,21 +49,6 @@ struct ContentView: View {
                     StarterSettingsView()
                 }
         }
-#elseif canImport(TabShell) && canImport(Settings) && canImport(Onboarding)
-        welcome
-            // Just above the tab bar, next to the Settings tab it points at. At accessibility sizes a
-            // pinned tip covers half the screen, so there it scrolls with the content instead.
-            .safeAreaInset(edge: .bottom) {
-                if !dynamicTypeSize.isAccessibilitySize {
-                    ContextualTipView("settings", in: tips)
-                        .padding(.horizontal)
-                }
-            }
-            // Retired when this tab next appears, including after a launch that restored Settings:
-            // the next tip is a popover, which TipKit presents only while this tab is on screen.
-            .onAppear {
-                if hasVisitedSettingsTab { tips.invalidate("settings") } // Done what the tip suggests.
-            }
 #else
         welcome
 #endif
@@ -93,11 +71,6 @@ struct ContentView: View {
                         .accessibilityAddTraits(.isHeader)
                     details
                     replayTour
-#if canImport(Onboarding) && canImport(Settings) && canImport(TabShell)
-                    if dynamicTypeSize.isAccessibilitySize {
-                        ContextualTipView("settings", in: tips)
-                    }
-#endif
                 }
                 .padding()
                 .frame(maxWidth: .infinity, minHeight: proxy.size.height)
@@ -145,14 +118,11 @@ struct ContentView: View {
             .formatted(.list(type: .and))
     }
 
-    /// The template's tips. The Settings tip comes first when that module is enabled.
+    /// The template's tips. The Settings tip comes first when that module sits behind the gear; a labeled
+    /// Settings tab needs none, as the HIG advises against tips that explain standard components.
     private static var tips: [ContextualTip] {
         var tips: [ContextualTip] = []
-#if canImport(Settings) && canImport(TabShell)
-        tips.append(ContextualTip(id: "settings", title: "Settings has its own tab",
-                                  message: "Tap Settings below to pick light or dark, store secrets and show the tour again.",
-                                  systemImage: "gearshape"))
-#elseif canImport(Settings)
+#if canImport(Settings) && !canImport(TabShell)
         tips.append(ContextualTip(id: "settings", title: "Settings live here",
                                   message: "Open Settings to pick light or dark, store secrets and show the tour again.",
                                   systemImage: "gearshape"))

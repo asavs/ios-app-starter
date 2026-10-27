@@ -92,69 +92,6 @@ final class StarterAppUITests: XCTestCase {
         welcome.tap() // Leave other local runs at the welcome screen.
     }
 
-    /// Opening Settings and quitting there counts as visiting it: the next launch restores the tab, and back on
-    /// Welcome the Settings tip is retired and the tour tip shows. Skips without TabShell, Settings or Onboarding.
-    @MainActor
-    func testSettingsTipRetiredAfterRestoringSettingsTab() throws {
-        let app = XCUIApplication()
-        app.launchArguments = ["-onboarding.completedVersion", "99", "-tips.reset", "YES"]
-        app.launch()
-        let welcome = tabButton(in: app, "welcome", title: "Welcome")
-        try requireModuleUI("TabShell", appeared: welcome.waitForExistence(timeout: 10), "no Welcome tab")
-        let settingsTab = tabButton(in: app, "settings", title: "Settings")
-        try requireModuleUI("Settings", appeared: settingsTab.waitForExistence(timeout: 5), "no Settings tab")
-        settingsTab.tap()
-        XCTAssertTrue(element(app, "settings.appearance").waitForExistence(timeout: 10), "Settings should open")
-        app.terminate()
-
-        app.launchArguments = ["-onboarding.completedVersion", "99"]
-        app.launch()
-        XCTAssertTrue(element(app, "settings.appearance").waitForExistence(timeout: 10), "The Settings tab should be restored")
-        let tour = app.buttons["onboarding.replay"]
-        welcome.tap()
-        try requireModuleUI("Onboarding", appeared: tour.waitForExistence(timeout: 10), "no tour button")
-        XCTAssertTrue(app.staticTexts["See the tour again"].waitForExistence(timeout: 10), "The tour tip should show")
-        XCTAssertFalse(app.staticTexts["Settings has its own tab"].exists, "Visiting Settings should retire its tip")
-        attach(name: "tabs-tip-after-restore")
-    }
-
-    /// "Show tips again" is on the Settings tab, so the launch it resets restores that tab. That launch does not
-    /// count as a visit: back on Welcome the Settings tip shows. Skips without TabShell, Settings or Onboarding.
-    @MainActor
-    func testSettingsTipShowsAfterTipsResetOnSettingsTab() throws {
-        let app = XCUIApplication()
-        app.launchArguments = ["-tabs.selected", "settings", "-onboarding.completedVersion", "99", "-tips.reset", "YES"]
-        app.launch()
-        let welcome = tabButton(in: app, "welcome", title: "Welcome")
-        try requireModuleUI("TabShell", appeared: welcome.waitForExistence(timeout: 10), "no Welcome tab")
-        try requireModuleUI("Settings", appeared: element(app, "settings.appearance").waitForExistence(timeout: 10),
-                            "the Settings tab was not restored")
-        welcome.tap()
-        try requireModuleUI("Onboarding", appeared: app.buttons["onboarding.replay"].waitForExistence(timeout: 10),
-                            "no tour button")
-        XCTAssertTrue(app.staticTexts["Settings has its own tab"].waitForExistence(timeout: 10),
-                      "After a tips reset the Settings tip should show")
-        attach(name: "tabs-tip-after-reset")
-    }
-
-    /// At accessibility text sizes the Settings tip scrolls with the welcome content, after the tour button,
-    /// instead of staying pinned over half the screen. Skips without TabShell, Settings or Onboarding.
-    @MainActor
-    func testSettingsTipScrollsAtLargestTextSize() throws {
-        let app = XCUIApplication()
-        app.launchArguments = ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL",
-                               "-tabs.selected", "welcome", "-onboarding.completedVersion", "99", "-tips.reset", "YES"]
-        app.launch()
-        try requireModuleUI("TabShell", appeared: tabButton(in: app, "welcome", title: "Welcome").waitForExistence(timeout: 10),
-                            "no Welcome tab")
-        let replay = app.buttons["onboarding.replay"]
-        try requireModuleUI("Onboarding", appeared: replay.waitForExistence(timeout: 10), "no tour button")
-        let tip = app.staticTexts["Settings has its own tab"]
-        XCTAssertTrue(scroll(app, to: tip), "The Settings tip should be reachable by scrolling")
-        XCTAssertGreaterThanOrEqual(tip.frame.minY, replay.frame.maxY, "The tip should follow the tour button in the content")
-        attach(name: "large-settings-tip")
-    }
-
     /// The Onboarding module's main path: welcome sheet, the choice step (multiple select, answer shown on the
     /// welcome screen), a tour card, the notifications primer against a fake requester, then the welcome
     /// screen with its first contextual tip. Skips when the module is disabled (no Continue button).
@@ -213,27 +150,17 @@ final class StarterAppUITests: XCTestCase {
         XCTAssertTrue(goals.waitForExistence(timeout: 5), "The welcome screen should show the choice step's answer")
         XCTAssertEqual(goals.label, "Building: A product to sell", "The host should receive the final answer")
 
-        // Contextual tips follow onboarding one at a time: the inline Settings tip when that module is
-        // enabled, then, once it is closed (or Settings opened as a tab), the tour tip as a popover on the
-        // replay button.
+        // Contextual tips follow onboarding one at a time: the inline Settings tip when that module sits
+        // behind the gear, then, once it is closed, the tour tip as a popover on the replay button. A Settings
+        // tab gets no tip.
         let tour = app.staticTexts["See the tour again"]
-        let settings = settingsButton(in: app)
-        if settings.waitForExistence(timeout: 5) {
-            let tabs = settings.identifier != "settings.open"
-            let settingsTip = app.staticTexts[tabs ? "Settings has its own tab" : "Settings live here"]
+        if app.buttons["settings.open"].waitForExistence(timeout: 5) {
+            let settingsTip = app.staticTexts["Settings live here"]
             XCTAssertTrue(settingsTip.waitForExistence(timeout: 10), "The Settings tip should show after onboarding")
             XCTAssertFalse(tour.exists, "Tips show one at a time")
             attach(name: "onboarding-tip-settings")
-            if tabs {
-                XCTAssertLessThan(settings.frame.minY - settingsTip.frame.maxY, 200,
-                                  "The tip should sit just above the tab bar, next to the tab it names")
-                settings.tap() // Opening the tab does what the tip suggests.
-                tabButton(in: app, "welcome", title: "Welcome").tap()
-                XCTAssertTrue(waitUntilGone(settingsTip), "Opening the Settings tab should retire its tip")
-            } else {
-                app.buttons["Close"].firstMatch.tap()
-                XCTAssertTrue(waitUntilGone(settingsTip), "Closing a tip should remove it")
-            }
+            app.buttons["Close"].firstMatch.tap()
+            XCTAssertTrue(waitUntilGone(settingsTip), "Closing a tip should remove it")
         }
         XCTAssertTrue(tour.waitForExistence(timeout: 10), "The tour tip should show next")
         attach(name: "onboarding-tip-tour")

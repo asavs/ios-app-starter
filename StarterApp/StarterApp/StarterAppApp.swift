@@ -16,11 +16,8 @@ import Settings
 @main
 struct StarterAppApp: App {
 #if canImport(Onboarding)
-    /// Whether this launch forgot the tips' history, as Settings' "Show tips again" asks.
-    private let tipsWereReset: Bool
-
     init() {
-        tipsWereReset = ContextualTips.configure() // Before any tip view appears.
+        ContextualTips.configure() // Before any tip view appears.
     }
 #endif
 
@@ -45,9 +42,7 @@ struct StarterAppApp: App {
     }
 
     @ViewBuilder private var appContent: some View {
-#if canImport(TabShell) && canImport(Onboarding)
-        StarterTabsView(tipsWereReset: tipsWereReset)
-#elseif canImport(TabShell)
+#if canImport(TabShell)
         StarterTabsView()
 #else
         ContentView()
