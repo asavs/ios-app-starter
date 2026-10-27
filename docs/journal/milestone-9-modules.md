@@ -2,6 +2,22 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-26 — No Settings tip for the Settings tab
+
+- **Tools:** Xcode 27.0 on the Mac, iPhone 17 / iOS 27.0 simulator, the owner's iPhone 14 Pro on iOS 26.3. Task `ios-s5.12`, on the `ios-s5.14` branch.
+- **Symptom (owner, on the phone):** The tab layout's Settings tip, pinned just above the tab bar, looked out of place. After the Settings resets it also never showed: the relaunch restored the Settings tab, which counted as a visit and retired the tip unseen.
+- **Decision:** The HIG's Offering help page says tips suit "new or less obvious features" and to avoid "explaining how standard components or patterns work"; Tab bars says nothing about tips. A labeled Settings tab is a standard component, so the tab layout drops the tip and the visit tracking, accessibility-size placement and their tests with it. The tour tip, a popover on its own button, stays as the template's example. The gear layout keeps its Settings tip, since an unlabeled gear is less obvious.
+- **Verified:** See the PR for the app suite on the iOS 27.0 simulator.
+- **Remaining:** The owner expects to revisit tips as features arrive and may drop the tour button later.
+
+## 2026-10-26 — Onboarding: one sheet for first launch and replay
+
+- **Tools:** Xcode 27.0 on the Mac, iPhone 17 / iOS 27.0 simulator. Task `ios-s5.14`.
+- **Decision:** First launch showed the flow in place of the app, full screen, while "Take the tour" replayed the same steps in a sheet. The owner asked for one presentation, chosen from Apple's guidance. The HIG's Onboarding page asks for a flow that is "fast, fun, and optional", not shown again once skipped, and easy to find later. Its Modality page keeps full screen for in-depth or complex tasks and sheets for narrowly scoped ones, always with an obvious dismissal, and its Sheets page says to support swiping to dismiss. The four short, optional steps are the narrow case, so both now use the sheet. The gate presents it over the app's content, and any dismissal, including a swipe or VoiceOver's escape gesture, records completion like Skip.
+- **Also:** At accessibility text sizes a step's last lines sat cut off at the page dots with no sign of more. Step scroll views now flash their indicators on appear.
+- **Verified:** Onboarding module tests 26/26 and the app suite 11/11 on the iOS 27.0 simulator, including a new swipe-to-skip test that relaunches to confirm the flow stays gone.
+- **Remaining:** An app that must not let people swipe past a step (a required choice) would need `interactiveDismissDisabled`; the template's choice step is optional. iPad sheet sizing and VoiceOver escape are unverified on device.
+
 ## 2026-10-26 — Appearance picker labels stack when the scheme switches mid-slide
 
 - **Tools:** Xcode 27.0 on the Mac, iPhone 17 / iOS 27.0 simulator, the owner's iPhone 14 Pro on iOS 26.3. Task `ios-s5.13`.

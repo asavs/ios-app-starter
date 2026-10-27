@@ -42,6 +42,7 @@ public struct OnboardingPageView: View {
                 .frame(maxWidth: .infinity, minHeight: proxy.size.height)
             }
             .scrollBounceBehavior(.basedOnSize)
+            .scrollIndicatorsFlash(onAppear: true) // At large text sizes, shows there is more below the page dots.
         }
     }
 

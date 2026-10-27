@@ -50,6 +50,7 @@ public struct ChoiceStepView: View {
             .frame(maxWidth: .infinity)
         }
         .scrollBounceBehavior(.basedOnSize)
+        .scrollIndicatorsFlash(onAppear: true) // At large text sizes, shows there is more below the page dots.
         .sensoryFeedback(.selection, trigger: selection)
     }
 
