@@ -14,6 +14,12 @@ struct StarterTabsView: View {
                     ContentView()
                         .navigationTitle("Welcome")
                 }
+#if canImport(SessionTimer) && canImport(TimerRing)
+            case .timer:
+                NavigationStack {
+                    StarterTimerView()
+                }
+#endif
 #if canImport(Settings)
             case .settings:
                 NavigationStack {

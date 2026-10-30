@@ -1,0 +1,39 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "A tone when a session starts, a beep at each new phase and a chime when the session ends, mixed with any music or podcast. Sounds play only while the app is open.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A tone when a session starts, a beep at each new phase and a chime when the session ends, mixed with any music or podcast. Sounds play only while the app is open."
+          }
+        }
+      }
+    },
+    "Play in silent mode": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play in silent mode"
+          }
+        }
+      }
+    },
+    "Sounds": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sounds"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

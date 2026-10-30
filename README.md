@@ -20,6 +20,10 @@ A native iPhone and iPad app to start from. Onboarding, theming and settings are
 | **Theme** | Colors, spacing and text styles in one place, plus buttons and cards that adapt to dark mode and large text. |
 | **Settings** | A settings screen with appearance, app info and Keychain-backed secrets. |
 | **TabShell** | Native tabs whose screens, labels and symbols you choose in Swift, with remembered selection and count badges. Available by local path until the next module release. |
+| **SessionTimer** | Timed sessions of phases (intervals, Pomodoro, meditation) on a clock that doesn't drift, with pause, skip and reset. Available by local path until the next module release. |
+| **TimerRing** | A countdown ring for the current phase that VoiceOver reads as one element. Available by local path until the next module release. |
+| **Cues** | Timer sounds (a start tone, a beep per phase, a chime at the end) that mix with music, with a Sounds section for Settings. Available by local path until the next module release. |
+| **DurationPicker** | A row for setting a length of time with hours, minutes and seconds wheels, like the Clock app's timer. Available by local path until the next module release. |
 | **TemplateVersion** | Shows which module version the app was built with. |
 
 Also included:
