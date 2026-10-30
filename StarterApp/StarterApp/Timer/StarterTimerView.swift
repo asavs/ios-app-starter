@@ -54,15 +54,8 @@ struct StarterTimerView: View {
         }
 #endif
         .onChange(of: snapshot, model.sessionChanged)
-        // A tap for starting, each new phase and finishing; nothing for pauses, resets or plan changes.
-        .sensoryFeedback(trigger: snapshot) { old, new in
-            switch new.transition(from: old) {
-            case .started, .resumed: .start
-            case .phaseStarted: .impact
-            case .finished: .success
-            case nil: nil
-            }
-        }
+        // A tap for starting, each new phase and finishing, unless haptics are off in Settings.
+        .sensoryFeedback(trigger: snapshot, model.haptic)
         // The screen stays on only while a session runs on this screen.
         .onChange(of: model.isRunning, initial: true) { _, running in
             UIApplication.shared.isIdleTimerDisabled = running

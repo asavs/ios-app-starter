@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import Testing
 @testable import Cues
 
@@ -12,16 +13,35 @@ struct CuesTests {
         defaults = try #require(UserDefaults(suiteName: suiteName))
     }
 
-    @Test func preferencesDefaultToSoundThroughSilentMode() {
+    @Test func preferencesDefaultToSoundThroughSilentModeWithHaptics() {
         defer { defaults.removePersistentDomain(forName: suiteName) }
-        #expect(CuePreferences(defaults: defaults) == CuePreferences(sound: true, playsInSilentMode: true))
+        #expect(CuePreferences(defaults: defaults) == CuePreferences(sound: true, playsInSilentMode: true, haptics: true))
     }
 
     @Test func preferencesReadStoredValues() {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         defaults.set(false, forKey: CuePreferences.soundKey)
         defaults.set(false, forKey: CuePreferences.silentModeKey)
-        #expect(CuePreferences(defaults: defaults) == CuePreferences(sound: false, playsInSilentMode: false))
+        defaults.set(false, forKey: CuePreferences.hapticsKey)
+        #expect(CuePreferences(defaults: defaults) == CuePreferences(sound: false, playsInSilentMode: false, haptics: false))
+    }
+
+    @Test(arguments: Cue.allCases)
+    func hapticsFollowTheSetting(_ cue: Cue) {
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let player = CuePlayer(defaults: defaults) { _, _ in }
+        #expect(player.haptic(for: cue) == cue.haptic)
+        defaults.set(false, forKey: CuePreferences.hapticsKey)
+        #expect(player.haptic(for: cue) == nil)
+        defaults.set(false, forKey: CuePreferences.soundKey)
+        defaults.set(true, forKey: CuePreferences.hapticsKey)
+        #expect(player.haptic(for: cue) == cue.haptic, "Haptics don't depend on sound")
+    }
+
+    @Test func eachCueHasItsOwnHaptic() {
+        #expect(Cue.start.haptic == .start)
+        #expect(Cue.phaseChange.haptic == .impact)
+        #expect(Cue.finished.haptic == .success)
     }
 
     @Test func playsWithTheCurrentPreferences() {

@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftUI
 #if canImport(SessionTimer)
 import SessionTimer
 #if canImport(Cues)
@@ -34,6 +35,8 @@ final class TimerScreenModel {
 #if canImport(Cues)
     /// Plays a cue; tests replace it to record what would play.
     @ObservationIgnored var play: (Cue) -> Void
+    /// The haptic for a cue, or nil with haptics off in Settings.
+    @ObservationIgnored var haptic: (Cue) -> SensoryFeedback?
 #endif
 
     init(defaults: UserDefaults = .standard, plan: TimerPlan = .intervals,
@@ -44,7 +47,9 @@ final class TimerScreenModel {
         self.times = times
         timer = SessionTimer(plan: plan.session(times), now: now)
 #if canImport(Cues)
-        play = CuePlayer(defaults: defaults).play
+        let player = CuePlayer(defaults: defaults)
+        play = player.play
+        haptic = player.haptic
 #endif
     }
 
@@ -79,14 +84,36 @@ final class TimerScreenModel {
     /// Called with each pair of snapshots; plays the cue for a start, a new phase or the end.
     func sessionChanged(from old: SessionSnapshot, to new: SessionSnapshot) {
 #if canImport(Cues)
+        if let cue = Self.cue(for: new.transition(from: old)) { play(cue) }
+#endif
+    }
+
+    /// The haptic for the change between two snapshots, for the view's `sensoryFeedback`. Nil
+    /// for pauses, resets and plan changes, and for everything with haptics off.
+    func haptic(from old: SessionSnapshot, to new: SessionSnapshot) -> SensoryFeedback? {
+#if canImport(Cues)
+        Self.cue(for: new.transition(from: old)).flatMap(haptic)
+#else
         switch new.transition(from: old) {
-        case .started, .resumed: play(.start)
-        case .phaseStarted: play(.phaseChange)
-        case .finished: play(.finished)
-        case nil: break
+        case .started, .resumed: .start
+        case .phaseStarted: .impact
+        case .finished: .success
+        case nil: nil
         }
 #endif
     }
+
+#if canImport(Cues)
+    /// A start or resume, a new phase and the end each have a cue; nothing else does.
+    static func cue(for transition: SessionTransition?) -> Cue? {
+        switch transition {
+        case .started, .resumed: .start
+        case .phaseStarted: .phaseChange
+        case .finished: .finished
+        case nil: nil
+        }
+    }
+#endif
 
     private static func storedTimes(for plan: TimerPlan, in defaults: UserDefaults) -> PlanTimes {
         defaults.string(forKey: plan.storageKey).flatMap(PlanTimes.init(rawValue:)) ?? plan.defaultTimes
