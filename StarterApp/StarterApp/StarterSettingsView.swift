@@ -38,6 +38,14 @@ struct StarterSettingsView: View {
 #if canImport(Cues)
             CueSettingsSection()
 #endif
+            Section {
+                ResetLocalDataButton(reset: StarterLocalData.reset)
+            } footer: {
+                Text("Removes your settings, the example API key and the welcome tour record from this device. The app stays installed.")
+            }
+        } about: {
+            PrivacyNoticeLink(.starter)
+            AcknowledgementsLink(Acknowledgement.starter)
         }
     }
 }

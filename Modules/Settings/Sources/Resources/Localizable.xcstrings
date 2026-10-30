@@ -34,6 +34,17 @@
         }
       }
     },
+    "Acknowledgements": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acknowledgements"
+          }
+        }
+      }
+    },
     "Appearance": {
       "extractionState": "manual",
       "localizations": {
@@ -100,6 +111,83 @@
         }
       }
     },
+    "Couldn't erase everything": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't erase everything"
+          }
+        }
+      }
+    },
+    "Credits for third-party code and art appear here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Credits for third-party code and art appear here."
+          }
+        }
+      }
+    },
+    "Deleting your data": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleting your data"
+          }
+        }
+      }
+    },
+    "Erase": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erase"
+          }
+        }
+      }
+    },
+    "Erase Local Data": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erase Local Data"
+          }
+        }
+      }
+    },
+    "Erase all local data?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erase all local data?"
+          }
+        }
+      }
+    },
+    "Leaves this device": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leaves this device"
+          }
+        }
+      }
+    },
     "Not set.": {
       "extractionState": "manual",
       "localizations": {
@@ -107,6 +195,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "Not set."
+          }
+        }
+      }
+    },
+    "Nothing to acknowledge yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing to acknowledge yet"
+          }
+        }
+      }
+    },
+    "Nothing. The app sends no data anywhere.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing. The app sends no data anywhere."
+          }
+        }
+      }
+    },
+    "Privacy Policy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy Policy"
+          }
+        }
+      }
+    },
+    "Privacy and Data": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy and Data"
           }
         }
       }
@@ -133,6 +265,17 @@
         }
       }
     },
+    "Stored on this device": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stored on this device"
+          }
+        }
+      }
+    },
     "Stored securely on this device.": {
       "extractionState": "manual",
       "localizations": {
@@ -140,6 +283,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Stored securely on this device."
+          }
+        }
+      }
+    },
+    "Text size, contrast and Reduce Motion follow your device settings.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text size, contrast and Reduce Motion follow your device settings."
+          }
+        }
+      }
+    },
+    "This removes everything the app stored on this device, including your settings and saved secrets. It can't be undone.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This removes everything the app stored on this device, including your settings and saved secrets. It can't be undone."
           }
         }
       }

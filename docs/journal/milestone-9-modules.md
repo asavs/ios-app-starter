@@ -2,6 +2,15 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-30 — Settings sections: About rows, Privacy and Data, Acknowledgements, Erase Local Data, and the missing privacy manifests
+
+- **Tools:** Xcode 27.0 on the Mac, iPhone 17 / iOS 27.0 simulator. Tasks `ios-6dd.1` (research, docs/research/settings-sections.md) and `ios-6dd.2`, the first of module round two (epic `ios-6dd`): modules now come from a survey of five real apps, and a candidate needs two or more of them to have built it by hand.
+- **Decision (Asa, 2026-10-30):** research is commit 1 of the implementation pull request, not a PR of its own; one implementation PR open at a time, since every module PR touches Package.swift, project.yml, the template's settings view and docs/modules.md. Feature modules (the timer) move out of the default template into an example overlay (`ios-6dd.10`).
+- **Finding (confirmed):** the repository shipped no `PrivacyInfo.xcprivacy` although the app and four modules use `UserDefaults`, a required-reason API. Apple's rule says App Store Connect has refused such uploads since 2024-05-01; the TestFlight uploads here went through, so first-party use is evidently warned, not refused, today. Manifests with reason `CA92.1` now ship in the app and in Settings, Onboarding, TabShell and Cues (each package target lists it under `resources:`), and `scripts/check-modules.py` fails a module that uses `UserDefaults` without one.
+- **Finding (confirmed):** removing a `UserDefaults` persistent domain in one call doesn't notify `@AppStorage` views; `LocalDataReset.defaults()` removes the keys one by one so the appearance picker and the Sounds toggles update when the person erases local data.
+- **Change:** `SettingsView` gains an `about:` builder for rows under the version (`PrivacyNoticeLink`, `AcknowledgementsLink`), a copyable version, and the About footer that says text size, contrast and Reduce Motion follow the system. `ResetLocalDataButton` runs a `LocalDataReset` behind a `confirmationDialog` (HIG: a specific verb, destructive style, the dialog's own Cancel). The template's privacy notice has no policy URL yet: that is an owner step, now in docs/human-steps.md.
+- **Verified:** Settings module lane and the app UI suite on the iOS 27.0 simulator; see the pull request for CI.
+
 ## 2026-10-27 — Timer modules: SessionTimer, TimerRing and Cues, with the research they came from
 
 - **Tools:** Xcode 27.0 on the Mac, iPhone 17 / iOS 27.0 simulator. Task `ios-s8.2`; research `ios-cts` (Codex, two passes, 85 sources) lands in the same pull request, because research merges with the code that uses it.

@@ -56,6 +56,17 @@
         }
       }
     },
+    "Erase Local Data in Settings removes all of it. Deleting the app does too.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erase Local Data in Settings removes all of it. Deleting the app does too."
+          }
+        }
+      }
+    },
     "Example secret": {
       "extractionState": "manual",
       "localizations": {
@@ -100,6 +111,17 @@
         }
       }
     },
+    "MIT License": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MIT License"
+          }
+        }
+      }
+    },
     "Modules %@": {
       "extractionState": "manual",
       "localizations": {
@@ -140,6 +162,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Plan"
+          }
+        }
+      }
+    },
+    "Removes your settings, the example API key and the welcome tour record from this device. The app stays installed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removes your settings, the example API key and the welcome tour record from this device. The app stays installed."
           }
         }
       }
@@ -309,6 +342,17 @@
         }
       }
     },
+    "Starter App works offline. Everything you enter stays on this device.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starter App works offline. Everything you enter stays on this device."
+          }
+        }
+      }
+    },
     "Step %lld of %lld": {
       "extractionState": "manual",
       "localizations": {
@@ -327,6 +371,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Take the tour"
+          }
+        }
+      }
+    },
+    "The example API key, in this device's Keychain": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The example API key, in this device's Keychain"
+          }
+        }
+      }
+    },
+    "The timer plans you edit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The timer plans you edit"
           }
         }
       }
@@ -386,6 +452,17 @@
         }
       }
     },
+    "Whether you've seen the welcome tour": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Whether you've seen the welcome tour"
+          }
+        }
+      }
+    },
     "Work": {
       "extractionState": "manual",
       "localizations": {
@@ -393,6 +470,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Work"
+          }
+        }
+      }
+    },
+    "Your appearance choice and other settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your appearance choice and other settings"
           }
         }
       }

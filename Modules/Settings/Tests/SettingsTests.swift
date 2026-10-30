@@ -170,12 +170,72 @@ struct SettingsTests {
 
     // MARK: Views
 
+    // MARK: Local data reset
+
+    @Test func resetErasesEveryDefaultsKeyAndEverySecret() throws {
+        let defaults = try isolatedDefaults()
+        defaults.set("dark", forKey: AppSettings.appearanceKey)
+        defaults.set(3, forKey: "tabs.selected")
+        let store = InMemorySecureStore()
+        try store.set("secret", for: "api.key")
+        try LocalDataReset([.defaults(defaults), .secrets(in: store)]).erase()
+        #expect(defaults.object(forKey: AppSettings.appearanceKey) == nil)
+        #expect(defaults.object(forKey: "tabs.selected") == nil)
+        #expect(try store.keys().isEmpty)
+    }
+
+    @Test func resetRunsEveryStepAndReportsTheOnesThatFailed() {
+        struct Broken: Error {}
+        var ran: [String] = []
+        let reset = LocalDataReset([
+            .init("first") { ran.append("first") },
+            .init("broken") { ran.append("broken"); throw Broken() },
+            .init("last") { ran.append("last") },
+        ])
+        let failure = #expect(throws: LocalDataReset.Failure.self) { try reset.erase() }
+        #expect(ran == ["first", "broken", "last"], "A failing store doesn't stop the others being erased")
+        #expect(failure?.steps.map(\.name) == ["broken"])
+        #expect(failure?.description.hasPrefix("broken:") == true)
+    }
+
+    @Test func resetWithNothingToEraseSucceeds() throws {
+        try LocalDataReset([]).erase()
+    }
+
+    // MARK: Privacy and acknowledgements
+
+    @Test func acknowledgementIdentityDefaultsToItsName() {
+        let entry = Acknowledgement(name: "A package", license: "MIT License")
+        #expect(entry.id == "A package")
+        #expect(Acknowledgement(id: "pkg", name: "A package").id == "pkg")
+        #expect(entry.author == nil && entry.url == nil)
+    }
+
+    @Test func privacyNoticeDefaultsToNothingSharedAndNoPolicy() {
+        let notice = PrivacyNotice(summary: "Works offline.", deletion: "Erase Local Data removes it.")
+        #expect(notice.stored.isEmpty && notice.shared.isEmpty && notice.policyURL == nil)
+        #expect(notice == PrivacyNotice(summary: "Works offline.", deletion: "Erase Local Data removes it."))
+    }
+
+    // MARK: Views
+
     @Test @MainActor func viewsConstructWithPublicInitializers() throws {
         _ = SettingsView()
         _ = SettingsView(version: nil)
         _ = SettingsView(version: "1.0 (1)") {
             Section("Account") { SecureSettingRow("API key", key: "api.key", store: InMemorySecureStore()) }
         }
+        let notice = PrivacyNotice(summary: "Works offline.", deletion: "Erase Local Data removes it.")
+        let entries = [Acknowledgement(name: "A package")]
+        _ = SettingsView {
+            Section { ResetLocalDataButton(reset: LocalDataReset([])) }
+        } about: {
+            PrivacyNoticeLink(notice)
+            AcknowledgementsLink(entries)
+        }
+        _ = PrivacyNoticeView(notice)
+        _ = AcknowledgementsView(entries)
+        _ = AcknowledgementsView([])
         _ = SecureSettingRow("Token", key: "token")
         _ = Text("Root").storedAppearance()
         _ = Text("Root").storedAppearance(store: try isolatedDefaults())
