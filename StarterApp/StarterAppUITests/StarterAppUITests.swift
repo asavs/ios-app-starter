@@ -182,8 +182,18 @@ final class StarterAppUITests: XCTestCase {
         // A Toggle's identifier lands on a switch spanning the row, whose center is the label; tap
         // the switch inside it. The section sits near the floating tab bar, so keep it clear first.
         func flip(_ toggle: XCUIElement) {
-            if waitUntilHittable(toggle.switches.firstMatch, timeout: 2) == false { app.swipeUp() }
-            toggle.switches.firstMatch.tap()
+            let before = toggle.value as? String ?? ""
+            XCTAssertTrue(scroll(app, to: toggle))
+            // The section sits near the floating tab bar; keep the row clear of it.
+            if toggle.frame.maxY > app.windows.firstMatch.frame.maxY - 120 { app.swipeUp() }
+            // Tap the knob on the row's trailing edge by coordinate. Asking the inner switch whether it's
+            // hittable fails the test outright while the list settles after a relaunch ("Activation
+            // point invalid"), as it did on the hosted runner.
+            let knob = toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5))
+            knob.tap()
+            // A tap while the list is still decelerating after a swipe only stops the scroll.
+            if waitUntil(toggle, "value != '\(before)'", timeout: 3) == false { knob.tap() }
+            XCTAssertTrue(waitUntil(toggle, "value != '\(before)'", timeout: 5), "\(toggle) should flip")
         }
         if sound.value as? String == "0" { flip(sound) }
         XCTAssertTrue(waitUntil(sound, "value == '1'"))
@@ -192,13 +202,23 @@ final class StarterAppUITests: XCTestCase {
         flip(sound)
         XCTAssertTrue(waitUntil(sound, "value == '0'"))
         XCTAssertTrue(waitUntil(silentMode, "isEnabled == false"), "Silent mode only applies with sounds on")
+
+        let haptics = app.switches["cues.haptics"]
+        XCTAssertTrue(haptics.isEnabled, "Haptics don't depend on sounds")
+        if haptics.value as? String == "0" { flip(haptics) }
+        XCTAssertTrue(waitUntil(haptics, "value == '1'"))
+        flip(haptics)
+        XCTAssertTrue(waitUntil(haptics, "value == '0'"))
         attach(name: "cues-settings-off")
         app.terminate()
         app.launch()
         XCTAssertTrue(scroll(app, to: sound))
         XCTAssertEqual(sound.value as? String, "0", "Sounds off should survive a relaunch")
+        XCTAssertEqual(haptics.value as? String, "0", "Haptics off should survive a relaunch")
         flip(sound)
         XCTAssertTrue(waitUntil(sound, "value == '1'"))
+        flip(haptics)
+        XCTAssertTrue(waitUntil(haptics, "value == '1'"))
     }
 
     /// At the largest accessibility text size the Timer tab scrolls to its controls and stacks Skip

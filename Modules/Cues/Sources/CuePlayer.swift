@@ -8,7 +8,7 @@ import AVFoundation
 /// background: a suspended app plays nothing (see docs/research/background-audio.md).
 @MainActor
 public final class CuePlayer {
-    private let defaults: UserDefaults
+    let defaults: UserDefaults
     private let output: (Cue, CuePreferences) -> Void
 
     public init(defaults: UserDefaults = .standard) {

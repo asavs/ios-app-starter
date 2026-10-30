@@ -1,6 +1,7 @@
 #if canImport(SessionTimer)
 import Foundation
 import SessionTimer
+import SwiftUI
 import Testing
 @testable import StarterApp
 #if canImport(Cues)
@@ -114,6 +115,20 @@ struct TimerScreenModelTests {
         step { clock.now += .seconds(9); model.skip() }
         step { clock.now += .seconds(3600); model.skip() } // Finish.
         #expect(played == [.start, .start, .phaseChange, .finished])
+    }
+
+    @Test func hapticsFollowTheSettingAndTheTransition() {
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let model = makeModel()
+        let ready = model.timer.snapshot
+        model.primaryAction()
+        let running = model.timer.snapshot
+        #expect(model.haptic(from: ready, to: running) == .start)
+        #expect(model.haptic(from: running, to: running) == nil, "No change, no tap")
+        model.primaryAction()
+        #expect(model.haptic(from: running, to: model.timer.snapshot) == nil, "Pausing doesn't tap")
+        defaults.set(false, forKey: CuePreferences.hapticsKey)
+        #expect(model.haptic(from: ready, to: running) == nil, "Haptics off in Settings")
     }
 #endif
 }
