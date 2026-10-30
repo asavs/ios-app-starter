@@ -183,10 +183,17 @@ final class StarterAppUITests: XCTestCase {
         // the switch inside it. The section sits near the floating tab bar, so keep it clear first.
         func flip(_ toggle: XCUIElement) {
             let before = toggle.value as? String ?? ""
-            if waitUntilHittable(toggle.switches.firstMatch, timeout: 2) == false { app.swipeUp() }
-            toggle.switches.firstMatch.tap()
+            XCTAssertTrue(scroll(app, to: toggle))
+            // The section sits near the floating tab bar; keep the row clear of it.
+            if toggle.frame.maxY > app.windows.firstMatch.frame.maxY - 120 { app.swipeUp() }
+            // Tap the knob on the row's trailing edge by coordinate. Asking the inner switch whether it's
+            // hittable fails the test outright while the list settles after a relaunch ("Activation
+            // point invalid"), as it did on the hosted runner.
+            let knob = toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5))
+            knob.tap()
             // A tap while the list is still decelerating after a swipe only stops the scroll.
-            if waitUntil(toggle, "value != '\(before)'", timeout: 3) == false { toggle.switches.firstMatch.tap() }
+            if waitUntil(toggle, "value != '\(before)'", timeout: 3) == false { knob.tap() }
+            XCTAssertTrue(waitUntil(toggle, "value != '\(before)'", timeout: 5), "\(toggle) should flip")
         }
         if sound.value as? String == "0" { flip(sound) }
         XCTAssertTrue(waitUntil(sound, "value == '1'"))
