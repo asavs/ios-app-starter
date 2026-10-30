@@ -1,6 +1,6 @@
 # Settings sections: About, privacy and data, acknowledgements, reset
 
-Checked 2026-10-30 by claude-mac for board tasks ios-6dd.1 (this research) and ios-6dd.2 (the implementation). Built as: pending.
+Checked 2026-10-30 by claude-mac for board tasks ios-6dd.1 (this research) and ios-6dd.2 (the implementation). Built as the Settings module's About rows, `PrivacyNoticeView`, `AcknowledgementsView`, `ResetLocalDataButton` and the privacy manifests (2026-10-30); see [modules.md](../modules.md#settings).
 
 Why: two of the five apps surveyed for module round two (epic ios-6dd) wrote the same four things by hand in their Settings: an About section (version and build, a line on what the app does with data, a footer saying text size, contrast and Reduce Motion follow the iPhone settings), a privacy and local data screen (works offline, what is stored, how to delete it), an acknowledgements screen (third-party art and code), and a reset or delete local data action. The template's Settings module shows only the version. Grades: A, Apple documentation; B, a named practitioner or a maintained open-source project; C, unattributed.
 
@@ -10,7 +10,7 @@ Why: two of the five apps surveyed for module round two (epic ios-6dd) wrote the
 - **App Privacy details on the product page** are mandatory for every submission, with a required, publicly reachable privacy policy URL. Data "processed only on device is not 'collected' and does not need to be disclosed", so a local-only app declares no collected data but still needs the policy URL. (A) https://developer.apple.com/app-store/app-privacy-details/
 - **Account deletion is required only when the app creates accounts** (5.1.1(v); Apple's support page: "Apps submitted to the App Store that support account creation must also let people initiate deletion of their account within the app", "typically... in the app's account settings"). An app without accounts has no deletion obligation; the reset action below is good practice, not a rule. It becomes the place account deletion plugs in when the sign-in module (ios-s5.1) arrives. (A) https://developer.apple.com/support/offering-account-deletion-in-your-app
 - **A privacy manifest for required-reason APIs.** `UserDefaults` is a required-reason API; an app that reads or writes its own defaults declares `NSPrivacyAccessedAPICategoryUserDefaults` with reason `CA92.1` ("information that is only accessible to the app itself") in `PrivacyInfo.xcprivacy`. "Starting May 1, 2024, apps that don't describe their use of required reason API in their privacy manifest file aren't accepted by App Store Connect." A Swift package target declares its own file and must list it under `resources:`. (A) https://developer.apple.com/documentation/bundleresources/describing-use-of-required-reason-api and https://developer.apple.com/documentation/bundleresources/adding-a-privacy-manifest-to-your-app-or-third-party-sdk
-  - Finding: this repository has no `PrivacyInfo.xcprivacy` anywhere, while the app and four modules (Settings, Onboarding, TabShell, Cues) use `UserDefaults`. TestFlight uploads have gone through, so enforcement for first-party code is evidently a warning email rather than a rejection today, but the rule is written as a rejection. Add the manifests with the implementation; it is one small file per target.
+  - Finding: this repository has no `PrivacyInfo.xcprivacy` anywhere, while the app and four modules (Settings, Onboarding, TabShell, Cues) use `UserDefaults`. TestFlight uploads have gone through, so first-party use is evidently warned rather than refused today; the rule is written as a refusal. The implementation adds one small file per target.
 
 ## What Apple says about the screen
 
@@ -40,6 +40,6 @@ Extend the Settings module rather than adding a module: the About section alread
 
 ## Open questions
 
-- Whether Apple enforces missing first-party required-reason declarations as a rejection today or only as an email: the written rule says rejection from 2024-05-01; the template uploaded without a manifest in 2026-10. Adding the manifest is right either way.
+- Whether Apple enforces missing first-party required-reason declarations as a rejection today or only as an email: the written rule says rejection from 2024-05-01; the template uploaded without a manifest in 2026-10.
 - A licence generator from `Package.resolved` (what AcknowList reads) as a script in `scripts/`, once an app depends on third-party code.
 - Account deletion lands with the sign-in module (ios-s5.1) and must satisfy the support page's rules (whole account, in-app, no support flow), not this reset.

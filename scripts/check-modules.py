@@ -31,6 +31,26 @@ def version(value):
     return parts + (0,) * (3 - len(parts))
 
 
+def check_privacy_manifest(name, target, root=ROOT):
+    """A module that touches a required-reason API ships a privacy manifest declaring why.
+
+    UserDefaults is the one the template's modules use (reason CA92.1, the app's own defaults). App
+    Store Connect has refused uploads without the declaration since 2024-05-01; see
+    docs/research/settings-sections.md.
+    """
+    sources = root / f"Modules/{name}/Sources"
+    uses_defaults = any("UserDefaults" in path.read_text(encoding="utf-8")
+                        for path in sources.rglob("*.swift"))
+    manifest_path = sources / "PrivacyInfo.xcprivacy"
+    declared = any(resource.get("path") == "PrivacyInfo.xcprivacy" for resource in target.get("resources", []))
+    if uses_defaults and not manifest_path.is_file():
+        raise ValueError(f"Modules/{name} uses UserDefaults: add Sources/PrivacyInfo.xcprivacy with reason CA92.1")
+    if manifest_path.is_file() and not declared:
+        raise ValueError(f"target {name}: list .process(\"PrivacyInfo.xcprivacy\") in resources so the manifest ships")
+    if manifest_path.is_file() and "NSPrivacyAccessedAPICategoryUserDefaults" not in manifest_path.read_text(encoding="utf-8") and uses_defaults:
+        raise ValueError(f"Modules/{name}/Sources/PrivacyInfo.xcprivacy must declare NSPrivacyAccessedAPICategoryUserDefaults")
+
+
 def check_manifest(manifest, module_dirs, root=ROOT):
     """Validate dump-package output against the Modules/ directories; return module records."""
     products = {product["name"]: product for product in manifest.get("products", [])}
@@ -57,6 +77,7 @@ def check_manifest(manifest, module_dirs, root=ROOT):
             directory = root / relative
             if not any(path.suffix == ".swift" for path in directory.rglob("*")) if directory.is_dir() else True:
                 raise ValueError(f"{relative} must contain at least one Swift file")
+        check_privacy_manifest(name, target, root)
         modules.append({"name": name, "sources": f"Modules/{name}/Sources", "tests": f"Modules/{name}/Tests",
                         "testTarget": f"{name}Tests"})
     for name, product in products.items():

@@ -18,7 +18,7 @@ A native iPhone and iPad app to start from. Onboarding, theming and settings are
 | --- | --- |
 | **Onboarding** | A first-launch flow you assemble from steps: welcome, tour cards, a question, a permission prompt, or your own view. Shows once, can be skipped, then hands off to tips. |
 | **Theme** | Colors, spacing and text styles in one place, plus buttons and cards that adapt to dark mode and large text. |
-| **Settings** | A settings screen with appearance, app info and Keychain-backed secrets. |
+| **Settings** | A settings screen with appearance, About, Privacy and Data, Acknowledgements, Erase Local Data and Keychain-backed secrets. |
 | **TabShell** | Native tabs whose screens, labels and symbols you choose in Swift, with remembered selection and count badges. Available by local path until the next module release. |
 | **SessionTimer** | Timed sessions of phases (intervals, Pomodoro, meditation) on a clock that doesn't drift, with pause, skip and reset. Available by local path until the next module release. |
 | **TimerRing** | A countdown ring for the current phase that VoiceOver reads as one element. Available by local path until the next module release. |

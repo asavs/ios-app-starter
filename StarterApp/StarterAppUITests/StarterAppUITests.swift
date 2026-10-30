@@ -170,6 +170,48 @@ final class StarterAppUITests: XCTestCase {
     /// The Cues section in Settings: turning Sounds off disables "Play in silent mode", and the
     /// choice survives a relaunch. Leaves Sounds on. Skips when the Cues module is disabled.
     @MainActor
+    /// The About rows open their screens, and Erase Local Data puts the stored appearance back to System.
+    func testSettingsAboutScreensAndReset() throws {
+        let app = XCUIApplication()
+        // No settings.appearance argument: an argument would outrank what the picker stores and the reset erases.
+        app.launchArguments = ["-tabs.selected", "settings", "-onboarding.completedVersion", "99", "-tips.testing", "hideAll"]
+        app.launch()
+        let picker = app.descendants(matching: .any).matching(identifier: "settings.appearance").firstMatch
+        try requireModuleUI("Settings", appeared: picker.waitForExistence(timeout: 10), "no appearance picker")
+        picker.buttons["Dark"].tap()
+        XCTAssertTrue(waitUntil(picker.buttons["Dark"], "isSelected == true"))
+
+        let privacy = app.buttons["settings.privacy"]
+        XCTAssertTrue(scroll(app, to: privacy), "The About section should link to Privacy and Data")
+        privacy.tap()
+        XCTAssertTrue(app.staticTexts["settings.privacy.summary"].waitForExistence(timeout: 5))
+        attach(name: "settings-privacy")
+        app.navigationBars.buttons.firstMatch.tap()
+
+        let acknowledgements = app.buttons["settings.acknowledgements"]
+        XCTAssertTrue(scroll(app, to: acknowledgements))
+        acknowledgements.tap()
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'settings.acknowledgements.'"))
+            .firstMatch.waitForExistence(timeout: 5), "The template credits the starter it came from")
+        attach(name: "settings-acknowledgements")
+        app.navigationBars.buttons.firstMatch.tap()
+
+        let reset = app.buttons["settings.reset"]
+        XCTAssertTrue(scroll(app, to: reset))
+        reset.tap()
+        // The identifier lands on the dialog's cell and the button inside it; either tap works.
+        let confirm = app.buttons["settings.reset.confirm"].firstMatch
+        let erase = confirm.waitForExistence(timeout: 3) ? confirm : app.buttons["Erase"].firstMatch
+        XCTAssertTrue(erase.waitForExistence(timeout: 5), "Erase should ask for confirmation first")
+        attach(name: "settings-reset-confirm")
+        erase.tap()
+        // Back up to the top of the form; `scroll` only goes down.
+        let window = app.windows.firstMatch
+        for _ in 0..<6 where !(picker.exists && window.frame.contains(picker.frame)) { app.swipeDown() }
+        XCTAssertTrue(waitUntil(picker.buttons["System"], "isSelected == true"), "Erasing local data should forget the appearance choice")
+    }
+
+    @MainActor
     func testCueSettings() throws {
         let app = XCUIApplication()
         // No cues.* arguments: an argument would outrank what the toggles store.
