@@ -38,6 +38,13 @@ struct CuesTests {
         #expect(player.haptic(for: cue) == cue.haptic, "Haptics don't depend on sound")
     }
 
+    @Test func settingsViewsConstructWithPublicInitializers() {
+        _ = CueSettingsSection()
+        _ = CueSettingsSection(defaults: defaults)
+        _ = CueSettingsLink()
+        _ = CueSettingsLink(defaults: defaults)
+    }
+
     @Test func eachCueHasItsOwnHaptic() {
         #expect(Cue.start.haptic == .start)
         #expect(Cue.phaseChange.haptic == .impact)

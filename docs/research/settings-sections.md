@@ -38,6 +38,14 @@ Extend the Settings module rather than adding a module: the About section alread
 - **Privacy manifests**: `PrivacyInfo.xcprivacy` with `CA92.1` for the app target (in `project.yml`) and for each module target that touches `UserDefaults`, declared in `Package.swift` resources. `scripts/check-modules.py` can warn when a module target uses `UserDefaults` without one.
 - **Human step**: every app needs a public privacy policy URL before submission (App Store Connect and 5.1.1(i)). Record it in `docs/human-steps.md`; the template leaves the URL `nil` and the screen hides the row until it is set.
 
+## Information architecture
+
+Checked 2026-10-30, after the first version of these rows made the template's Settings six stacked sections, with every later module adding one more.
+
+- **Apple's model is a hierarchy, not a long page.** HIG Lists and tables: "iOS Settings uses a hierarchy of lists to help people choose options"; the grouped style "uses headers, footers, and additional space to separate groups of data"; a row that leads to a subview shows a disclosure indicator, and "an info button... doesn't support navigation through a hierarchical table or list". HIG Settings: "Minimize the number of settings you offer." (A) https://developer.apple.com/design/human-interface-guidelines/lists-and-tables and https://developer.apple.com/design/human-interface-guidelines/settings
+- **The Settings app itself** keeps a short top level of grouped rows (connectivity, then notifications and sounds, then General and the per-app list) and puts controls one level down; the few inline controls at the top level are the ones people touch most. Ice Cubes has the same shape: General, Other and App groups of `Label` rows pushing Display, Haptics and the rest. (B) https://github.com/Dimillian/IceCubesApp
+- **Recommendation.** A module exports its settings twice: a `Section` for inline use and a `Link` row that pushes a screen holding that section, so the host decides per module whether it's worth a row. The Settings module provides the generic row (`SettingsLink`), so every module's row looks and reads the same (a `Label` with a symbol, a disclosure indicator, the title as the pushed screen's navigation title). The template's top level becomes four groups, mostly rows: the app (Appearance inline, Sounds & Haptics as a row), the examples, data (Privacy and Data, Erase Local Data), and About.
+
 ## Open questions
 
 - Whether Apple enforces missing first-party required-reason declarations as a rejection today or only as an email: the written rule says rejection from 2024-05-01; the template uploaded without a manifest in 2026-10.

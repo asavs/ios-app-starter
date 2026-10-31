@@ -28,7 +28,7 @@ Each feature of the starter is a module you enable in `project.yml`; keep the on
 | `TabShell` | Native tabs with typed, restored selection and host-supplied count badges. Requires `Theme`. | `TabShell(tabs:selection:) { tab in ... }`; own `TabSelection` in scene-root `@State`. Unreleased. |
 | `SessionTimer` | A session plan of timed phases and a clock that can't drift: start, pause, skip, reset, and a snapshot of where the session is. No UI or other module. | `SessionTimer(plan:)` in a view's `@State`; read `timer.snapshot`. Unreleased. |
 | `TimerRing` | One ring that empties as a phase runs out, with its remaining time and title, read by VoiceOver as one element. Requires `Theme`. | `TimerRing(fractionRemaining:title:remaining:)` fed from a `SessionSnapshot`. Unreleased. |
-| `Cues` | Foreground sounds and haptics for a session (a start tone, a beep per phase, a chime at the end, each with its tap), mixed with music, with a Sounds & Haptics section for Settings. | `CuePlayer().play(.phaseChange)`, `player.haptic(for:)` inside `sensoryFeedback`; `CueSettingsSection()` in `SettingsView { }`. Unreleased. |
+| `Cues` | Foreground sounds and haptics for a session (a start tone, a beep per phase, a chime at the end, each with its tap), mixed with music, with a Sounds & Haptics section for Settings. | `CuePlayer().play(.phaseChange)`, `player.haptic(for:)` inside `sensoryFeedback`; `CueSettingsSection()` inline or `CueSettingsLink()` as a row in `SettingsView { }`. Unreleased. |
 | `DurationPicker` | A form row for minutes and seconds that opens native wheels, kept inside a range and on a step. Requires `Theme`. | `DurationPickerRow("Work", value: $duration)`. Unreleased. |
 
 ### Theme
@@ -127,7 +127,9 @@ Secrets go through the `SecureStore` protocol: `data(for:)`, `set(_:for:)`, `rem
 - `InMemorySecureStore` stands in for tests and previews.
 - `SecureSettingRow("API key", key: "api.key")` is the matching form row. It never shows the stored value: it reports "Checking…" until its first read returns, then "Stored securely on this device." or "Not set.". Save replaces the value, Clear forgets it, and every Keychain call goes through `perform`.
 
-Accessibility identifiers for UI tests: `settings.appearance`, `settings.version`, `settings.privacy` (and `settings.privacy.summary`, `settings.privacy.policy` on its screen), `settings.acknowledgements` (and `settings.acknowledgements.<id>` rows), `settings.reset` / `settings.reset.confirm`, `settings.secure.<key>.field` / `.save` / `.clear` / `.status`.
+`SettingsLink(_:systemImage:id:) { }` is the row that pushes a screen of its own (a `Form` with the content), for a module's settings or the app's; see "Settings from other modules" below.
+
+Accessibility identifiers for UI tests: `settings.appearance`, `settings.version`, `settings.<id>` for each `SettingsLink`, `settings.privacy` (and `settings.privacy.summary`, `settings.privacy.policy` on its screen), `settings.acknowledgements` (and `settings.acknowledgements.<id>` rows), `settings.reset` / `settings.reset.confirm`, `settings.secure.<key>.field` / `.save` / `.clear` / `.status`.
 
 ```swift
 @main struct MyApp: App {
@@ -151,7 +153,8 @@ Settings doesn't depend on feature modules, and feature modules don't depend on 
 
 - **Keys and defaults in one value type** in the module, such as `CuePreferences`: keys namespaced by module (`cues.sound`, `cues.playsInSilentMode`), each default a `static let`, and an `init(defaults:)` that reads stored values or falls back to those defaults. Code that acts on a setting reads it at the moment it acts, so a change applies at once.
 - **A form section the module exports**, such as `CueSettingsSection(defaults:)`, using `@AppStorage` with the same keys and defaults. It's a plain `Section`, so it works in `SettingsView`'s builder or any other form.
-- **The app places it**: `StarterSettingsView` lists `CueSettingsSection()` under `#if canImport(Cues)`, so removing the module's product line removes its settings with it.
+- **A row that pushes that section**, such as `CueSettingsLink()`, for apps whose Settings nests like iOS Settings (the HIG: "iOS Settings uses a hierarchy of lists"). The Settings module's `SettingsLink(_:systemImage:) { }` builds one for any content, so every module's row looks the same: a `Label` with a symbol, a disclosure indicator, the title as the pushed screen's navigation title.
+- **The app places one or the other**: `StarterSettingsView` keeps Appearance inline as the most-touched control and lists `CueSettingsLink()` under `#if canImport(Cues)`, so removing the module's product line removes its settings with it. Its top level is four groups, mostly rows: the app, the examples, data (Privacy and Data, Erase Local Data) and About ([research](research/settings-sections.md#information-architecture)).
 - Preferences stay in `UserDefaults`; secrets go through `SecureStore`. Tests inject a defaults suite. UI tests must not pass a module's keys as launch arguments, because the argument domain outranks what a toggle stores and the toggle would seem not to stick.
 
 

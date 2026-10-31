@@ -236,6 +236,8 @@ struct SettingsTests {
         _ = PrivacyNoticeView(notice)
         _ = AcknowledgementsView(entries)
         _ = AcknowledgementsView([])
+        _ = SettingsLink("Sounds", systemImage: "speaker.wave.2") { Text("Content") }
+        _ = SettingsLink("Sounds", systemImage: "speaker.wave.2", id: "sounds") { Text("Content") }
         _ = SecureSettingRow("Token", key: "token")
         _ = Text("Root").storedAppearance()
         _ = Text("Root").storedAppearance(store: try isolatedDefaults())

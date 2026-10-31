@@ -67,13 +67,24 @@
         }
       }
     },
-    "Example secret": {
+    "Erasing removes your settings, the example API key and the welcome tour record from this device. The app stays installed.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Example secret"
+            "value": "Erasing removes your settings, the example API key and the welcome tour record from this device. The app stays installed."
+          }
+        }
+      }
+    },
+    "Examples": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Examples"
           }
         }
       }
@@ -166,17 +177,6 @@
         }
       }
     },
-    "Removes your settings, the example API key and the welcome tour record from this device. The app stays installed.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Removes your settings, the example API key and the welcome tour record from this device. The app stays installed."
-          }
-        }
-      }
-    },
     "Replace this screen in ContentView.swift.": {
       "extractionState": "manual",
       "localizations": {
@@ -250,6 +250,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rounds: %lld"
+          }
+        }
+      }
+    },
+    "Rows a real app replaces: a secret kept in the Keychain, and the welcome tour's reset.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rows a real app replaces: a secret kept in the Keychain, and the welcome tour's reset."
           }
         }
       }
@@ -441,17 +452,6 @@
         }
       }
     },
-    "Welcome tour": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Welcome tour"
-          }
-        }
-      }
-    },
     "Whether you've seen the welcome tour": {
       "extractionState": "manual",
       "localizations": {
@@ -481,6 +481,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your appearance choice and other settings"
+          }
+        }
+      }
+    },
+    "Your data": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data"
           }
         }
       }
