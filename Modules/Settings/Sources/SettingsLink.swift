@@ -29,7 +29,7 @@ public struct SettingsLink<Content: View>: View {
         NavigationLink {
             Form { content }
                 .navigationTitle(Text(title))
-                .navigationBarTitleDisplayMode(.inline)
+                .inlineNavigationTitle()
         } label: {
             Label { Text(title) } icon: { Image(systemName: systemImage) }
         }

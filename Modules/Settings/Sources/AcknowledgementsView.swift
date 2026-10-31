@@ -26,7 +26,7 @@ public struct AcknowledgementsView: View {
             }
         }
         .navigationTitle(Text("Acknowledgements", bundle: .module))
-        .navigationBarTitleDisplayMode(.inline)
+        .inlineNavigationTitle()
     }
 }
 

@@ -53,7 +53,7 @@ public struct PrivacyNoticeView: View {
             }
         }
         .navigationTitle(Text("Privacy and Data", bundle: .module))
-        .navigationBarTitleDisplayMode(.inline)
+        .inlineNavigationTitle()
     }
 }
 

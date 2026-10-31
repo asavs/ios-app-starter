@@ -23,10 +23,21 @@ public struct CueSettingsLink: View {
         NavigationLink {
             Form { CueSettingsSection(defaults: defaults) }
                 .navigationTitle(Text("Sounds & Haptics", bundle: .module))
-                .navigationBarTitleDisplayMode(.inline)
+                .inlineNavigationTitle()
         } label: {
             Label { Text("Sounds & Haptics", bundle: .module) } icon: { Image(systemName: "speaker.wave.2") }
         }
         .accessibilityIdentifier("settings.cues")
+    }
+}
+
+private extension View {
+    /// An inline title on iOS; the package also builds for macOS so `swift test` runs on the host.
+    @ViewBuilder func inlineNavigationTitle() -> some View {
+#if os(iOS)
+        navigationBarTitleDisplayMode(.inline)
+#else
+        self
+#endif
     }
 }
