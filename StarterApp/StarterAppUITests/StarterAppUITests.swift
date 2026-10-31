@@ -232,14 +232,13 @@ final class StarterAppUITests: XCTestCase {
             XCTAssertTrue(scroll(app, to: toggle))
             // The section sits near the floating tab bar; keep the row clear of it.
             if toggle.frame.maxY > app.windows.firstMatch.frame.maxY - 120 { app.swipeUp() }
-            // Tap the knob on the row's trailing edge by coordinate. Asking the inner switch whether it's
-            // hittable fails the test outright while the list settles after a relaunch ("Activation
-            // point invalid"), as it did on the hosted runner.
-            let knob = toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5))
-            knob.tap()
-            // A tap while the list is still decelerating after a swipe only stops the scroll.
-            if waitUntil(toggle, "value != '\(before)'", timeout: 3) == false { knob.tap() }
-            XCTAssertTrue(waitUntil(toggle, "value != '\(before)'", timeout: 5), "\(toggle) should flip")
+            // Let the push or the swipe finish first: a tap mid-animation lands elsewhere, and a retry
+            // after a slow tap would flip it back. Then tap the knob on the row's trailing edge by
+            // coordinate; asking the inner switch whether it's hittable fails the test outright while
+            // the list settles ("Activation point invalid"), as it did on the hosted runner.
+            XCTAssertTrue(waitUntilSettled(toggle), "\(toggle) should stop moving")
+            toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+            XCTAssertTrue(waitUntil(toggle, "value != '\(before)'", timeout: 10), "\(toggle) should flip")
         }
         if sound.value as? String == "0" { flip(sound) }
         XCTAssertTrue(waitUntil(sound, "value == '1'"))
@@ -523,6 +522,17 @@ final class StarterAppUITests: XCTestCase {
             return element.isHittable == expected
         }
         return XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: settled, object: nil)], timeout: timeout) == .completed
+    }
+
+    /// Waits until the element's frame stops changing: a push, a sheet or a swipe has finished.
+    private func waitUntilSettled(_ element: XCUIElement, checks: Int = 20) -> Bool {
+        for _ in 0..<checks {
+            guard element.exists else { return false }
+            let frame = element.frame
+            Thread.sleep(forTimeInterval: 0.25)
+            if element.exists, element.frame == frame, frame.minX.isFinite, !frame.isEmpty { return true }
+        }
+        return false
     }
 
     /// Any element with this accessibility identifier; containers and combined rows vary in type.
