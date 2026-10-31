@@ -218,8 +218,12 @@ final class StarterAppUITests: XCTestCase {
         app.launchArguments = ["-tabs.selected", "settings", "-onboarding.completedVersion", "99",
                                "-tips.testing", "hideAll"]
         app.launch()
+        // The module's settings sit one level down, behind the Sounds & Haptics row.
+        let cuesRow = app.buttons["settings.cues"]
+        try requireModuleUI("Cues", appeared: scroll(app, to: cuesRow), "no Sounds & Haptics row in Settings")
+        cuesRow.tap()
         let sound = app.switches["cues.sound"]
-        try requireModuleUI("Cues", appeared: scroll(app, to: sound), "no Sounds toggle in Settings")
+        XCTAssertTrue(sound.waitForExistence(timeout: 5), "The row should push the Sounds & Haptics screen")
         let silentMode = app.switches["cues.silentMode"]
         // A Toggle's identifier lands on a switch spanning the row, whose center is the label; tap
         // the switch inside it. The section sits near the floating tab bar, so keep it clear first.
@@ -254,7 +258,9 @@ final class StarterAppUITests: XCTestCase {
         attach(name: "cues-settings-off")
         app.terminate()
         app.launch()
-        XCTAssertTrue(scroll(app, to: sound))
+        XCTAssertTrue(scroll(app, to: cuesRow))
+        cuesRow.tap()
+        XCTAssertTrue(sound.waitForExistence(timeout: 5))
         XCTAssertEqual(sound.value as? String, "0", "Sounds off should survive a relaunch")
         XCTAssertEqual(haptics.value as? String, "0", "Haptics off should survive a relaunch")
         flip(sound)

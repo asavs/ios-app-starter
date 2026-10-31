@@ -265,13 +265,16 @@
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					77BB0999D503BC959EC52252 = {
+						DevelopmentTeam = 9L6Y9T3PPW;
 						ProvisioningStyle = Automatic;
 					};
 					804528C1CF4C645211E71031 = {
+						DevelopmentTeam = 9L6Y9T3PPW;
 						ProvisioningStyle = Automatic;
 						TestTargetID = 77BB0999D503BC959EC52252;
 					};
 					D8CDD9BCDE41C375B5B95E91 = {
+						DevelopmentTeam = 9L6Y9T3PPW;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -383,7 +386,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.StarterAppTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.asaschaeffer.starterappdemo.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/StarterApp.app/StarterApp";
@@ -409,7 +412,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.StarterApp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.asaschaeffer.starterappdemo;
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -437,7 +440,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.StarterApp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.asaschaeffer.starterappdemo;
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -484,6 +487,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 9L6Y9T3PPW;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -516,7 +520,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.StarterAppTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.asaschaeffer.starterappdemo.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/StarterApp.app/StarterApp";
@@ -533,7 +537,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.StarterAppUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.asaschaeffer.starterappdemo.uitests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = StarterApp;
@@ -550,7 +554,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.StarterAppUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.asaschaeffer.starterappdemo.uitests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = StarterApp;
@@ -595,6 +599,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 9L6Y9T3PPW;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
