@@ -12,9 +12,17 @@ import Onboarding
 #if canImport(Settings)
 import Settings
 #endif
+#if canImport(Database)
+import Database
+#endif
 
 @main
 struct StarterAppApp: App {
+#if canImport(Database)
+    /// Opens the store once per launch; `DatabaseGate` shows recovery if it won't open.
+    @State private var database = StarterDatabase.loader()
+#endif
+
 #if canImport(Onboarding)
     init() {
         ContextualTips.configure() // Before any tip view appears.
@@ -23,8 +31,16 @@ struct StarterAppApp: App {
 
     var body: some Scene {
         WindowGroup {
+#if canImport(Database)
+            DatabaseGate(database) {
+                root
+                    .modifier(Appearance())
+                    .modifier(SeedOnLaunch())
+            }
+#else
             root
                 .modifier(Appearance())
+#endif
         }
     }
 

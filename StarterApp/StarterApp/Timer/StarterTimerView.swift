@@ -9,6 +9,9 @@ import TimerRing
 struct StarterTimerView: View {
     @State private var model = TimerScreenModel()
     @State private var isEditing = false
+#if canImport(Database)
+    @State private var isChoosingPreset = false
+#endif
     @Environment(\.appTheme) private var theme
 
     var body: some View {
@@ -43,7 +46,12 @@ struct StarterTimerView: View {
         .navigationTitle("Timer")
 #if canImport(DurationPicker)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItemGroup(placement: .primaryAction) {
+#if canImport(Database)
+                // Saved plans live in the database module's store.
+                Button("Presets", systemImage: "bookmark", action: choosePreset)
+                    .accessibilityIdentifier("timer.presets")
+#endif
                 Button("Edit", action: edit)
                     .disabled(model.canChangePlan == false)
                     .accessibilityIdentifier("timer.edit")
@@ -52,6 +60,11 @@ struct StarterTimerView: View {
         .sheet(isPresented: $isEditing) {
             TimerPlanEditor(plan: model.plan, times: $model.times)
         }
+#if canImport(Database)
+        .sheet(isPresented: $isChoosingPreset) {
+            TimerPresetsView(model: model)
+        }
+#endif
 #endif
         .onChange(of: snapshot, model.sessionChanged)
         // A tap for starting, each new phase and finishing, unless haptics are off in Settings.
@@ -66,6 +79,12 @@ struct StarterTimerView: View {
     private func edit() {
         isEditing = true
     }
+
+#if canImport(Database)
+    private func choosePreset() {
+        isChoosingPreset = true
+    }
+#endif
 }
 
 #Preview {
