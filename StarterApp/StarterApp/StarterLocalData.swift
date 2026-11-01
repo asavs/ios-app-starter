@@ -33,6 +33,9 @@ enum StarterLocalData {
         // After the defaults wipe: TipKit keeps its own store, and this marks it for a reset.
         steps.append(LocalDataReset.Step("tips") { ContextualTips.resetOnNextLaunch() })
 #endif
+#if canImport(Attachments)
+        steps.append(StarterAttachments.resetStep)
+#endif
         return LocalDataReset(steps)
     }
 }

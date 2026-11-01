@@ -25,6 +25,7 @@ let package = Package(
         .library(name: "Cues", targets: ["Cues"]),
         .library(name: "DurationPicker", targets: ["DurationPicker"]),
         .library(name: "SessionActivity", targets: ["SessionActivity"]),
+        .library(name: "Attachments", targets: ["Attachments"]),
     ],
     targets: [
         .target(name: "TemplateVersion", path: "Modules/TemplateVersion/Sources"),
@@ -58,6 +59,9 @@ let package = Package(
         .target(name: "SessionActivity", dependencies: ["SessionTimer", "Theme"], path: "Modules/SessionActivity/Sources",
                 resources: [.process("Resources"), .process("PrivacyInfo.xcprivacy")]),
         .testTarget(name: "SessionActivityTests", dependencies: ["SessionActivity"], path: "Modules/SessionActivity/Tests"),
+        .target(name: "Attachments", dependencies: ["Theme", "Onboarding"], path: "Modules/Attachments/Sources",
+                resources: [.process("Resources")]),
+        .testTarget(name: "AttachmentsTests", dependencies: ["Attachments"], path: "Modules/Attachments/Tests"),
     ],
     swiftLanguageModes: [.v6]
 )

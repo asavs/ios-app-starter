@@ -36,6 +36,18 @@ if [[ "$xcode_major" =~ ^[0-9]+$ ]] && (( xcode_major < 27 )); then
   icon_settings=(ASSETCATALOG_COMPILER_APPICON_NAME=)
 fi
 
+# UI tests run on parallel simulator clones when IOS_TEST_WORKERS is above 1: XCTest hands each test
+# class to a clone, which is why StarterAppUITests is split into classes by area. Each clone has its
+# own data container, so tests that store defaults, a Keychain secret or a database store don't
+# collide. Serial by default: measured on 2026-11-01, two clones ran each test about twice as slowly on
+# a Mac and never came up on the hosted runner (docs/ci.md), so the switch is for the next attempt.
+workers="${IOS_TEST_WORKERS:-1}"
+parallel_settings=(-parallel-testing-enabled NO)
+if [[ "$workers" =~ ^[0-9]+$ ]] && (( workers > 1 )); then
+  parallel_settings=(-parallel-testing-enabled YES -parallel-testing-worker-count "$workers")
+fi
+printf 'Test workers: %s\n' "$workers"
+
 # The app is signed ad hoc (no certificate or team needed) with an application-identifier
 # entitlement: the simulator Keychain returns errSecMissingEntitlement (-34018) to an unsigned
 # app, and the Settings UI test stores a secret for real. Release signing is untouched.
@@ -50,7 +62,7 @@ xcodebuild \
   -resultBundlePath "$report_dir/Tests.xcresult" \
   -skip-testing:StarterAppUITests/StarterAppUITests/testLaunchPerformance \
   -skip-testing:StarterAppUITests/StarterAppUITestsLaunchTests \
-  -parallel-testing-enabled NO \
+  "${parallel_settings[@]}" \
   -test-timeouts-enabled YES \
   -default-test-execution-time-allowance 300 \
   -maximum-test-execution-time-allowance 300 \

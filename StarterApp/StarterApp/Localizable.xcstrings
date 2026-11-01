@@ -594,6 +594,50 @@
           }
         }
       }
+    },
+    "Attachments": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attachments"
+          }
+        }
+      }
+    },
+    "No attachments yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No attachments yet"
+          }
+        }
+      }
+    },
+    "Add a photo, a file or a link that goes with this preset.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a photo, a file or a link that goes with this preset."
+          }
+        }
+      }
+    },
+    "%lld attachments": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld attachments"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

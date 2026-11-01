@@ -2,6 +2,9 @@ import SwiftUI
 #if canImport(SessionTimer) && canImport(Database)
 import SwiftData
 import Theme
+#if canImport(Attachments)
+import Attachments
+#endif
 
 /// Saved plans: tap one to load it, swipe to delete, or save the current plan under a name.
 /// Accessibility identifiers: `timer.presets.save`, `timer.presets.name`, `timer.presets.done`,
@@ -11,8 +14,12 @@ struct TimerPresetsView: View {
     @Query(sort: \TimerPreset.createdAt) private var presets: [TimerPreset]
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.appTheme) private var theme
     @State private var isNaming = false
     @State private var newName = ""
+#if canImport(Attachments)
+    @State private var attachmentsFor: TimerPreset?
+#endif
 
     var body: some View {
         NavigationStack {
@@ -25,6 +32,18 @@ struct TimerPresetsView: View {
                     }
                     .disabled(model.canChangePlan == false)
                     .accessibilityIdentifier("timer.presets.row.\(preset.name)")
+#if canImport(Attachments)
+                    // Swipe from the leading edge for the preset's photos, files and links.
+                    .swipeActions(edge: .leading) {
+                        Button {
+                            showAttachments(of: preset)
+                        } label: {
+                            Label("Attachments", systemImage: "paperclip")
+                        }
+                        .tint(theme.colors.accent)
+                        .accessibilityIdentifier("timer.presets.row.\(preset.name).attachments")
+                    }
+#endif
                 }
                 .onDelete(perform: delete)
             }
@@ -46,6 +65,11 @@ struct TimerPresetsView: View {
                         .accessibilityIdentifier("timer.presets.save")
                 }
             }
+#if canImport(Attachments)
+            .sheet(item: $attachmentsFor) { preset in
+                TimerPresetAttachmentsView(preset: preset)
+            }
+#endif
             .alert("Save the current plan", isPresented: $isNaming) {
                 TextField("Preset name", text: $newName)
                     .accessibilityIdentifier("timer.presets.name")
@@ -65,6 +89,12 @@ struct TimerPresetsView: View {
         for index in offsets { context.delete(presets[index]) }
         try? context.save()
     }
+
+#if canImport(Attachments)
+    private func showAttachments(of preset: TimerPreset) {
+        attachmentsFor = preset
+    }
+#endif
 
     private func askForName() {
         newName = ""
