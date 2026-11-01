@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-01 — Live Activity, first signed build: the wildcard profile covers the extension, and the phone was not there
+
+- **Tools:** Xcode 27.1 (27A9275) on the Mac over SSH, iOS 27.1 SDK. Task `ios-s8.3`, approval `ios-0dj`, overlay `examples/starter-app-demo.yml`.
+- **Symptom (confirmed):** `scripts/run-on-device.sh` could not start: `devicectl` listed the iPhone 14 Pro as paired but unavailable, with no USB link and no local-network tunnel. The phone check waits on the owner (`ios-mhv`). Nothing to fix in the script; its message already lists the three things to try.
+- **Finding (confirmed):** the account-side part of the build needs no phone. `xcodebuild build -destination 'generic/platform=iOS' -allowProvisioningUpdates CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM=<team>` on the demo manifest signed the app and `StarterWidgets.appex` with the same `iOS Team Provisioning Profile: *` (application identifier `<team>.*`, two devices, created 2026-08-02). No App ID was registered and no profile created, because neither target has an entitlement that needs an explicit App ID. `ios-0dj`, docs/research/live-activities.md, docs/modules.md and docs/human-steps.md had predicted an explicit `.Widgets` App ID on this build; they now say the development build registers nothing and the first TestFlight export is where one would appear (unverified).
+- **Symptom (confirmed, known):** the first attempt failed at `codesign` with `errSecInternalComponent` on the extension's debug dylib. Automatic signing had picked `Apple Development: Created via API` from a second keychain that is locked for an SSH session (`show-keychain-info`: "User interaction is not allowed"), while the login keychain's own `Apple Development` identity for the same team works. Fix as the script header says: narrow the user keychain search list to the login keychain for the build (`IOS_SIGNING_KEYCHAIN=~/Library/Keychains/login.keychain-db` for `run-on-device`), restore it after. The second attempt built and signed both targets.
+- **Remaining:** the phone check itself (compact island, expanded view, Lock Screen, paused state) once the phone is connected; the TestFlight export's effect on the account, to read from the first release run's log.
+
 ## 2026-11-01 — The starter lane: simulator clones don't help, the test classes are split anyway
 
 - **Tools:** Xcode 27.0 on the Mac, Xcode 27.0 on the hosted macOS runner. Task `ios-6dd.13`, after the lane crossed its 25-minute step cap on PR #136 and on PR #138's first attempt.
