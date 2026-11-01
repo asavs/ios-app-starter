@@ -10,6 +10,9 @@ import Cues
 #if canImport(Database)
 import SwiftData
 #endif
+#if canImport(SessionTimer) && canImport(SessionActivity)
+import SessionActivity
+#endif
 
 /// The same host-owned Settings content is used in a tab or, without TabShell, behind the gear.
 ///
@@ -24,6 +27,9 @@ struct StarterSettingsView: View {
 #endif
 #if canImport(Database)
     @Environment(\.modelContext) private var modelContext
+#endif
+#if canImport(SessionTimer) && canImport(SessionActivity)
+    @AppStorage(SessionActivityPreferences.enabledKey) private var liveActivity = SessionActivityPreferences.defaultEnabled
 #endif
 
     private var localData: LocalDataReset {
@@ -68,6 +74,11 @@ struct StarterSettingsView: View {
             } footer: {
                 Text("Erasing removes your settings, the example API key and the welcome tour record from this device. The app stays installed.")
             }
+#if canImport(SessionTimer) && canImport(SessionActivity)
+            // Module sections go after the template's own, above About: the UI tests scroll to rows above.
+            SessionActivitySettingsSection()
+                .onChange(of: liveActivity, StarterSessionActivity.shared.settingChanged)
+#endif
         } about: {
             AcknowledgementsLink(Acknowledgement.starter)
         }

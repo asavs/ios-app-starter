@@ -109,6 +109,45 @@ struct SessionClockTests {
         #expect(snapshot.phaseRemaining == .seconds(10))
     }
 
+    @Test func stateRoundTripsThroughDates() {
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        var clock = SessionClock(plan: plan)
+        clock.start(at: t0)
+        clock.pause(at: t0 + .seconds(5))
+        clock.start(at: t0 + .seconds(100))
+        let state = clock.state(at: t0 + .seconds(110), date: date)
+        #expect(state.banked == .seconds(5))
+        #expect(state.hasStarted)
+        #expect(state.runningSince == date.addingTimeInterval(-10))
+
+        // Another process, another ContinuousClock origin, 30 s later by the wall clock.
+        let t1 = t0 + .seconds(5000)
+        let restored = SessionClock(plan: plan, state: state, at: t1, date: date.addingTimeInterval(30))
+        #expect(restored.snapshot(at: t1) == clock.snapshot(at: t0 + .seconds(140)))
+        #expect(restored.snapshot(at: t1).elapsed == .seconds(45))
+    }
+
+    @Test func pausedAndReadyStatesRestore() {
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        var clock = SessionClock(plan: plan)
+        #expect(SessionClock(plan: plan, state: clock.state(at: t0, date: date), at: t0, date: date)
+            .snapshot(at: t0).status == .ready)
+        clock.start(at: t0)
+        clock.pause(at: t0 + .seconds(7))
+        let paused = SessionClock(plan: plan, state: clock.state(at: t0 + .seconds(8), date: date), at: t0, date: date)
+        #expect(paused.snapshot(at: t0 + .seconds(999)).status == .paused)
+        #expect(paused.snapshot(at: t0 + .seconds(999)).elapsed == .seconds(7))
+    }
+
+    @Test func aStartDateInTheFutureCountsAsNow() {
+        // The wall clock moved backwards between saving and restoring.
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        let state = SessionClockState(banked: .seconds(3), runningSince: date.addingTimeInterval(600), hasStarted: true)
+        let clock = SessionClock(plan: plan, state: state, at: t0, date: date)
+        #expect(clock.snapshot(at: t0).elapsed == .seconds(3))
+        #expect(clock.snapshot(at: t0 + .seconds(2)).elapsed == .seconds(5))
+    }
+
     @Test func skippingTheLastPhaseFinishes() {
         var clock = SessionClock(plan: plan)
         clock.start(at: t0)

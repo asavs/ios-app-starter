@@ -19,6 +19,22 @@ struct SessionTimerTests {
         SessionTimer(plan: plan, refreshInterval: .seconds(3600)) { [clock] in clock.now }
     }
 
+    @Test func loadingAStoredStateContinuesTheSession() {
+        let timer = makeTimer()
+        timer.start()
+        clock.now += .seconds(12)
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        let state = timer.state(date: date)
+        #expect(state.isRunning)
+
+        let other = makeTimer()
+        other.load(plan, state: state, date: date.addingTimeInterval(10))
+        #expect(other.snapshot.status == .running)
+        #expect(other.snapshot.phaseIndex == 1)
+        #expect(other.snapshot.phaseRemaining == .seconds(8))
+        #expect(other.isRefreshing)
+    }
+
     @Test func refreshReadsTheClock() {
         let timer = makeTimer()
         timer.start()

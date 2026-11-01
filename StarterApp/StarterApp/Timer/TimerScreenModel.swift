@@ -6,9 +6,13 @@ import SessionTimer
 #if canImport(Cues)
 import Cues
 #endif
+#if canImport(SessionActivity)
+import SessionActivity
+#endif
 
 /// What the Timer tab does, apart from drawing it: which plan is chosen, its stored times, the
-/// primary button, and which cue each change of the session plays. The view only lays it out.
+/// primary button, which cue each change of the session plays, and the session's record and Live
+/// Activity. The view only lays it out.
 @MainActor @Observable
 final class TimerScreenModel {
     let timer: SessionTimer
@@ -18,7 +22,7 @@ final class TimerScreenModel {
         didSet {
             let stored = Self.storedTimes(for: plan, in: defaults)
             // Assigning different times loads them (see `times`); equal times need loading here.
-            if stored == times { timer.load(plan.session(times)) } else { times = stored }
+            if stored == times { load() } else { times = stored }
         }
     }
 
@@ -27,9 +31,13 @@ final class TimerScreenModel {
         didSet {
             guard times != oldValue else { return }
             defaults.set(times.rawValue, forKey: plan.storageKey)
-            timer.load(plan.session(times))
+            load()
         }
     }
+
+    /// Identifies one run of the session, from its start from the beginning until the next such
+    /// start: the stored record and the Live Activity carry it.
+    private(set) var sessionID = UUID()
 
     private let defaults: UserDefaults
 #if canImport(Cues)
@@ -37,6 +45,10 @@ final class TimerScreenModel {
     @ObservationIgnored var play: (Cue) -> Void
     /// The haptic for a cue, or nil with haptics off in Settings.
     @ObservationIgnored var haptic: (Cue) -> SensoryFeedback?
+#endif
+#if canImport(SessionActivity)
+    /// The app's Live Activity, or nil in tests.
+    @ObservationIgnored private var activity: StarterSessionActivity?
 #endif
 
     init(defaults: UserDefaults = .standard, plan: TimerPlan = .intervals,
@@ -51,6 +63,19 @@ final class TimerScreenModel {
         play = player.play
         haptic = player.haptic
 #endif
+    }
+
+#if canImport(SessionActivity)
+    /// The Timer tab's model: the session also drives the app's Live Activity.
+    convenience init(activity: StarterSessionActivity) {
+        self.init()
+        self.activity = activity
+    }
+#endif
+
+    /// Replace the timer's plan; the next start is a new session.
+    private func load() {
+        timer.load(plan.session(times))
     }
 
     /// Changing the plan or its times starts over, so both wait until a session isn't underway.
@@ -70,10 +95,11 @@ final class TimerScreenModel {
     func primaryAction() {
         switch timer.snapshot.status {
         case .running: timer.pause()
+        case .paused: timer.start()
         case .finished:
             timer.reset()
-            timer.start()
-        case .ready, .paused: timer.start()
+            startSession()
+        case .ready: startSession()
         }
     }
 
@@ -81,11 +107,38 @@ final class TimerScreenModel {
 
     func reset() { timer.reset() }
 
-    /// Called with each pair of snapshots; plays the cue for a start, a new phase or the end.
+    /// A start from the beginning is a new session, with its own record and activity. The identifier
+    /// changes here and not on reset, so the reset still reaches the old session's activity.
+    private func startSession() {
+        sessionID = UUID()
+        timer.start()
+    }
+
+    /// Called with each pair of snapshots: plays the cue for a start, a new phase or the end, keeps
+    /// the stored record current, and passes the change on to the Live Activity. Ticks within a
+    /// phase change nothing but the remaining time, which the record and the activity derive.
     func sessionChanged(from old: SessionSnapshot, to new: SessionSnapshot) {
 #if canImport(Cues)
         if let cue = Self.cue(for: new.transition(from: old)) { play(cue) }
 #endif
+        guard new.status != old.status || new.phaseIndex != old.phaseIndex else { return }
+        if new.status == .ready {
+            SessionRecord.clear(in: defaults)
+        } else {
+            SessionRecord(id: sessionID, plan: plan, times: times, clock: timer.state()).save(to: defaults)
+        }
+#if canImport(SessionActivity)
+        activity?.controller.sessionChanged(new, plan: timer.plan,
+                                            attributes: StarterSessionActivity.attributes(for: plan, sessionID: sessionID))
+#endif
+    }
+
+    /// The app is back in the foreground: if the Live Activity's button paused or resumed this
+    /// session meanwhile, take the stored position over.
+    func restoreFromRecord() {
+        guard let record = SessionRecord.load(from: defaults), record.id == sessionID,
+              record.clock.isRunning != (timer.snapshot.status == .running) else { return }
+        timer.load(plan.session(times), state: record.clock)
     }
 
     /// The haptic for the change between two snapshots, for the view's `sensoryFeedback`. Nil

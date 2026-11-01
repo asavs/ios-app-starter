@@ -55,6 +55,18 @@ public final class SessionTimer {
         refresh()
     }
 
+    /// Replace the plan and restore a stored position in it, such as one an App Intent changed
+    /// while the app was in the background. `date` is the wall-clock time matching `now()`.
+    public func load(_ plan: SessionPlan, state: SessionClockState, date: Date = .now) {
+        clock = SessionClock(plan: plan, state: state, at: now(), date: date)
+        refresh()
+    }
+
+    /// The position to store, as dates. `date` is the wall-clock time matching `now()`.
+    public func state(date: Date = .now) -> SessionClockState {
+        clock.state(at: now(), date: date)
+    }
+
     /// Read the clock now. The refresh loop calls this while running; tests call it directly.
     func refresh() {
         snapshot = clock.snapshot(at: now())

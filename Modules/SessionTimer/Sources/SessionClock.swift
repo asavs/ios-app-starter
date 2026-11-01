@@ -19,6 +19,24 @@ public struct SessionClock: Sendable {
         self.plan = plan
     }
 
+    /// Restore a stored position. `now` and `date` are the same moment on the two clocks; a run
+    /// stored as started in the future (a clock change) counts as started now.
+    public init(plan: SessionPlan, state: SessionClockState, at now: Instant, date: Date) {
+        self.plan = plan
+        banked = min(max(.zero, state.banked), plan.totalDuration)
+        hasStarted = state.hasStarted || state.runningSince != nil
+        runningSince = state.runningSince.map { since in
+            now - .seconds(max(0, date.timeIntervalSince(since)))
+        }
+    }
+
+    /// The position as dates, to store. `now` and `date` are the same moment on the two clocks.
+    public func state(at now: Instant, date: Date) -> SessionClockState {
+        SessionClockState(banked: banked,
+                          runningSince: runningSince.map { date.addingTimeInterval(-(now - $0).seconds) },
+                          hasStarted: hasStarted)
+    }
+
     /// Start, or resume after a pause. Does nothing while running or once finished.
     public mutating func start(at now: Instant) {
         guard runningSince == nil, banked < plan.totalDuration else { return }

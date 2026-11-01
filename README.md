@@ -24,6 +24,7 @@ A native iPhone and iPad app to start from. Onboarding, theming and settings are
 | **TimerRing** | A countdown ring for the current phase that VoiceOver reads as one element. Available by local path until the next module release. |
 | **Cues** | Timer sounds and haptics (a start tone, a beep per phase, a chime at the end, each with its tap) that mix with music, with a Sounds & Haptics section for Settings. Available by local path until the next module release. |
 | **Database** | A SwiftData store opener with versioned schemas, a once-only seed, a recovery screen and an erase step; the app keeps its own models. Available by local path until the next module release. |
+| **SessionActivity** | A Live Activity for a running session: the Dynamic Island and Lock Screen count the phase down with the app closed, with a pause button and a link back. Comes with the `StarterWidgets` extension target. Available by local path until the next module release. |
 | **DurationPicker** | A row for setting a length of time with hours, minutes and seconds wheels, like the Clock app's timer. Available by local path until the next module release. |
 | **TemplateVersion** | Shows which module version the app was built with. |
 

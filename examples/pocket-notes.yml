@@ -26,3 +26,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.example.pocketnotes.uitests
+  StarterWidgets:
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.example.pocketnotes.widgets

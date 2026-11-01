@@ -11,6 +11,9 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = {"StarterApp", "StarterAppTests", "StarterAppUITests"}
+# Optional app extensions, embedded in the app: each needs a bundle identifier that is a child of the
+# app's and otherwise matches it (team, minimum, platforms). StarterWidgets draws the Live Activity.
+EXTENSIONS = {"StarterWidgets": "com.apple.product-type.app-extension"}
 TEAM_ID = re.compile(r"[A-Z0-9]{10}\Z")
 # Web and system schemes another app or the system already handles.
 RESERVED_SCHEMES = {"http", "https", "file", "ftp", "mailto", "tel", "sms", "facetime", "maps", "itms-apps", "app-settings"}
@@ -161,10 +164,11 @@ def check(project):
             raise ValueError("account capabilities require later Apple setup/signing milestones; "
                              "remove enabled SystemCapabilities for the unsigned starter")
     listing = command_json("xcodebuild", "-project", str(project), "-list", "-json")["project"]
-    if set(listing["targets"]) != TARGETS:
-        raise ValueError("only StarterApp, StarterAppTests, and StarterAppUITests targets are supported; "
-                         "modules are Swift package products (docs/modules.md), and optional platforms "
-                         "are pending milestone 14")
+    present = set(listing["targets"])
+    if present - set(EXTENSIONS) != TARGETS:
+        raise ValueError("only StarterApp, StarterAppTests, and StarterAppUITests targets are supported, plus the "
+                         "optional StarterWidgets extension; modules are Swift package products (docs/modules.md), "
+                         "and optional platforms are pending milestone 14")
     if "StarterApp" not in listing["schemes"]:
         raise ValueError("StarterApp scheme missing; keep the template scheme name and its test targets")
     scheme = project / "xcshareddata/xcschemes/StarterApp.xcscheme"
@@ -187,7 +191,7 @@ def check(project):
             if entry.get("error"):
                 raise ValueError(f"Xcode could not resolve {config}/{entry['target']}: {entry['error']}")
         settings = {entry["target"]: entry["buildSettings"] for entry in resolved}
-        if set(settings) != TARGETS:
+        if set(settings) != present:
             raise ValueError(f"{config}: cannot inspect all template targets")
         minimums, identifiers, teams = set(), set(), set()
         for target, values in settings.items():
@@ -224,6 +228,16 @@ def check(project):
         if len(teams) != 1:
             raise ValueError(f"{config}: all app/test targets must use the same DEVELOPMENT_TEAM")
         app = settings["StarterApp"]
+        for extension, product_type in EXTENSIONS.items():
+            if extension not in settings:
+                continue
+            values = settings[extension]
+            if values.get("PRODUCT_TYPE") != product_type:
+                raise ValueError(f"{config}/{extension}: must be an app extension target (type: app-extension)")
+            if not values.get("PRODUCT_BUNDLE_IDENTIFIER", "").startswith(app["PRODUCT_BUNDLE_IDENTIFIER"] + "."):
+                raise ValueError(f"{config}/{extension}: PRODUCT_BUNDLE_IDENTIFIER must be a child of the app's, such as "
+                                 f"{app['PRODUCT_BUNDLE_IDENTIFIER']}.Widgets; an overlay that changes the app's "
+                                 "identifier sets this one too")
         if app.get("PRODUCT_MODULE_NAME") != "StarterApp" or app.get("PRODUCT_NAME") != "StarterApp":
             raise ValueError(f"{config}: keep PRODUCT_NAME/PRODUCT_MODULE_NAME as StarterApp; "
                              "customize INFOPLIST_KEY_CFBundleDisplayName instead")
