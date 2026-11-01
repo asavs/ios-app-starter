@@ -61,6 +61,8 @@ targets:
         product: Cues
       - package: StarterModules
         product: DurationPicker
+      - package: StarterModules
+        product: Database
     settings:
       base:
         # XcodeGen writes info.path relative to this file but resolves the setting from StarterApp/.

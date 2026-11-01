@@ -169,8 +169,57 @@ final class StarterAppUITests: XCTestCase {
 
     /// The Cues section in Settings: turning Sounds off disables "Play in silent mode", and the
     /// choice survives a relaunch. Leaves Sounds on. Skips when the Cues module is disabled.
+    /// Presets come from the database: the seeded ones show, a saved one survives a relaunch, loading one
+    /// sets the ring, and a swipe deletes. Skips when the Database or timer modules are disabled.
     @MainActor
+    func testTimerPresets() throws {
+        let app = XCUIApplication()
+        // A store of this test's own, emptied on the first launch and kept for the second.
+        let arguments = ["-tabs.selected", "timer", "-onboarding.completedVersion", "99", "-tips.testing", "hideAll",
+                         "-database.store", "uitest-presets"]
+        app.launchArguments = arguments + ["-database.reset"]
+        app.launch()
+        let ring = element(app, "timer.ring")
+        try requireModuleUI("SessionTimer", appeared: ring.waitForExistence(timeout: 10), "no timer ring on the Timer tab")
+        let presets = app.buttons["timer.presets"]
+        try requireModuleUI("Database", appeared: presets.waitForExistence(timeout: 5), "no Presets button on the Timer tab")
+        presets.tap()
+        let tabata = app.buttons["timer.presets.row.Tabata"]
+        XCTAssertTrue(tabata.waitForExistence(timeout: 10), "The seeded presets should be listed")
+
+        app.buttons["timer.presets.save"].tap()
+        // An alert's text field doesn't carry an accessibility identifier; find it through the alert.
+        let alert = app.alerts.firstMatch
+        XCTAssertTrue(alert.waitForExistence(timeout: 5), "Save Current should ask for a name")
+        let name = alert.textFields.firstMatch
+        name.tap()
+        name.typeText("Mine")
+        alert.buttons["Save"].tap()
+        let mine = app.buttons["timer.presets.row.Mine"]
+        XCTAssertTrue(mine.waitForExistence(timeout: 5), "The saved preset should appear")
+        attach(name: "timer-presets")
+        app.buttons["timer.presets.done"].tap()
+
+        app.terminate()
+        app.launchArguments = arguments
+        app.launch()
+        XCTAssertTrue(presets.waitForExistence(timeout: 10))
+        presets.tap()
+        XCTAssertTrue(mine.waitForExistence(timeout: 10), "A saved preset should survive a relaunch")
+        tabata.tap()
+        XCTAssertTrue(waitUntil(ring, "value == '20 seconds remaining'"), "Loading Tabata should set a 20-second work phase")
+        attach(name: "timer-preset-loaded")
+
+        presets.tap()
+        XCTAssertTrue(mine.waitForExistence(timeout: 10))
+        mine.swipeLeft()
+        app.buttons["Delete"].firstMatch.tap()
+        XCTAssertTrue(waitUntilGone(mine), "Swiping should delete the preset")
+        app.buttons["timer.presets.done"].tap()
+    }
+
     /// The About rows open their screens, and Erase Local Data puts the stored appearance back to System.
+    @MainActor
     func testSettingsAboutScreensAndReset() throws {
         let app = XCUIApplication()
         // No settings.appearance argument: an argument would outrank what the picker stores and the reset erases.

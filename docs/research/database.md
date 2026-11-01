@@ -1,5 +1,7 @@
 # Database module research
 
+Built as the `Database` module (2026-10-31); see [modules.md](../modules.md#database) for what shipped and what stays with the app.
+
 Checked 2026-10-27. Source grades: A = Apple documentation or first-party code; B = practitioner experiment or maintained implementation; C = anecdote. A describes the contract, not proof of every OS implementation. Recommendations are design judgments, not tested code.
 
 ## Recommendation

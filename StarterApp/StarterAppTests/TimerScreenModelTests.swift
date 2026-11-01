@@ -97,6 +97,30 @@ struct TimerScreenModelTests {
         #expect(model.canChangePlan)
     }
 
+#if canImport(Database)
+    @Test func presetsRoundTripThePlanAndTimes() {
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let model = makeModel()
+        model.plan = .focus
+        model.times = PlanTimes(work: 1200, rest: 240, rounds: 2)
+        let preset = model.preset(named: "Short focus")
+        #expect(preset.plan == "focus" && preset.work == 1200 && preset.rest == 240 && preset.rounds == 2)
+
+        let other = makeModel()
+        other.apply(preset)
+        #expect(other.plan == .focus)
+        #expect(other.times == PlanTimes(work: 1200, rest: 240, rounds: 2))
+        #expect(other.timer.snapshot.phaseRemaining == .seconds(1200))
+
+        other.primaryAction()
+        other.apply(TimerPreset(name: "Ignored", plan: "intervals", work: 5, rest: 5, rounds: 1))
+        #expect(other.plan == .focus, "A running session keeps its plan")
+        let odd = makeModel(plan: .focus)
+        odd.apply(TimerPreset(name: "Odd", plan: "unknown", work: 5, rest: 5, rounds: 1))
+        #expect(odd.plan == .intervals, "An unknown plan name falls back to intervals")
+    }
+#endif
+
 #if canImport(Cues)
     @Test func sessionChangesPlayTheirCues() {
         defer { defaults.removePersistentDomain(forName: suiteName) }

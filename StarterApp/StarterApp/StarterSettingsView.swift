@@ -7,6 +7,9 @@ import Onboarding
 #if canImport(Cues)
 import Cues
 #endif
+#if canImport(Database)
+import SwiftData
+#endif
 
 /// The same host-owned Settings content is used in a tab or, without TabShell, behind the gear.
 ///
@@ -19,6 +22,17 @@ struct StarterSettingsView: View {
     @State private var tourResetPending = false
     @State private var tipsResetPending = false
 #endif
+#if canImport(Database)
+    @Environment(\.modelContext) private var modelContext
+#endif
+
+    private var localData: LocalDataReset {
+#if canImport(Database)
+        StarterLocalData.reset(database: modelContext.container)
+#else
+        StarterLocalData.reset
+#endif
+    }
 
     var body: some View {
         SettingsView {
@@ -48,7 +62,7 @@ struct StarterSettingsView: View {
             }
             Section {
                 PrivacyNoticeLink(.starter)
-                ResetLocalDataButton(reset: StarterLocalData.reset)
+                ResetLocalDataButton(reset: localData)
             } header: {
                 Text("Your data")
             } footer: {

@@ -4,10 +4,26 @@ import Settings
 #if canImport(Onboarding)
 import Onboarding
 #endif
+#if canImport(Database)
+import Database
+import SwiftData
+#endif
 
 /// Everything the template keeps on the device, for the Erase Local Data row. A module that adds a
-/// store adds a step here; the database module's container is the next one.
+/// store adds a step here.
 enum StarterLocalData {
+#if canImport(Database)
+    /// - Parameter database: The open container; its records go too. Seeded sample content comes
+    ///   back on the next launch, as on a fresh install.
+    static func reset(database: ModelContainer?) -> LocalDataReset {
+        var reset = reset
+        if let database {
+            reset.steps.append(LocalDataReset.Step("database") { try Database.erase(database) })
+        }
+        return reset
+    }
+#endif
+
     static var reset: LocalDataReset {
         var steps: [LocalDataReset.Step] = [
             .defaults(),

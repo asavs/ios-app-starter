@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-31 — Database module: a store opener, not a schema owner
+
+- **Tools:** Xcode 27.0 on the Mac, iPhone 17 / iOS 27.0 simulator. Task `ios-s8.1`, research in docs/research/database.md (Codex, 2026-10-27). Four of the five surveyed apps have a local database; two wrote this same scaffold by hand.
+- **Decision:** the module opens, seeds and erases whatever schema the app passes, and nothing more. The research's reason holds: a package can't know an app's models or decide its migrations, so `StarterSchemaV1`, the migration plan and the seed content live in the app, and the module ships only `SeedMarker`. The recovery screen never deletes a store by itself; Start Over is a person's confirmed choice.
+- **Finding (confirmed):** `Database.seed` keeps its marker in the same save as the seeded records, so an interrupted or throwing seed leaves no marker and the next launch retries; deleting every seeded record leaves the marker, so the samples don't return. `Database.erase` removes the marker with everything else, which is the fresh-install behaviour Erase Local Data promises.
+- **Finding (confirmed):** the required starter lane crossed its 20-minute step timeout on the hosted runner (PR #136, 2026-10-31): the UI suite's fifteen tests take 35 to 137 seconds each there, and every test that ran had passed. The step cap is 25 minutes for now and `ios-6dd.13` tracks bringing the lane back under the ten minutes AGENTS.md asks for (parallel simulator clones, trimming the slowest tests, splitting unit from UI tests).
+- **Verified:** Database lane on the simulator (memory and temporary persistent stores, a corrupt file failing to open and Start Over recovering); the app suite with `testTimerPresets` (seeded rows, a saved preset surviving a relaunch into the same store, load, swipe-delete).
+
 ## 2026-10-30 — Settings sections: About rows, Privacy and Data, Acknowledgements, Erase Local Data, and the missing privacy manifests
 
 - **Tools:** Xcode 27.0 on the Mac, iPhone 17 / iOS 27.0 simulator. Tasks `ios-6dd.1` (research, docs/research/settings-sections.md) and `ios-6dd.2`, the first of module round two (epic `ios-6dd`): modules now come from a survey of five real apps, and a candidate needs two or more of them to have built it by hand.
