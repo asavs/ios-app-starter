@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-10-31 — Chat research: selection availability and platform dependencies
+
+- **Scope and tools:** documentation-only research using Python 3.13 and current Apple documentation, WWDC transcripts and version-pinned open-source manifests/source. Findings and proposed API are in [chat-ui.md](../research/chat-ui.md); no chat code or dependency was added.
+- **Finding (documented):** SwiftUI `Text.textSelection` is available on iOS 17 but its menu acts on the whole text through iOS 26. Apple's current documentation puts range selection in iOS 27. A future module must distinguish Copy from range selection and prototype a selectable text-view bridge if the latter is required on iOS 17.
+- **Finding (confirmed in source):** a SwiftUI-facing chat package can contain a UIKit transcript and a binary dependency without native macOS slices. Exyte Chat at `49bf1f3` uses UITableView and Giphy 2.2.16; the latter's XCFramework lists iOS, simulator and Catalyst, with no native macOS slice. SwiftPM's `platforms` entries set deployment floors; omission alone does not exclude a platform. Inspect source and the resolved dependency graph before adopting a library.
+- **Decision:** recommend a provider-neutral source, separate composer and optional adapters, with explicit iOS 17 fallbacks for newer scrolling and glass APIs. Keep implementation pending an app need and approval. Cumulative model snapshots must replace the current body instead of being appended as token deltas.
+- **Verification and limits:** checked documentation metadata and repository files; no libraries were compiled and no Messages UI or runtime behaviour was tested. Pagination stability, selection during streaming, accessibility and actual platform builds remain implementation checks. Research does not advance a roadmap runtime gate.
+
 ## 2026-10-31 — Feed and grid research stays separate from the module library
 
 - **Tools:** Windows, Python 3.13.14, Apple documentation JSON and WWDC sources; versioned Nuke 13.0.0 and Kingfisher 8.0.0 source inspection.
