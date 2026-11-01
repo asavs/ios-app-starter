@@ -7,12 +7,17 @@ import TimerRing
 /// The template's timer: the SessionTimer and TimerRing modules configured as short intervals or
 /// as a Pomodoro-style focus session. `TimerScreenModel` holds the logic.
 struct StarterTimerView: View {
+#if canImport(SessionActivity)
+    @State private var model = TimerScreenModel(activity: .shared)
+#else
     @State private var model = TimerScreenModel()
+#endif
     @State private var isEditing = false
 #if canImport(Database)
     @State private var isChoosingPreset = false
 #endif
     @Environment(\.appTheme) private var theme
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         let snapshot = model.timer.snapshot
@@ -39,6 +44,11 @@ struct StarterTimerView: View {
                     .accessibilityIdentifier("timer.step")
 
                 TimerControls(model: model)
+#if canImport(SessionActivity)
+                if SessionActivityReadout.isRequested {
+                    SessionActivityReadout(snapshot: snapshot)
+                }
+#endif
             }
             .padding()
         }
@@ -67,6 +77,10 @@ struct StarterTimerView: View {
 #endif
 #endif
         .onChange(of: snapshot, model.sessionChanged)
+        // The Live Activity's button may have paused or resumed the session while the app was away.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { model.restoreFromRecord() }
+        }
         // A tap for starting, each new phase and finishing, unless haptics are off in Settings.
         .sensoryFeedback(trigger: snapshot, model.haptic)
         // The screen stays on only while a session runs on this screen.

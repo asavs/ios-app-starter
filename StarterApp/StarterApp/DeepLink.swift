@@ -13,6 +13,13 @@ enum DeepLink {
         return Set(types.flatMap { $0["CFBundleURLSchemes"] as? [String] ?? [] }.map { $0.lowercased() })
     }()
 
+    /// The app's own link to a tab, `<scheme>://<tab>`, for a Live Activity or a widget to open;
+    /// nil when the app registers no scheme.
+    static func link(to tab: String, schemes: Set<String> = registeredSchemes) -> URL? {
+        guard let scheme = schemes.sorted().first else { return nil }
+        return URL(string: "\(scheme)://\(tab)")
+    }
+
     /// The tab a link names, or `nil` when the URL is not one of the app's own tab links.
     /// The caller still checks that the tab exists, as `TabSelection.select(rawValue:)` does.
     static func tab(in url: URL, schemes: Set<String> = registeredSchemes) -> String? {

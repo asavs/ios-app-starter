@@ -34,9 +34,9 @@ def main():
         if len(apps) != 1:
             raise ValueError('Expected exactly one archived app.')
         app = apps[0]
-        # This starter supports one app; extensions/frameworks need their own checks.
-        if (app / 'PlugIns').exists() or list((app / 'Frameworks').glob('*.framework')):
-            raise ValueError('Embedded extensions/frameworks require additional symbol validation.')
+        # This starter supports one app plus embedded app extensions; frameworks need their own checks.
+        if list((app / 'Frameworks').glob('*.framework')):
+            raise ValueError('Embedded frameworks require additional symbol validation.')
         info = plistlib.loads((app / 'Info.plist').read_bytes())
         executable = info['CFBundleExecutable']
         if Path(executable).name != executable:
@@ -46,6 +46,20 @@ def main():
         dwarf = dsym / 'Contents/Resources/DWARF' / executable
         if uuids(dwarf) != binary_ids:
             raise ValueError('App and dSYM UUIDs do not match.')
+        extensions = []
+        for appex in sorted((app / 'PlugIns').glob('*.appex')) if (app / 'PlugIns').is_dir() else []:
+            appex_info = plistlib.loads((appex / 'Info.plist').read_bytes())
+            appex_executable = appex_info['CFBundleExecutable']
+            if Path(appex_executable).name != appex_executable:
+                raise ValueError('Invalid extension executable name.')
+            if not appex_info['CFBundleIdentifier'].startswith(info['CFBundleIdentifier'] + '.'):
+                raise ValueError('Extension bundle identifier is not a child of the app identifier.')
+            appex_ids = uuids(appex / appex_executable)
+            appex_dwarf = args.archive / 'dSYMs' / (appex.name + '.dSYM') / 'Contents/Resources/DWARF' / appex_executable
+            if uuids(appex_dwarf) != appex_ids:
+                raise ValueError('Extension and dSYM UUIDs do not match.')
+            extensions.append({'bundleIdentifier': appex_info['CFBundleIdentifier'], 'dsym': appex.name + '.dSYM',
+                               'images': [{'uuid': u, 'architecture': a} for u, a in appex_ids]})
         if args.ipa:
             with zipfile.ZipFile(args.ipa) as package, tempfile.TemporaryDirectory() as temporary:
                 candidates = [name for name in package.namelist()
@@ -62,12 +76,15 @@ def main():
                     raise ValueError('Package and archive UUIDs differ.')
         report = {'status': 'matched', 'bundleIdentifier': info['CFBundleIdentifier'],
                   'marketingVersion': info['CFBundleShortVersionString'], 'buildNumber': info['CFBundleVersion'],
-                  'commit': args.commit, 'images': [{'uuid': u, 'architecture': a} for u, a in binary_ids]}
+                  'commit': args.commit, 'images': [{'uuid': u, 'architecture': a} for u, a in binary_ids],
+                  'extensions': extensions}
         if args.retain:
             if args.retain.exists():
                 raise ValueError('Symbol retention directory must not already exist.')
             args.retain.mkdir(parents=True, mode=0o700)
             shutil.copytree(dsym, args.retain / dsym.name, symlinks=False)
+            for extension in extensions:
+                shutil.copytree(args.archive / 'dSYMs' / extension['dsym'], args.retain / extension['dsym'], symlinks=False)
             (args.retain / 'symbols.json').write_text(json.dumps(report, indent=2) + '\n')
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(report, indent=2) + '\n')

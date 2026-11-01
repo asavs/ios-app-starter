@@ -7,3 +7,7 @@ packages:REPLACE: {}
 targets:
   StarterApp:
     dependencies:REPLACE: []
+  # The widget extension draws the SessionActivity module's Live Activity; without the module it has
+  # nothing to draw and the app no longer embeds it (the app's dependencies are replaced above).
+  StarterWidgets:
+    dependencies:REPLACE: []

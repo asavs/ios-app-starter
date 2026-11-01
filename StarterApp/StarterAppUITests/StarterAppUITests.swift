@@ -395,6 +395,42 @@ final class StarterAppUITests: XCTestCase {
         attach(name: "timer-focus")
     }
 
+    /// The SessionActivity module's main path: starting a session starts one Live Activity, pausing keeps it,
+    /// resetting ends it. A test can't read another process's Dynamic Island, so the app reports its activity
+    /// count under `-sessionActivity.readout`, and the screenshot taken from the Home Screen shows the island.
+    @MainActor
+    func testTimerLiveActivity() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-tabs.selected", "timer", "-onboarding.completedVersion", "99",
+                               "-tips.testing", "hideAll", "-timer.intervals", "20,10,3",
+                               "-sessionActivity.readout", "YES"]
+        app.launch()
+        let primary = element(app, "timer.primary")
+        try requireModuleUI("SessionTimer", appeared: primary.waitForExistence(timeout: 10), "no Start button on the Timer tab")
+        let count = element(app, "timer.activityCount")
+        try requireModuleUI("SessionActivity", appeared: count.waitForExistence(timeout: 5), "no Live Activity readout")
+        XCTAssertEqual(count.label, "0")
+
+        primary.tap()
+        XCTAssertTrue(waitUntil(primary, "label == 'Pause'"))
+        if !waitUntil(count, "label == '1'", timeout: 10) {
+            // The person (or this simulator) has Live Activities off for the app; the controller then does nothing.
+            throw XCTSkip("Live Activities are not available in this environment; the phone check covers them")
+        }
+        XCUIDevice.shared.press(.home)
+        Thread.sleep(forTimeInterval: 2) // Let the island settle before the screenshot.
+        attach(name: "live-activity-island")
+        app.activate()
+        XCTAssertTrue(primary.waitForExistence(timeout: 10))
+
+        primary.tap()
+        XCTAssertTrue(waitUntil(primary, "label == 'Resume'"))
+        XCTAssertEqual(count.label, "1", "Pausing keeps the activity")
+        element(app, "timer.reset").tap()
+        XCTAssertTrue(waitUntil(primary, "label == 'Start'"))
+        XCTAssertTrue(waitUntil(count, "label == '0'", timeout: 10), "Resetting ends the activity")
+    }
+
     /// The Onboarding module's main path: welcome sheet, the choice step (multiple select, answer shown on the
     /// welcome screen), a tour card, the notifications primer against a fake requester, then the welcome
     /// screen with its first contextual tip. Skips when the module is disabled (no Continue button).

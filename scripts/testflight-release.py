@@ -122,6 +122,13 @@ def verify_apps(app, delivery, archive, distribution_app=None):
         icon = info.get('CFBundleIcons', {}).get('CFBundlePrimaryIcon', {})
         if icon.get('CFBundleIconName') != 'AppIcon' or not any(path.glob('AppIcon*.png')):
             raise ReleaseError('Archive/export has no compiled AppIcon; add the required app icon before delivery.')
+        # Embedded extensions (the Live Activity's widget extension) carry the app's identity.
+        for appex in path.glob('PlugIns/*.appex'):
+            appex_info = plistlib.loads((appex / 'Info.plist').read_bytes())
+            if (not str(appex_info.get('CFBundleIdentifier', '')).startswith(app['bundleIdentifier'] + '.')
+                    or appex_info.get('CFBundleShortVersionString') != delivery['marketingVersion']
+                    or appex_info.get('CFBundleVersion') != delivery['buildNumber']):
+                raise ReleaseError('Embedded extension identity or version does not match the app.')
 
 
 def digest(path):

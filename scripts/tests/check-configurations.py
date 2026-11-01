@@ -28,6 +28,8 @@ cases = [
     ("unsupported-platform", {"targets": {"WatchApp": {"type": "application", "platform": "watchOS",
                                                    "sources": []}}}, "only StarterApp"),
     ("missing-scheme", {"schemes:REPLACE": {}}, "scheme"),
+    ("widget-identifier-not-a-child", {"targets": {"StarterWidgets": {"settings": {"base": {
+        "PRODUCT_BUNDLE_IDENTIFIER": "com.example.Elsewhere"}}}}}, "child of the app"),
     ("missing-ui-test", {"schemes": {"StarterApp": {"test": {"targets:REPLACE": ["StarterAppTests"]}}}},
      "scheme must include"),
     ("unconfigured-capability", {"targets": {"StarterApp": {"attributes": {

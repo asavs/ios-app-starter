@@ -23,11 +23,16 @@ struct StarterAppApp: App {
     @State private var database = StarterDatabase.loader()
 #endif
 
-#if canImport(Onboarding)
     init() {
+#if canImport(Onboarding)
         ContextualTips.configure() // Before any tip view appears.
-    }
 #endif
+#if canImport(SessionTimer) && canImport(SessionActivity)
+        // Also runs when the system launches the app in the background for the activity's button.
+        StarterSessionActivity.shared.installIntents()
+        StarterSessionActivity.shared.reattach()
+#endif
+    }
 
     var body: some Scene {
         WindowGroup {

@@ -29,6 +29,13 @@ struct DeepLinkTests {
         #expect(DeepLink.tab(in: try #require(URL(string: link)), schemes: schemes) == nil)
     }
 
+    @Test func linksToATabRoundTrip() throws {
+        let link = try #require(DeepLink.link(to: "timer", schemes: schemes))
+        #expect(link.absoluteString == "starterapp://timer")
+        #expect(DeepLink.tab(in: link, schemes: schemes) == "timer")
+        #expect(DeepLink.link(to: "timer", schemes: []) == nil)
+    }
+
     @Test func appRegistersItsScheme() {
         #expect(!DeepLink.registeredSchemes.isEmpty, "project.yml should register APP_URL_SCHEME")
     }

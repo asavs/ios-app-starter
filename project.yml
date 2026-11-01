@@ -41,6 +41,8 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: $(PRODUCT_BUNDLE_IDENTIFIER)
             CFBundleURLSchemes: [$(APP_URL_SCHEME)]
+        # The SessionActivity module's Live Activity; drop it with the module and the StarterWidgets target.
+        NSSupportsLiveActivities: true
     # Enabled modules: one product line each. Remove a line to disable that module.
     dependencies:
       - package: StarterModules
@@ -63,6 +65,10 @@ targets:
         product: DurationPicker
       - package: StarterModules
         product: Database
+      - package: StarterModules
+        product: SessionActivity
+      # The widget extension that draws the Live Activity; embedded in the app. Remove it with SessionActivity.
+      - target: StarterWidgets
     settings:
       base:
         # XcodeGen writes info.path relative to this file but resolves the setting from StarterApp/.
@@ -90,6 +96,33 @@ targets:
       configs:
         Debug:
           INFOPLIST_KEY_CFBundleDisplayName: $(DEV_DISPLAY_NAME)
+  # The widget extension: it draws the SessionActivity module's Live Activity (docs/modules.md). Its
+  # bundle identifier must be a child of the app's; an overlay that changes the app's changes this too.
+  # Signing it registers one more App ID under the team; see docs/human-steps.md.
+  StarterWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: StarterApp/StarterWidgets
+        excludes: [Info.plist]
+    info:
+      path: StarterApp/StarterWidgets/Info.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    dependencies:
+      - package: StarterModules
+        product: SessionActivity
+    settings:
+      base:
+        INFOPLIST_FILE: StarterWidgets/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: "Starter Widgets"
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.StarterApp.Widgets
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SKIP_INSTALL: YES
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
   StarterAppTests:
     type: bundle.unit-test
     platform: iOS
