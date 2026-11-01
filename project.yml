@@ -43,6 +43,9 @@ targets:
             CFBundleURLSchemes: [$(APP_URL_SCHEME)]
         # The SessionActivity module's Live Activity; drop it with the module and the StarterWidgets target.
         NSSupportsLiveActivities: true
+        # The Attachments module's Camera entry; the only permission attachments need. scripts/check-modules.py
+        # requires it while the module is enabled. Photos and Files pickers run out of process and need none.
+        NSCameraUsageDescription: Take a photo to attach it to a preset.
     # Enabled modules: one product line each. Remove a line to disable that module.
     dependencies:
       - package: StarterModules
@@ -67,6 +70,8 @@ targets:
         product: Database
       - package: StarterModules
         product: SessionActivity
+      - package: StarterModules
+        product: Attachments
       # The widget extension that draws the Live Activity; embedded in the app. Remove it with SessionActivity.
       - target: StarterWidgets
     settings:

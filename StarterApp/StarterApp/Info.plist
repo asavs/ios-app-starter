@@ -29,6 +29,8 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Take a photo to attach it to a preset.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 </dict>

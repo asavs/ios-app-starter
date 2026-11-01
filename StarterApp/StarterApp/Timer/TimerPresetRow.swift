@@ -9,8 +9,17 @@ struct TimerPresetRow: View {
 
     var body: some View {
         LabeledContent {
-            Text(verbatim: summary)
-                .monospacedDigit()
+            HStack(spacing: theme.spacing.small) {
+#if canImport(Attachments)
+                if !preset.attachments.isEmpty {
+                    Label("\(preset.attachments.count) attachments", systemImage: "paperclip")
+                        .labelStyle(.iconOnly)
+                        .foregroundStyle(theme.colors.textSecondary)
+                }
+#endif
+                Text(verbatim: summary)
+                    .monospacedDigit()
+            }
         } label: {
             Text(verbatim: preset.name)
                 .foregroundStyle(theme.colors.textPrimary)

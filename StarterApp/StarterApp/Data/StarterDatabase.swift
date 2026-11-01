@@ -6,7 +6,7 @@ import SwiftData
 /// The template's store: its versioned schema, migration plan, location and seed. An app keeps
 /// this file and replaces the models; the Database module opens whatever schema it's given.
 enum StarterDatabase {
-    static let schema = Schema(versionedSchema: StarterSchemaV1.self)
+    static let schema = Schema(versionedSchema: StarterSchemaCurrent.self)
 
     /// `-database.store <name>` puts the store in the temporary directory under that name, and
     /// `-database.reset` removes it before opening, so UI tests start clean and can relaunch into

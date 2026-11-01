@@ -147,10 +147,26 @@ def check(root=ROOT, project=None):
         if version(platforms["ios"]) > version(minimum):
             raise ValueError(f"Package.swift iOS platform {platforms['ios']} is above the app minimum {minimum}; "
                              "lower the package platform or raise options.deploymentTarget.iOS")
+        check_usage_strings(enabled, project.parent, root)
         record.update({"minimumIOS": minimum, "enabled": enabled,
                        "disabled": [m["name"] for m in modules if m["name"] not in enabled],
                        "otherPackageDependencies": remote})
     return record
+
+
+# A module whose feature asks the system for access needs the matching usage string in the app's
+# Info.plist, or the system terminates the app at the request. Attachments: the camera (Photos and
+# Files pickers run out of process and need none; docs/research/attachments.md).
+USAGE_STRINGS = {"Attachments": "NSCameraUsageDescription"}
+
+
+def check_usage_strings(enabled, project_dir, root=ROOT):
+    info = project_dir / "StarterApp/Info.plist"
+    text = info.read_text(encoding="utf-8") if info.is_file() else ""
+    for module, key in USAGE_STRINGS.items():
+        if module in enabled and f"<key>{key}</key>" not in text:
+            raise ValueError(f"{module} is enabled but the app's Info.plist has no {key}; add it under "
+                             "targets.StarterApp.info.properties in project.yml and regenerate the project")
 
 
 if __name__ == "__main__":
