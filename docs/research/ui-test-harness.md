@@ -1,5 +1,7 @@
 # UI test harness
 
+Built as the shared launch contract in `StarterApp/Shared/UITesting` (`UITestLaunch`, `Identifiers`, `ModuleIdentifiers`), `StarterDefaults` in the app and `scripts/check-ui-identifiers.py` (2026-11-01, `ios-6dd.4`); see [ci.md](../ci.md#ui-test-scenarios) for how a test launches and how to add a scenario or an identifier.
+
 Checked 2026-10-27. A: Apple and repository inspection; C: task description's reported UI quirks, not independently reproduced. Recommendation: propose an opt-in testing support module and a documented launch contract for generated apps.
 
 The current `StarterApp/StarterAppUITests/StarterAppUITests.swift` sets individual launch argument defaults such as `-onboarding.completedVersion`, uses accessibility identifiers, and retains named screenshots. `docs/ci.md` explains attachment extraction. It does not establish a generic `-ui-testing` reset or SwiftData memory store. Apple documents a volatile argument defaults domain that takes precedence over app settings ([Apple, A](https://developer.apple.com/documentation/foundation/userdefaults/argumentdomain)). Overrides are not a reset of persisted defaults. A dedicated test launch flag should select an isolated suite and an in-memory container before app construction, use deterministic fixtures, and avoid deleting ordinary user data. Verify the flag cannot accidentally operate on a production store.

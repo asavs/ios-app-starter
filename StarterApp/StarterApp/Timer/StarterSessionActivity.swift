@@ -10,7 +10,7 @@ import SessionTimer
 /// and updates the activity itself. `StarterAppApp` installs it at launch.
 @MainActor
 final class StarterSessionActivity {
-    static let shared = StarterSessionActivity()
+    static let shared = StarterSessionActivity(defaults: StarterDefaults.store)
 
     let controller: SessionActivityController
     private let defaults: UserDefaults

@@ -1,39 +1,40 @@
 import XCTest
 
-/// The Settings module and the sections other modules add to it.
+/// The Settings module and the sections other modules add to it. Every test launches into its own
+/// emptied defaults suite (`UITestLaunch`), so none has to put a setting back for the next.
 final class SettingsUITests: StarterUITestCase {
     /// The About rows open their screens, and Erase Local Data puts the stored appearance back to System.
     @MainActor
     func testSettingsAboutScreensAndReset() throws {
         let app = XCUIApplication()
         // No settings.appearance argument: an argument would outrank what the picker stores and the reset erases.
-        app.launchArguments = ["-tabs.selected", "settings", "-onboarding.completedVersion", "99", "-tips.testing", "hideAll"]
-        app.launch()
-        let picker = app.descendants(matching: .any).matching(identifier: "settings.appearance").firstMatch
+        app.launch(.tab(Identifiers.Tabs.settings))
+        let picker = element(app, ModuleIdentifiers.Settings.appearance)
         try requireModuleUI("Settings", appeared: picker.waitForExistence(timeout: 10), "no appearance picker")
         picker.buttons["Dark"].tap()
         XCTAssertTrue(waitUntil(picker.buttons["Dark"], "isSelected == true"))
 
-        let privacy = app.buttons["settings.privacy"]
+        let privacy = app.buttons[ModuleIdentifiers.Settings.privacy]
         XCTAssertTrue(scroll(app, to: privacy), "The About section should link to Privacy and Data")
         privacy.tap()
-        XCTAssertTrue(app.staticTexts["settings.privacy.summary"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts[ModuleIdentifiers.Settings.privacySummary].waitForExistence(timeout: 5))
         attach(name: "settings-privacy")
         app.navigationBars.buttons.firstMatch.tap()
 
-        let acknowledgements = app.buttons["settings.acknowledgements"]
+        let acknowledgements = app.buttons[ModuleIdentifiers.Settings.acknowledgements]
         XCTAssertTrue(scroll(app, to: acknowledgements))
         acknowledgements.tap()
-        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'settings.acknowledgements.'"))
-            .firstMatch.waitForExistence(timeout: 5), "The template credits the starter it came from")
+        let credits = NSPredicate(format: "identifier BEGINSWITH %@", ModuleIdentifiers.Settings.acknowledgementPrefix)
+        XCTAssertTrue(app.descendants(matching: .any).matching(credits).firstMatch.waitForExistence(timeout: 5),
+                      "The template credits the starter it came from")
         attach(name: "settings-acknowledgements")
         app.navigationBars.buttons.firstMatch.tap()
 
-        let reset = app.buttons["settings.reset"]
+        let reset = app.buttons[ModuleIdentifiers.Settings.reset]
         XCTAssertTrue(scroll(app, to: reset))
         reset.tap()
         // The identifier lands on the dialog's cell and the button inside it; either tap works.
-        let confirm = app.buttons["settings.reset.confirm"].firstMatch
+        let confirm = app.buttons[ModuleIdentifiers.Settings.resetConfirm].firstMatch
         let erase = confirm.waitForExistence(timeout: 3) ? confirm : app.buttons["Erase"].firstMatch
         XCTAssertTrue(erase.waitForExistence(timeout: 5), "Erase should ask for confirmation first")
         attach(name: "settings-reset-confirm")
@@ -44,22 +45,47 @@ final class SettingsUITests: StarterUITestCase {
         XCTAssertTrue(waitUntil(picker.buttons["System"], "isSelected == true"), "Erasing local data should forget the appearance choice")
     }
 
+    /// The test harness itself: a setting made under a scenario survives `relaunch` and is gone after a
+    /// launch that resets, so every test starts from a fresh install without touching the data of a normal
+    /// launch on this simulator. Skips when the Settings module is disabled.
+    @MainActor
+    func testScenarioKeepsDataUntilReset() throws {
+        let app = XCUIApplication()
+        let scenario = UITestLaunch.tab(Identifiers.Tabs.settings)
+        app.launch(scenario)
+        let picker = element(app, ModuleIdentifiers.Settings.appearance)
+        try requireModuleUI("Settings", appeared: picker.waitForExistence(timeout: 10), "no appearance picker")
+        XCTAssertTrue(waitUntil(picker.buttons["System"], "isSelected == true"), "A reset launch starts from the default")
+        picker.buttons["Dark"].tap()
+        XCTAssertTrue(waitUntil(picker.buttons["Dark"], "isSelected == true"))
+
+        app.terminate()
+        app.launch(scenario.relaunch)
+        XCTAssertTrue(picker.waitForExistence(timeout: 10))
+        XCTAssertTrue(waitUntil(picker.buttons["Dark"], "isSelected == true"), "A relaunch keeps the test's data")
+
+        app.terminate()
+        app.launch(scenario)
+        XCTAssertTrue(picker.waitForExistence(timeout: 10))
+        XCTAssertTrue(waitUntil(picker.buttons["System"], "isSelected == true"), "A reset launch empties the suite")
+        attach(name: "scenario-reset")
+    }
+
     /// The Cues section in Settings: turning Sounds off disables "Play in silent mode", and the
-    /// choice survives a relaunch. Leaves Sounds on. Skips when the Cues module is disabled.
+    /// choice survives a relaunch. Skips when the Cues module is disabled.
     @MainActor
     func testCueSettings() throws {
         let app = XCUIApplication()
         // No cues.* arguments: an argument would outrank what the toggles store.
-        app.launchArguments = ["-tabs.selected", "settings", "-onboarding.completedVersion", "99",
-                               "-tips.testing", "hideAll"]
-        app.launch()
+        let scenario = UITestLaunch.tab(Identifiers.Tabs.settings)
+        app.launch(scenario)
         // The module's settings sit one level down, behind the Sounds & Haptics row.
-        let cuesRow = app.buttons["settings.cues"]
+        let cuesRow = app.buttons[ModuleIdentifiers.Settings.cues]
         try requireModuleUI("Cues", appeared: scroll(app, to: cuesRow), "no Sounds & Haptics row in Settings")
         cuesRow.tap()
-        let sound = app.switches["cues.sound"]
+        let sound = app.switches[ModuleIdentifiers.Cues.sound]
         XCTAssertTrue(sound.waitForExistence(timeout: 5), "The row should push the Sounds & Haptics screen")
-        let silentMode = app.switches["cues.silentMode"]
+        let silentMode = app.switches[ModuleIdentifiers.Cues.silentMode]
         // A Toggle's identifier lands on a switch spanning the row, whose center is the label; tap
         // the switch inside it. The section sits near the floating tab bar, so keep it clear first.
         func flip(_ toggle: XCUIElement) {
@@ -75,32 +101,26 @@ final class SettingsUITests: StarterUITestCase {
             toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
             XCTAssertTrue(waitUntil(toggle, "value != '\(before)'", timeout: 10), "\(toggle) should flip")
         }
-        if sound.value as? String == "0" { flip(sound) }
-        XCTAssertTrue(waitUntil(sound, "value == '1'"))
+        XCTAssertTrue(waitUntil(sound, "value == '1'"), "Sounds start on in a fresh suite")
         XCTAssertTrue(silentMode.isEnabled)
 
         flip(sound)
         XCTAssertTrue(waitUntil(sound, "value == '0'"))
         XCTAssertTrue(waitUntil(silentMode, "isEnabled == false"), "Silent mode only applies with sounds on")
 
-        let haptics = app.switches["cues.haptics"]
+        let haptics = app.switches[ModuleIdentifiers.Cues.haptics]
         XCTAssertTrue(haptics.isEnabled, "Haptics don't depend on sounds")
-        if haptics.value as? String == "0" { flip(haptics) }
-        XCTAssertTrue(waitUntil(haptics, "value == '1'"))
+        XCTAssertTrue(waitUntil(haptics, "value == '1'"), "Haptics start on in a fresh suite")
         flip(haptics)
         XCTAssertTrue(waitUntil(haptics, "value == '0'"))
         attach(name: "cues-settings-off")
         app.terminate()
-        app.launch()
+        app.launch(scenario.relaunch)
         XCTAssertTrue(scroll(app, to: cuesRow))
         cuesRow.tap()
         XCTAssertTrue(sound.waitForExistence(timeout: 5))
         XCTAssertEqual(sound.value as? String, "0", "Sounds off should survive a relaunch")
         XCTAssertEqual(haptics.value as? String, "0", "Haptics off should survive a relaunch")
-        flip(sound)
-        XCTAssertTrue(waitUntil(sound, "value == '1'"))
-        flip(haptics)
-        XCTAssertTrue(waitUntil(haptics, "value == '1'"))
     }
 
     /// The Settings module's main path: open the screen, pick an appearance, store and clear a secret
@@ -108,32 +128,31 @@ final class SettingsUITests: StarterUITestCase {
     @MainActor
     func testSettingsScreen() throws {
         let app = XCUIApplication()
-        app.launchArguments += ["-tabs.selected", "welcome", "-onboarding.completedVersion", "99", // Past any flow version: straight to the welcome screen.
-                                "-tips.testing", "hideAll"] // No tip popover over the gear button.
-        app.launch()
+        app.launch(.tab(Identifiers.Tabs.welcome))
 
         let open = settingsButton(in: app)
         try requireModuleUI("Settings", appeared: open.waitForExistence(timeout: 10), "no settings button on the welcome screen")
         open.tap()
 
-        let picker = app.descendants(matching: .any).matching(identifier: "settings.appearance").firstMatch
+        let picker = element(app, ModuleIdentifiers.Settings.appearance)
         XCTAssertTrue(picker.waitForExistence(timeout: 10), "Settings should show the appearance picker")
         picker.buttons["Dark"].tap()
         // The app can report idle before a tap's state change lands, so state is waited for, not read once.
         XCTAssertTrue(waitUntil(picker.buttons["Dark"], "isSelected == true"), "Picking Dark should select it")
 
-        let key = "example.apiKey"
-        let field = app.secureTextFields["settings.secure.\(key).field"]
-        let status = app.staticTexts["settings.secure.\(key).status"]
-        let clear = app.buttons["settings.secure.\(key).clear"]
+        let key = Identifiers.Settings.exampleSecretKey
+        let field = app.secureTextFields[ModuleIdentifiers.Settings.Secure.field(key)]
+        let status = app.staticTexts[ModuleIdentifiers.Settings.Secure.status(key)]
+        let clear = app.buttons[ModuleIdentifiers.Settings.Secure.clear(key)]
         XCTAssertTrue(field.waitForExistence(timeout: 5), "Settings should show the example secret row")
         // The row reads the Keychain off the main actor, so wait for that first answer.
         XCTAssertTrue(waitUntil(status, "NOT (label BEGINSWITH 'Checking')"), "The row should finish its first read")
-        if clear.exists { clear.tap() } // A previous run on this simulator may have left a value.
+        // The Keychain isn't part of the test suite: a previous run on this simulator may have left a value.
+        if clear.exists { clear.tap() }
         XCTAssertTrue(waitUntil(status, "label BEGINSWITH 'Not set'"), "Secret should start empty, got: \(status.label)")
         try focus(field, in: app)
         app.typeText("ui-test-secret")
-        app.buttons["settings.secure.\(key).save"].tap()
+        app.buttons[ModuleIdentifiers.Settings.Secure.save(key)].tap()
         XCTAssertTrue(clear.waitForExistence(timeout: 5), "Saving should store the secret and offer Clear")
         XCTAssertTrue(waitUntil(status, "label BEGINSWITH 'Stored'"),
                       "Status should report the stored secret, got: \(status.label)")
@@ -149,13 +168,11 @@ final class SettingsUITests: StarterUITestCase {
         XCTAssertTrue(waitUntilGone(clear), "Clear should disappear once nothing is stored")
 
         // Resetting the tour only takes effect on the next launch, so the button says so and turns inactive.
-        let tourReset = app.buttons["settings.onboarding.reset"]
+        let tourReset = app.buttons[Identifiers.Settings.onboardingReset]
         if tourReset.exists {
             tourReset.tap()
             XCTAssertTrue(waitUntil(tourReset, "label CONTAINS 'shows on next launch' AND isEnabled == false"),
                           "The reset button should confirm, got: \(tourReset.label)")
         }
-        picker.buttons["System"].tap() // Leave the simulator's stored appearance as it was.
-        XCTAssertTrue(waitUntil(picker.buttons["System"], "isSelected == true"))
     }
 }

@@ -67,8 +67,8 @@ final class TimerScreenModel {
 
 #if canImport(SessionActivity)
     /// The Timer tab's model: the session also drives the app's Live Activity.
-    convenience init(activity: StarterSessionActivity) {
-        self.init()
+    convenience init(defaults: UserDefaults = .standard, activity: StarterSessionActivity) {
+        self.init(defaults: defaults)
         self.activity = activity
     }
 #endif

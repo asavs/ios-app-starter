@@ -6,15 +6,11 @@ final class OnboardingUITests: StarterUITestCase {
     func testWelcomeScreen() throws {
         // UI tests must launch the application that they test.
         let app = XCUIApplication()
-        // Force the onboarding flow when the Onboarding module is enabled: UserDefaults reads this
-        // launch argument ahead of the stored completion, so the smoke test covers a first launch.
-        app.launchArguments += ["-tabs.selected", "welcome", "-onboarding.completedVersion", "0",
-                                "-onboarding.permissions", "granted", // No system alert on the primer.
-                                "-tips.testing", "hideAll"] // No tip popover over the welcome screen.
-        app.launch()
+        // A first launch when the Onboarding module is enabled, so the smoke test covers the flow.
+        app.launch(.onboarding)
 
         // Step through onboarding when it appears; with the module disabled the welcome screen is first.
-        let next = app.buttons["onboarding.next"]
+        let next = app.buttons[ModuleIdentifiers.Onboarding.next]
         if next.waitForExistence(timeout: 5) {
             let onboarding = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
             onboarding.name = "onboarding-first-page"
@@ -37,7 +33,7 @@ final class OnboardingUITests: StarterUITestCase {
         add(screenshot)
 
         XCTAssertTrue(visible, "Welcome text should be visible")
-        let moduleVersion = app.staticTexts["welcome.modulesVersion"]
+        let moduleVersion = app.staticTexts[Identifiers.Welcome.modulesVersion]
         if Self.enabledModules?.contains("TemplateVersion") == true || moduleVersion.exists {
             XCTAssertTrue(moduleVersion.waitForExistence(timeout: 10), "The enabled module should report its version")
             XCTAssertEqual(moduleVersion.label, "Modules 0.3.1", "The welcome screen should identify this module release")
@@ -50,26 +46,28 @@ final class OnboardingUITests: StarterUITestCase {
     @MainActor
     func testOnboardingSteps() throws {
         let app = XCUIApplication()
-        app.launchArguments += ["-tabs.selected", "welcome", "-onboarding.completedVersion", "0", "-onboarding.permissions", "granted",
-                                "-tips.reset", "YES"] // Forget earlier runs' dismissals so the first tip shows.
-        app.launch()
+        var scenario = UITestLaunch.onboarding
+        scenario.tips = .fresh // Forget earlier runs' dismissals so the first tip shows.
+        app.launch(scenario)
 
-        let next = app.buttons["onboarding.next"]
+        let next = app.buttons[ModuleIdentifiers.Onboarding.next]
         try requireModuleUI("Onboarding", appeared: next.waitForExistence(timeout: 10), "no Continue button on launch")
-        let skip = app.buttons["onboarding.skip"]
+        let skip = app.buttons[ModuleIdentifiers.Onboarding.skip]
 
         // The page style keeps neighbouring pages in the hierarchy, so existence alone proves nothing;
         // a step is on screen when one of its leaf elements is hittable. Not the `onboarding.step.<id>`
         // container: XCUITest hit-tests a container at its centre, which on the choice step is empty
         // scroll view, and on the iOS 27 runner that check stayed false with the step fully on screen.
-        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.feature.phone")),
+        // The first step gets a longer wait: on a loaded hosted runner the sheet has taken over 15 s
+        // to settle after the Continue button existed.
+        XCTAssertTrue(waitUntilHittable(element(app, ModuleIdentifiers.Onboarding.feature("phone")), timeout: 30),
                       "The welcome sheet should be the first step")
         XCTAssertTrue(waitUntilHittable(skip), "Skip should be offered on the welcome sheet")
         attach(name: "onboarding-welcome")
         next.tap()
 
-        let tool = app.buttons["onboarding.choice.build.tool"]
-        let product = app.buttons["onboarding.choice.build.product"]
+        let tool = app.buttons[ModuleIdentifiers.Onboarding.choice("build", "tool")]
+        let product = app.buttons[ModuleIdentifiers.Onboarding.choice("build", "product")]
         XCTAssertTrue(waitUntilHittable(tool), "The choice step should follow the welcome sheet, its answers as buttons")
         tool.tap()
         product.tap()
@@ -82,13 +80,13 @@ final class OnboardingUITests: StarterUITestCase {
         XCTAssertTrue(waitUntilHittable(skip), "Skip should still be offered on a choice step")
         next.tap()
 
-        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.page.tour")),
+        XCTAssertTrue(waitUntilHittable(element(app, ModuleIdentifiers.Onboarding.page("tour"))),
                       "The tour card should follow the choice step")
         XCTAssertTrue(waitUntilHittable(tool, expected: false), "The choice step should have moved off")
         attach(name: "onboarding-tour")
         next.tap()
 
-        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.permission.notifications.footnote")),
+        XCTAssertTrue(waitUntilHittable(element(app, ModuleIdentifiers.Onboarding.permissionFootnote("notifications"))),
                       "The notifications primer, with its footnote, should be the last step")
         XCTAssertTrue(waitUntilHittable(skip, expected: false), "A permission primer has exactly one button")
         XCTAssertEqual(next.label, "Continue", "The primer's button is Continue, never Allow")
@@ -98,7 +96,7 @@ final class OnboardingUITests: StarterUITestCase {
         XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 10),
                       "Finishing onboarding should reveal the welcome screen")
         XCTAssertTrue(waitUntilGone(next), "The flow should be gone once finished") // It fades out first.
-        let goals = app.staticTexts["welcome.buildGoals"]
+        let goals = app.staticTexts[Identifiers.Welcome.buildGoals]
         XCTAssertTrue(goals.waitForExistence(timeout: 5), "The welcome screen should show the choice step's answer")
         XCTAssertEqual(goals.label, "Building: A product to sell", "The host should receive the final answer")
 
@@ -106,7 +104,7 @@ final class OnboardingUITests: StarterUITestCase {
         // behind the gear, then, once it is closed, the tour tip as a popover on the replay button. A Settings
         // tab gets no tip.
         let tour = app.staticTexts["See the tour again"]
-        if app.buttons["settings.open"].waitForExistence(timeout: 5) {
+        if app.buttons[Identifiers.Welcome.settings].waitForExistence(timeout: 5) {
             let settingsTip = app.staticTexts["Settings live here"]
             XCTAssertTrue(settingsTip.waitForExistence(timeout: 10), "The Settings tip should show after onboarding")
             XCTAssertFalse(tour.exists, "Tips show one at a time")
@@ -124,45 +122,44 @@ final class OnboardingUITests: StarterUITestCase {
     @MainActor
     func testLargestTextSize() throws {
         let app = XCUIApplication()
-        app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL",
-                                "-tabs.selected", "welcome", "-onboarding.completedVersion", "0", "-onboarding.permissions", "granted",
-                                "-tips.testing", "hideAll"]
-        app.launch()
+        var scenario = UITestLaunch.onboarding
+        scenario.extra = UITestLaunch.largestTextSize
+        app.launch(scenario)
 
-        let next = app.buttons["onboarding.next"]
+        let next = app.buttons[ModuleIdentifiers.Onboarding.next]
         try requireModuleUI("Onboarding", appeared: next.waitForExistence(timeout: 10), "no Continue button on launch")
-        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.feature.phone")),
+        XCTAssertTrue(waitUntilHittable(element(app, ModuleIdentifiers.Onboarding.feature("phone")), timeout: 30),
                       "The welcome sheet should start with its first row")
         attach(name: "large-welcome")
-        XCTAssertTrue(scroll(app, to: element(app, "onboarding.feature.yours")),
+        XCTAssertTrue(scroll(app, to: element(app, ModuleIdentifiers.Onboarding.feature("yours"))),
                       "The welcome sheet should scroll to its last row")
         next.tap()
 
         attach(name: "large-choice")
-        XCTAssertTrue(scroll(app, to: app.buttons["onboarding.choice.build.product"]),
+        XCTAssertTrue(scroll(app, to: app.buttons[ModuleIdentifiers.Onboarding.choice("build", "product")]),
                       "The choice step should follow and scroll to its last answer")
         next.tap()
 
-        XCTAssertTrue(waitUntilOnScreen(app, element(app, "onboarding.page.tour")), "The tour card should follow")
+        XCTAssertTrue(waitUntilOnScreen(app, element(app, ModuleIdentifiers.Onboarding.page("tour"))), "The tour card should follow")
         attach(name: "large-tour")
         next.tap()
 
-        XCTAssertTrue(waitUntilOnScreen(app, element(app, "onboarding.page.notifications")), "The primer should follow")
+        XCTAssertTrue(waitUntilOnScreen(app, element(app, ModuleIdentifiers.Onboarding.page("notifications"))), "The primer should follow")
         attach(name: "large-permission")
-        XCTAssertTrue(scroll(app, to: element(app, "onboarding.permission.notifications.footnote")),
+        XCTAssertTrue(scroll(app, to: element(app, ModuleIdentifiers.Onboarding.permissionFootnote("notifications"))),
                       "The primer's footnote should be reachable by scrolling")
         next.tap()
 
         XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 10), "The welcome screen should follow")
-        XCTAssertTrue(scroll(app, to: app.buttons["onboarding.replay"]), "The tour button should be reachable")
+        XCTAssertTrue(scroll(app, to: app.buttons[Identifiers.Welcome.replayTour]), "The tour button should be reachable")
         attach(name: "large-welcome-screen")
 
         let open = settingsButton(in: app)
         guard open.waitForExistence(timeout: 5) else { return } // Settings module disabled.
         open.tap()
-        let key = "example.apiKey"
-        let field = app.secureTextFields["settings.secure.\(key).field"]
-        let save = app.buttons["settings.secure.\(key).save"]
+        let key = Identifiers.Settings.exampleSecretKey
+        let field = app.secureTextFields[ModuleIdentifiers.Settings.Secure.field(key)]
+        let save = app.buttons[ModuleIdentifiers.Settings.Secure.save(key)]
         XCTAssertTrue(field.waitForExistence(timeout: 10) && save.waitForExistence(timeout: 5),
                       "Settings should show the example secret row")
         XCTAssertGreaterThanOrEqual(save.frame.minY, field.frame.maxY - 1,
@@ -176,24 +173,22 @@ final class OnboardingUITests: StarterUITestCase {
     func testOnboardingNotShownAgainAfterCompletion() throws {
         let app = XCUIApplication()
         // The argument domain shadows the stored value but never replaces it, so the first launch is
-        // forced to show the flow while completion still writes to the persistent defaults.
-        app.launchArguments = ["-tabs.selected", "welcome", "-onboarding.completedVersion", "0", "-onboarding.permissions", "granted",
-                               "-tips.testing", "hideAll"]
-        app.launch()
-        let next = app.buttons["onboarding.next"]
+        // forced to show the flow while completion still writes to the test's defaults suite.
+        let scenario = UITestLaunch.onboarding
+        app.launch(scenario)
+        let next = app.buttons[ModuleIdentifiers.Onboarding.next]
         try requireModuleUI("Onboarding", appeared: next.waitForExistence(timeout: 10), "no Continue button on launch")
-        let skip = app.buttons["onboarding.skip"]
+        let skip = app.buttons[ModuleIdentifiers.Onboarding.skip]
         XCTAssertTrue(waitUntilHittable(skip), "Skip should be offered on the first step")
         skip.tap()
         XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 10),
                       "Skipping should reveal the welcome screen and record completion")
 
         app.terminate()
-        // No onboarding override: the stored version decides. The tab is pinned because an earlier
-        // test can leave Settings selected, which TabShell rightly restores.
-        app.launchArguments = ["-tabs.selected", "welcome", "-onboarding.permissions", "granted",
-                               "-tips.testing", "hideAll"]
-        app.launch()
+        // No onboarding override: the stored version decides.
+        var stored = scenario.relaunch
+        stored.onboarding = .asStored
+        app.launch(stored)
         XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 10),
                       "A relaunch after completion should open on the welcome screen")
         XCTAssertFalse(next.waitForExistence(timeout: 3), "A completed flow must not show again on relaunch")
@@ -205,23 +200,25 @@ final class OnboardingUITests: StarterUITestCase {
     @MainActor
     func testSwipingOnboardingAwaySkipsIt() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-tabs.selected", "welcome", "-onboarding.completedVersion", "0", "-onboarding.permissions", "granted",
-                               "-tips.testing", "hideAll"]
-        app.launch()
-        let next = app.buttons["onboarding.next"]
+        let scenario = UITestLaunch.onboarding
+        app.launch(scenario)
+        let next = app.buttons[ModuleIdentifiers.Onboarding.next]
         try requireModuleUI("Onboarding", appeared: next.waitForExistence(timeout: 10), "no Continue button on launch")
-        XCTAssertTrue(waitUntilHittable(element(app, "onboarding.feature.phone")), "The welcome sheet should be showing")
+        XCTAssertTrue(waitUntilHittable(element(app, ModuleIdentifiers.Onboarding.feature("phone")), timeout: 30),
+                      "The welcome sheet should be showing")
         attach(name: "onboarding-sheet")
-        let sheet = element(app, "onboarding.step.welcome")
+        let sheet = element(app, ModuleIdentifiers.Onboarding.step("welcome"))
         sheet.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1))
             .press(forDuration: 0.1, thenDragTo: app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1.0)))
         XCTAssertTrue(waitUntilGone(next), "Swiping the sheet down should close onboarding")
-        XCTAssertTrue(app.buttons["onboarding.replay"].waitForExistence(timeout: 5), "The welcome screen should be under it")
+        let replay = app.buttons[Identifiers.Welcome.replayTour]
+        XCTAssertTrue(replay.waitForExistence(timeout: 5), "The welcome screen should be under it")
 
         app.terminate()
-        app.launchArguments = ["-tabs.selected", "welcome", "-onboarding.permissions", "granted", "-tips.testing", "hideAll"]
-        app.launch()
-        XCTAssertTrue(app.buttons["onboarding.replay"].waitForExistence(timeout: 10))
+        var stored = scenario.relaunch
+        stored.onboarding = .asStored
+        app.launch(stored)
+        XCTAssertTrue(replay.waitForExistence(timeout: 10))
         XCTAssertFalse(next.waitForExistence(timeout: 3), "A flow swiped away must not show again")
     }
 }

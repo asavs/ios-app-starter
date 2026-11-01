@@ -16,13 +16,13 @@ struct TimerPlanEditor: View {
             Form {
                 Section {
                     DurationPickerRow(plan.workTitle, value: $times.workDuration, range: Self.phaseRange)
-                        .accessibilityIdentifier("timer.edit.work")
+                        .accessibilityIdentifier(Identifiers.Timer.Edit.work)
                     DurationPickerRow(plan.restTitle, value: $times.restDuration, range: Self.phaseRange)
-                        .accessibilityIdentifier("timer.edit.rest")
+                        .accessibilityIdentifier(Identifiers.Timer.Edit.rest)
                     Stepper(value: $times.rounds, in: PlanTimes.roundRange) {
                         Text("Rounds: \(times.rounds)")
                     }
-                    .accessibilityIdentifier("timer.edit.rounds")
+                    .accessibilityIdentifier(Identifiers.Timer.Edit.rounds)
                 } footer: {
                     Text("Rests come between rounds, not after the last one.")
                 }
@@ -32,7 +32,7 @@ struct TimerPlanEditor: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done", action: close)
-                        .accessibilityIdentifier("timer.edit.done")
+                        .accessibilityIdentifier(Identifiers.Timer.Edit.done)
                 }
             }
         }

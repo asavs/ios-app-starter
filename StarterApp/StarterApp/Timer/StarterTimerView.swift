@@ -8,9 +8,9 @@ import TimerRing
 /// as a Pomodoro-style focus session. `TimerScreenModel` holds the logic.
 struct StarterTimerView: View {
 #if canImport(SessionActivity)
-    @State private var model = TimerScreenModel(activity: .shared)
+    @State private var model = TimerScreenModel(defaults: StarterDefaults.store, activity: .shared)
 #else
-    @State private var model = TimerScreenModel()
+    @State private var model = TimerScreenModel(defaults: StarterDefaults.store)
 #endif
     @State private var isEditing = false
 #if canImport(Database)
@@ -29,19 +29,19 @@ struct StarterTimerView: View {
                 }
                 .pickerStyle(.segmented)
                 .disabled(model.canChangePlan == false)
-                .accessibilityIdentifier("timer.plan")
+                .accessibilityIdentifier(Identifiers.Timer.plan)
 
                 TimerRing(fractionRemaining: snapshot.phaseFractionRemaining,
                           title: snapshot.status == .finished ? "Done" : phase.title,
                           remaining: snapshot.phaseRemaining,
                           tint: phase.kind == "rest" ? theme.colors.success : theme.colors.accent)
                     .frame(maxWidth: 320)
-                    .accessibilityIdentifier("timer.ring")
+                    .accessibilityIdentifier(Identifiers.Timer.ring)
 
                 Text("Step \(snapshot.phaseIndex + 1) of \(model.timer.plan.phases.count)")
                     .font(theme.typography.body)
                     .foregroundStyle(theme.colors.textSecondary)
-                    .accessibilityIdentifier("timer.step")
+                    .accessibilityIdentifier(Identifiers.Timer.step)
 
                 TimerControls(model: model)
 #if canImport(SessionActivity)
@@ -60,11 +60,11 @@ struct StarterTimerView: View {
 #if canImport(Database)
                 // Saved plans live in the database module's store.
                 Button("Presets", systemImage: "bookmark", action: choosePreset)
-                    .accessibilityIdentifier("timer.presets")
+                    .accessibilityIdentifier(Identifiers.Timer.presets)
 #endif
                 Button("Edit", action: edit)
                     .disabled(model.canChangePlan == false)
-                    .accessibilityIdentifier("timer.edit")
+                    .accessibilityIdentifier(Identifiers.Timer.edit)
             }
         }
         .sheet(isPresented: $isEditing) {

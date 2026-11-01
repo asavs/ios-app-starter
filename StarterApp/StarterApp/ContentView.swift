@@ -42,7 +42,7 @@ struct ContentView: View {
                         } label: {
                             Label("Settings", systemImage: "gearshape")
                         }
-                        .accessibilityIdentifier("settings.open")
+                        .accessibilityIdentifier(Identifiers.Welcome.settings)
                     }
                 }
                 .navigationDestination(isPresented: $isShowingSettings) {
@@ -91,7 +91,7 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity)
         }
         .prominentButtonStyle()
-        .accessibilityIdentifier("onboarding.replay")
+        .accessibilityIdentifier(Identifiers.Welcome.replayTour)
         .contextualTip("tour", in: tips, arrowEdge: .bottom)
         .sheet(isPresented: $isReplayingTour) {
             OnboardingView(steps: OnboardingStep.template(onChoice: ContentView.rememberBuildGoals)) {
@@ -107,7 +107,7 @@ struct ContentView: View {
     /// Stores the choice step's answer where the welcome screen reads it; an app would adapt its content instead.
     /// The identifiers are stored, never the titles, so the answer survives a change of language.
     static func rememberBuildGoals(_ goals: [String]) {
-        UserDefaults.standard.set(goals.joined(separator: ","), forKey: buildGoalsKey)
+        StarterDefaults.store.set(goals.joined(separator: ","), forKey: buildGoalsKey)
     }
 
     /// The stored answer as the picked options' titles in the current language, as a list ("A and B").
@@ -139,7 +139,7 @@ struct ContentView: View {
 #if canImport(Theme)
         ThemedCard { detailLines }
             .accessibilityElement(children: .contain)
-            .accessibilityIdentifier("welcome.card")
+            .accessibilityIdentifier(Identifiers.Welcome.card)
 #else
         detailLines
 #endif
@@ -154,14 +154,14 @@ struct ContentView: View {
             Text("Modules \(TemplateVersion.modules)")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
-                .accessibilityIdentifier("welcome.modulesVersion")
+                .accessibilityIdentifier(Identifiers.Welcome.modulesVersion)
 #endif
 #if canImport(Onboarding)
             if !buildGoalTitles.isEmpty {
                 Text("Building: \(buildGoalTitles)")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                    .accessibilityIdentifier("welcome.buildGoals")
+                    .accessibilityIdentifier(Identifiers.Welcome.buildGoals)
             }
 #endif
         }

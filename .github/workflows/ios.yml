@@ -127,6 +127,9 @@ jobs:
       - name: Check module string catalogs
         run: python3 scripts/check-module-strings.py
 
+      - name: Check the UI-test identifier contract
+        run: python3 scripts/check-ui-identifiers.py
+
       - name: Check app icon document and render previews
         if: matrix.configuration == 'starter'
         env:

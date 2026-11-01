@@ -317,6 +317,8 @@ IOS_TEST_DESTINATION='platform=iOS Simulator,name=iPhone 17,OS=26.5' bash script
 swift test                                             # host-side, all host-portable modules
 ```
 
+The app's UI tests launch through `UITestLaunch` ([ci.md](ci.md#ui-test-scenarios)): a test names a tab and a scenario and gets an emptied defaults suite and an in-memory store, and a module's own launch arguments (`-attachments.fakeCamera`, `-timer.intervals`) go in its `extra`. The module identifiers the tests use are mirrored in `ModuleIdentifiers`, which `scripts/check-ui-identifiers.py` checks against the module sources, so renaming one fails the build before a test does.
+
 Xcode derives one scheme per product plus `StarterModules-Package` (just `StarterModules` when there is a single product), and only the package-wide scheme has a test action. `test-module.sh` therefore runs that scheme with `-only-testing:<Name>Tests` and writes the same `summary.md`, `results.json` and log layout as `test-ios.sh`. The required iOS workflow runs one simulator test lane per module it finds under `Modules/`. It also generates the `examples/no-modules.yml` app, verifies that it enables no module products, and builds it for the iOS Simulator.
 
 The app, module and compatibility lanes cache Xcode's cloned Swift package sources in `build/swiftpm-cache/`, keyed on the Xcode version and hashes of the package manifests, resolved pins and XcodeGen specs. A miss or stale entry falls back to normal package resolution. DerivedData is never cached. The cache saves downloads only once the root package has a remote dependency.

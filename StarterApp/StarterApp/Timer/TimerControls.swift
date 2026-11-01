@@ -14,7 +14,7 @@ struct TimerControls: View {
                 Text(model.primaryTitle).frame(maxWidth: .infinity)
             }
             .prominentButtonStyle()
-            .accessibilityIdentifier("timer.primary")
+            .accessibilityIdentifier(Identifiers.Timer.primary)
 
             ViewThatFits {
                 HStack(spacing: theme.spacing.medium) { TimerSecondaryButtons(model: model) }

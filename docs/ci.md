@@ -48,6 +48,23 @@ bash scripts/test-ios.sh
 
 Reports go to a directory under `build/test-results/`, which the script prints; `IOS_TEST_OUTPUT_DIR` changes it and `IOS_TEST_DESTINATION` picks another installed simulator. The script exits nonzero on a failed build or test even though `tee` captures the output, and also when a run succeeds with no verified passing tests. Each test may run for 300 seconds. In the workflow, build and test have a 20-minute step limit and the job 30 minutes; raise these deliberately as the app grows. CI skips sysdiagnose collection after failures to keep reports quick; set `IOS_TEST_DIAGNOSTICS=on-failure` for a dedicated diagnostic run.
 
+## UI test scenarios
+
+A UI test launches the app into a scenario rather than assembling launch arguments by hand:
+
+```swift
+let scenario = UITestLaunch(tab: Identifiers.Tabs.timer, store: "presets")
+app.launch(scenario)            // emptied first: a fresh install
+app.terminate()
+app.launch(scenario.relaunch)   // the same data again
+```
+
+`UITestLaunch` (in `StarterApp/Shared/UITesting`, compiled into the app and the UI test bundle) names the tab, whether onboarding shows, is recorded as completed or is left to the stored record, whether tips are hidden or fresh, and an optional named database store. `.tab(_)` is the common case: past onboarding, on a tab, tips hidden. The tab, onboarding and tips reach their modules through the argument domain, which shadows stored values for reads. The launch also keeps the test's data apart from a normal launch on the same simulator or phone: the app's defaults go to a `UserDefaults` suite of their own (`StarterDefaults`, bound to every `@AppStorage` through `defaultAppStorage`), the database is in memory unless the scenario names a store under the launch's directory in the temporary folder, and attachments go under that directory too. A launch with `resets` (the default) empties all three first; `relaunch` keeps them, for a test that checks a value survived. A module's own arguments, such as `-attachments.fakeCamera YES` or `-timer.intervals 20,10,3`, go in `extra`, every flag followed by a value because the argument domain reads pairs. Debug builds only: a release build reads none of this.
+
+Accessibility identifiers are constants in the same folder: `Identifiers` for the app's views (they set them from there too) and `ModuleIdentifiers` for the module controls the tests touch, mirroring what each module documents in [modules.md](modules.md). To add a control, add its constant, set it in the view and look it up in the test. `scripts/check-ui-identifiers.py` (a CI step) fails when an app view or a UI test uses an identifier literal, when an `Identifiers` constant is referenced nowhere, or when a `ModuleIdentifiers` constant no longer appears in the module sources. Identifiers are for automation; the labels VoiceOver reads are the views' own and the tests check those separately.
+
+`SettingsUITests.testScenarioKeepsDataUntilReset` is the harness's own check: a setting made under a scenario survives `relaunch` and is gone after a reset launch. `UITestLaunchTests` in the app's unit tests covers the argument round trip, that a normal launch reads nothing (including a reset request without the flag), and that the database and attachments stay out of the app's own store. The Keychain is not part of the suite: a test that stores a secret clears what an earlier run left.
+
 ## Run on your iPhone from a Mac
 
 With an iPhone connected over USB or Wi-Fi (Developer Mode on, computer trusted), build, install and launch a Debug app with no commit, upload or TestFlight:

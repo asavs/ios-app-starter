@@ -10,7 +10,8 @@ import SwiftData
 #endif
 
 /// Everything the template keeps on the device, for the Erase Local Data row. A module that adds a
-/// store adds a step here.
+/// store adds a step here. Main actor, like the Settings view that asks for it and the defaults it reads.
+@MainActor
 enum StarterLocalData {
 #if canImport(Database)
     /// - Parameter database: The open container; its records go too. Seeded sample content comes
@@ -26,7 +27,7 @@ enum StarterLocalData {
 
     static var reset: LocalDataReset {
         var steps: [LocalDataReset.Step] = [
-            .defaults(),
+            .defaults(StarterDefaults.store),
             .secrets(in: KeychainStore()),
         ]
 #if canImport(Onboarding)

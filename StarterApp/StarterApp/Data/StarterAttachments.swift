@@ -6,9 +6,19 @@ import Settings
 #endif
 
 /// The app's attachment store: files under Application Support, thumbnails and link metadata
-/// under Caches. UI tests point it elsewhere with `-attachments.root` (see `AttachmentTestOverrides`).
+/// under Caches. A UI-test launch keeps them under its own directory instead, emptied on a `resets`
+/// launch, unless the test names a root itself (`-attachments.root`, see `AttachmentTestOverrides`).
 enum StarterAttachments {
-    static let store = AttachmentTestOverrides.current.store()
+    static let store = store(for: UITestLaunch.current, overrides: .current)
+
+    static func store(for launch: UITestLaunch?, overrides: AttachmentTestOverrides) -> AttachmentStore {
+        var overrides = overrides
+        if let launch, overrides.root == nil {
+            overrides.root = UITestLaunch.directory.appending(path: "Attachments", directoryHint: .isDirectory)
+            overrides.reset = launch.resets
+        }
+        return overrides.store()
+    }
 
 #if canImport(Settings)
     /// Erase Local Data removes every stored file and cache; the records that named them go with

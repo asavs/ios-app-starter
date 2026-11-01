@@ -25,7 +25,7 @@ struct StarterAppApp: App {
 
     init() {
 #if canImport(Onboarding)
-        ContextualTips.configure() // Before any tip view appears.
+        ContextualTips.configure(defaults: StarterDefaults.store) // Before any tip view appears.
 #endif
 #if canImport(SessionTimer) && canImport(SessionActivity)
         // Also runs when the system launches the app in the background for the activity's button.
@@ -42,9 +42,11 @@ struct StarterAppApp: App {
                     .modifier(Appearance())
                     .modifier(SeedOnLaunch())
             }
+            .defaultAppStorage(StarterDefaults.store)
 #else
             root
                 .modifier(Appearance())
+                .defaultAppStorage(StarterDefaults.store)
 #endif
         }
     }
@@ -56,7 +58,8 @@ struct StarterAppApp: App {
     @ViewBuilder private var root: some View {
 #if canImport(Onboarding)
         appContent
-            .onboardingGate(steps: OnboardingStep.template(onChoice: ContentView.rememberBuildGoals), version: 3)
+            .onboardingGate(steps: OnboardingStep.template(onChoice: ContentView.rememberBuildGoals), version: 3,
+                            record: OnboardingRecord(defaults: StarterDefaults.store))
 #else
         appContent
 #endif
@@ -75,7 +78,7 @@ struct StarterAppApp: App {
 private struct Appearance: ViewModifier {
     func body(content: Content) -> some View {
 #if canImport(Settings)
-        content.storedAppearance()
+        content.storedAppearance(store: StarterDefaults.store)
 #else
         content
 #endif

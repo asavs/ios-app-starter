@@ -8,15 +8,16 @@ import SwiftData
 enum StarterDatabase {
     static let schema = Schema(versionedSchema: StarterSchemaCurrent.self)
 
-    /// `-database.store <name>` puts the store in the temporary directory under that name, and
-    /// `-database.reset` removes it before opening, so UI tests start clean and can relaunch into
-    /// the same data.
-    static func storage(arguments: [String] = CommandLine.arguments) -> DatabaseStorage {
-        guard let index = arguments.firstIndex(of: "-database.store"), index + 1 < arguments.count else {
-            return .applicationSupport(named: "StarterApp")
-        }
-        let storage = DatabaseStorage.persistent(URL.temporaryDirectory.appending(path: "\(arguments[index + 1]).store"))
-        if arguments.contains("-database.reset") { try? Database.removeStoreFiles(for: storage) }
+    /// The app's store, or under a UI-test launch one that never touches it: in memory, or a named
+    /// store under the launch's directory for a test that relaunches into the same records, emptied
+    /// first on a `resets` launch (`UITestLaunch`).
+    static func storage(for launch: UITestLaunch? = .current) -> DatabaseStorage {
+        guard let launch else { return .applicationSupport(named: "StarterApp") }
+        guard let name = launch.store else { return .memory }
+        let directory = UITestLaunch.directory
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let storage = DatabaseStorage.persistent(directory.appending(path: "\(name).store"))
+        if launch.resets { try? Database.removeStoreFiles(for: storage) }
         return storage
     }
 
