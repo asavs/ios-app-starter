@@ -39,7 +39,8 @@ fi
 # UI tests run on parallel simulator clones when IOS_TEST_WORKERS is above 1: XCTest hands each test
 # class to a clone, which is why StarterAppUITests is split into classes by area. Each clone has its
 # own data container, so tests that store defaults, a Keychain secret or a database store don't
-# collide. The hosted lane sets 2; locally the default is serial, which is faster on a busy Mac.
+# collide. Serial by default: measured on 2026-11-01, two clones ran each test about twice as slowly on
+# a Mac and never came up on the hosted runner (docs/ci.md), so the switch is for the next attempt.
 workers="${IOS_TEST_WORKERS:-1}"
 parallel_settings=(-parallel-testing-enabled NO)
 if [[ "$workers" =~ ^[0-9]+$ ]] && (( workers > 1 )); then

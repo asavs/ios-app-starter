@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-01 — The starter lane: simulator clones don't help, the test classes are split anyway
+
+- **Tools:** Xcode 27.0 on the Mac, Xcode 27.0 on the hosted macOS runner. Task `ios-6dd.13`, after the lane crossed its 25-minute step cap on PR #136 and on PR #138's first attempt.
+- **Measured first:** on the green run of #138 the build-and-test step took 14.6 minutes: about 4.5 of build and unit tests and 9.6 of sixteen UI tests (deep links 67 s, cue settings 60 s, largest text size 56 s). The same work took over 25 minutes on a slower runner the attempt before, so the runner itself varies almost two to one.
+- **Finding (confirmed):** XCTest distributes whole test classes to parallel clones. With every UI test in one class, a two-clone run left the second clone idle. The tests now sit in four classes by area over a `StarterUITestCase` base with the helpers; no test body changed.
+- **Finding (confirmed):** with the split, both clones took work locally (16 of 16 passed), but each test ran about twice as slowly, so the suite took 664 s of testing against 617 s serial: the simulators share whatever bounds UI testing on this Mac. On the hosted runner, two clones were worse still: the build finished and no test case ran for eighteen minutes until the step timed out, so the clones never came up. The lane stays serial; `IOS_TEST_WORKERS` remains for the next attempt.
+- **Next:** a job per class group (each with its own simulator) halves the wall time for the same runner minutes, but today the macOS runner queue, not the lane, set the pace (PR #142 waited over an hour to start). Trimming the slowest tests and splitting the unit tests from the UI tests are the cheaper moves.
+
 ## 2026-10-31 — SessionActivity: a Live Activity that the system counts down, and the first extension target
 
 - **Tools:** Xcode 27.0 on the Mac, iPhone 17 / iOS 27.0 simulator. Task `ios-s8.3`, research `ios-6dd.7` in docs/research/live-activities.md (claude-mac, three parallel passes over Apple's ActivityKit and WidgetKit docs, the HIG and seven open-source timer activities; Codex was offline). The survey had counted one app with a Live Activity for calls; it turned out to be a stub with `TODO` comments and no extension.
