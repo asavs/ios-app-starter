@@ -52,6 +52,10 @@ As of 2026-10-24. Evidence for every milestone is in [the setup journal](docs/se
 - **Milestone 9, round one, is released.** Theme, Onboarding and Settings shipped with TemplateVersion as module library `0.2.0` (2026-10-23); `0.3.0` (2026-10-24) made all module text translatable and moved Keychain calls off the main actor. See [docs/modules.md](docs/modules.md). Sign-in and the SwiftData layer are round two, built when a real app asks for them.
 - **Milestone 10 is in progress.** The [onboarding runbook](docs/agent-onboarding.md), its consent checklist and the resumable `scripts/setup.py` exist. Still to do: the timed run on a fresh second app and one backpropagation round-trip.
 
+## Feature screen direction
+
+The owner-approved [feature-tab plan](docs/design/feature-tabs.md) adds useful Library and Notes screens, a content-based Home, and persistent tab selection in Settings and onboarding. Timer remains an optional feature in the demo; the reusable template keeps its essentials. This plan is pending implementation and does not establish new module releases or runtime coverage.
+
 ## Principles
 
 Every module is a scaffold an app can keep, change or delete: the app builds with any subset enabled, and nothing enters the template until a real app needed it. Update onboarding and examples with every milestone. Finish with complete walkthroughs from Windows and from a Mac, and generated non-AI and AI examples that prove optional modules stay optional.
