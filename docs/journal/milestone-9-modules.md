@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-02: Timer session ownership before runtime tab changes
+
+- Tools and scope: research on Windows with Python 3.13.14 and Git 2.54.0; source inspection of main `12c7ee8` and the pending Live Activity fix in PR #146 at `7aee161`. Apple documentation and WWDC checked against the iOS 17 minimum.
+- Confirmed in source: `StarterTimerView` owns its model and invokes the snapshot observer that saves the record, plays cues and updates the activity. Keeping only the model above a changing tab shell would still leave transition effects dependent on a mounted view. Screen-awake cleanup also needs explicit reappearance handling when a running session never changed status.
+- Recommendation: [session-lifetime.md](../research/session-lifetime.md) specifies one app-owned session, owner-driven transition effects, wall-clock restoration and scene-scoped screen-awake requests. Retain PR #146's toggle, adoption, ordering and cleanup fixes. Hiding Timer preserves its run and record.
+- Verification: inspected source, checked Apple API contracts and pinned skills, and specified deterministic owner tests plus UI/device acceptance. Research only; no compilation or runtime compatibility claim. Built as: pending.
+- Remaining uncertainty: phase changes cannot execute while suspended under the current local-only activity design; clock changes across termination, manual activity dismissal and cue catch-up policy need explicit implementation decisions and verification.
+
 ## 2026-11-02 — Feature tabs as useful app screens
 
 - **Task and tools:** module round two, GitHub CLI, Beads 1.3.1, source inspection of main at `101cb28`. Product planning only; no app or account changes.
