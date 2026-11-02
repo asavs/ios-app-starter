@@ -7,44 +7,43 @@ final class AttachmentsUITests: StarterUITestCase {
     @MainActor
     func testPresetAttachments() throws {
         let app = XCUIApplication()
-        let root = FileManager.default.temporaryDirectory.appending(path: "uitest-attachments").path()
-        let arguments = ["-tabs.selected", "timer", "-onboarding.completedVersion", "99", "-tips.testing", "hideAll",
-                         "-database.store", "uitest-attachments", "-attachments.root", root,
-                         "-attachments.fakeCamera", "-attachments.fakeLink", "Fake Link Title"]
-        app.launchArguments = arguments + ["-database.reset", "-attachments.reset"]
-        app.launch()
-        let ring = element(app, "timer.ring")
+        // A named store and the launch's own attachments directory, emptied first and kept for the relaunch.
+        let scenario = UITestLaunch(tab: Identifiers.Tabs.timer, store: "attachments",
+                                    extra: ["-attachments.fakeCamera", "YES", "-attachments.fakeLink", "Fake Link Title"])
+        app.launch(scenario)
+        let ring = element(app, Identifiers.Timer.ring)
         try requireModuleUI("SessionTimer", appeared: ring.waitForExistence(timeout: 10), "no timer ring on the Timer tab")
-        let presets = app.buttons["timer.presets"]
+        let presets = app.buttons[Identifiers.Timer.presets]
         try requireModuleUI("Database", appeared: presets.waitForExistence(timeout: 5), "no Presets button on the Timer tab")
         presets.tap()
-        let tabata = app.buttons["timer.presets.row.Tabata"]
+        let tabata = app.buttons[Identifiers.Timer.Presets.row("Tabata")]
         XCTAssertTrue(tabata.waitForExistence(timeout: 10), "The seeded presets should be listed")
         tabata.swipeRight()
-        let open = app.buttons["timer.presets.row.Tabata.attachments"]
+        let open = app.buttons[Identifiers.Timer.Presets.attachments(of: "Tabata")]
         try requireModuleUI("Attachments", appeared: open.waitForExistence(timeout: 5), "no Attachments swipe action on a preset")
         open.tap()
 
-        let add = app.buttons["attachments.add"].firstMatch
+        let add = app.buttons[ModuleIdentifiers.Attachments.add].firstMatch
         XCTAssertTrue(add.waitForExistence(timeout: 10), "The Attachments screen should offer an Add menu")
         attach(name: "attachments-empty")
 
         add.tap()
-        app.buttons["attachments.add.camera"].firstMatch.tap()
-        let items = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'attachments.item.'"))
+        app.buttons[ModuleIdentifiers.Attachments.addCamera].firstMatch.tap()
+        let cells = NSPredicate(format: "identifier BEGINSWITH %@", ModuleIdentifiers.Attachments.itemPrefix)
+        let items = app.descendants(matching: .any).matching(cells)
         XCTAssertTrue(waitUntil(items.firstMatch, "exists == true", timeout: 10), "The fake camera should add a photo")
         XCTAssertTrue(items.firstMatch.label.hasPrefix("Photo"), "The cell describes its kind, got: \(items.firstMatch.label)")
 
         add.tap()
-        app.buttons["attachments.add.link"].firstMatch.tap()
-        let field = app.textFields["attachments.link.field"].firstMatch.exists ? app.textFields["attachments.link.field"].firstMatch
-            : app.alerts.firstMatch.textFields.firstMatch
+        app.buttons[ModuleIdentifiers.Attachments.addLink].firstMatch.tap()
+        let linkField = app.textFields[ModuleIdentifiers.Attachments.linkField].firstMatch
+        let field = linkField.exists ? linkField : app.alerts.firstMatch.textFields.firstMatch
         XCTAssertTrue(field.waitForExistence(timeout: 5), "Adding a link should ask for the address")
         field.tap()
         field.typeText("www.example.com/plan")
-        app.buttons["attachments.link.add"].firstMatch.tap()
+        app.buttons[ModuleIdentifiers.Attachments.linkAdd].firstMatch.tap()
         XCTAssertTrue(waitUntil(items.element(boundBy: 1), "exists == true", timeout: 10), "The link should be listed")
-        XCTAssertTrue(app.descendants(matching: .any)["attachments.linkPreview"].waitForExistence(timeout: 10),
+        XCTAssertTrue(app.descendants(matching: .any)[ModuleIdentifiers.Attachments.linkPreview].waitForExistence(timeout: 10),
                       "A link gets its preview card from the cached metadata")
         attach(name: "attachments-photo-and-link")
 
@@ -61,8 +60,7 @@ final class AttachmentsUITests: StarterUITestCase {
 
         // Everything survives a relaunch into the same store.
         app.terminate()
-        app.launchArguments = arguments
-        app.launch()
+        app.launch(scenario.relaunch)
         XCTAssertTrue(presets.waitForExistence(timeout: 10))
         presets.tap()
         XCTAssertTrue(tabata.waitForExistence(timeout: 10))
@@ -78,6 +76,6 @@ final class AttachmentsUITests: StarterUITestCase {
         remove.tap()
         XCTAssertTrue(waitUntil(items.element(boundBy: 1), "exists == false", timeout: 10), "Removing should drop one item")
         attach(name: "attachments-after-remove")
-        app.buttons["timer.presets.attachments.done"].tap()
+        app.buttons[Identifiers.Timer.Presets.attachmentsDone].tap()
     }
 }

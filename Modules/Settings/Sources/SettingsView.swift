@@ -25,10 +25,12 @@ import Theme
 public struct SettingsView<Extra: View, About: View>: View {
     @Environment(\.appTheme) private var theme
     @AppStorage(AppSettings.appearanceKey) private var appearance: AppearancePreference = .system
-    /// The picker's selection. It reaches `appearance` after the segmented control's selection has slid
-    /// into place: switching the window's scheme mid-slide made the iOS 26 glass selection redraw its
-    /// labels as stacked, displaced copies.
-    @State private var choice: AppearancePreference
+    /// The picker's pending selection, nil while it follows `appearance`. A pick reaches `appearance`
+    /// after the segmented control's selection has slid into place: switching the window's scheme
+    /// mid-slide made the iOS 26 glass selection redraw its labels as stacked, displaced copies.
+    /// It starts nil rather than from `.standard`: `appearance` reads whatever store the app put in
+    /// `defaultAppStorage`, and a value from another store would be written back over it.
+    @State private var choice: AppearancePreference?
     private let extra: Extra
     private let about: About
     private let version: String?
@@ -42,7 +44,11 @@ public struct SettingsView<Extra: View, About: View>: View {
         self.version = version
         self.extra = extra()
         self.about = about()
-        _choice = State(initialValue: AppSettings().appearance)
+    }
+
+    /// The picker shows the pending choice, or the stored appearance until there is one.
+    private var selection: Binding<AppearancePreference> {
+        Binding { choice ?? appearance } set: { choice = $0 }
     }
 
     /// Long enough for the segmented control's selection to slide clear: on an iOS 26.3 iPhone the
@@ -54,7 +60,7 @@ public struct SettingsView<Extra: View, About: View>: View {
     public var body: some View {
         Form {
             Section {
-                Picker(selection: $choice) {
+                Picker(selection: selection) {
                     ForEach(AppearancePreference.allCases) { preference in
                         Text(preference.title).tag(preference)
                     }
@@ -65,11 +71,11 @@ public struct SettingsView<Extra: View, About: View>: View {
                 .accessibilityIdentifier("settings.appearance")
                 // A new tap restarts the wait, so only the last choice is applied.
                 .task(id: choice) {
-                    guard choice != appearance,
+                    guard let choice, choice != appearance,
                           (try? await Task.sleep(for: Self.appearanceDelay)) != nil else { return }
                     appearance = choice
                 }
-                .onChange(of: appearance) { _, stored in choice = stored } // Changed elsewhere, such as a reset.
+                .onChange(of: appearance) { choice = nil } // Applied, or changed elsewhere, such as a reset: follow it.
             } header: {
                 Text("Appearance", bundle: .module)
             }

@@ -7,12 +7,11 @@ final class StarterAppUITests: StarterUITestCase {
     @MainActor
     func testTabShellSwitchesAndRestoresSelection() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-tabs.selected", "welcome", "-onboarding.completedVersion", "99",
-                               "-tips.testing", "hideAll"]
-        app.launch()
-        let welcome = tabButton(in: app, "welcome", title: "Welcome")
+        let scenario = UITestLaunch.tab(Identifiers.Tabs.welcome)
+        app.launch(scenario)
+        let welcome = tabButton(in: app, Identifiers.Tabs.welcome, title: "Welcome")
         try requireModuleUI("TabShell", appeared: welcome.waitForExistence(timeout: 10), "no Welcome tab")
-        let settings = tabButton(in: app, "settings", title: "Settings")
+        let settings = tabButton(in: app, Identifiers.Tabs.settings, title: "Settings")
         try requireModuleUI("Settings", appeared: settings.waitForExistence(timeout: 5), "no Settings tab")
         XCTAssertTrue(waitUntil(welcome, "isSelected == true"))
         XCTAssertEqual(welcome.label, "Welcome")
@@ -22,7 +21,7 @@ final class StarterAppUITests: StarterUITestCase {
 
         settings.tap()
         XCTAssertTrue(waitUntil(settings, "isSelected == true"))
-        XCTAssertTrue(element(app, "settings.appearance").waitForExistence(timeout: 10))
+        XCTAssertTrue(element(app, ModuleIdentifiers.Settings.appearance).waitForExistence(timeout: 10))
         attach(name: "tabs-settings")
         welcome.tap()
         XCTAssertTrue(waitUntil(welcome, "isSelected == true"))
@@ -31,46 +30,45 @@ final class StarterAppUITests: StarterUITestCase {
         XCTAssertTrue(waitUntil(settings, "isSelected == true"))
 
         app.terminate()
-        // No tabs.selected argument: restore the value saved by the native tab selection.
-        app.launchArguments = ["-onboarding.completedVersion", "99", "-tips.testing", "hideAll"]
-        app.launch()
+        // No pinned tab: restore the value saved by the native tab selection.
+        var restored = scenario.relaunch
+        restored.tab = nil
+        app.launch(restored)
         XCTAssertTrue(settings.waitForExistence(timeout: 10))
         XCTAssertTrue(waitUntil(settings, "isSelected == true"), "Relaunch should restore Settings")
-        XCTAssertTrue(element(app, "settings.appearance").waitForExistence(timeout: 5))
+        XCTAssertTrue(element(app, ModuleIdentifiers.Settings.appearance).waitForExistence(timeout: 5))
         attach(name: "tabs-restored")
-        welcome.tap() // Leave other local runs at the welcome screen.
     }
 
     /// The app's own link selects a tab; a link with a route, query or unknown tab changes nothing.
-    /// `open(_:)` relaunches the app with the URL and the same launch arguments, so each link starts from
-    /// the pinned tab: this covers links that launch the app. Skips without TabShell or Settings.
+    /// `open(_:in:)` relaunches the app with the URL into the scenario, so each link starts from the
+    /// pinned tab: this covers links that launch the app. Skips without TabShell or Settings.
     @MainActor
     func testDeepLinkSelectsTab() throws {
         let scheme = try XCTUnwrap(Bundle(for: Self.self).object(forInfoDictionaryKey: "StarterAppURLScheme") as? String,
                                    "project.yml should pass APP_URL_SCHEME to the UI tests")
         let app = XCUIApplication()
-        let welcome = tabButton(in: app, "welcome", title: "Welcome")
-        let settings = tabButton(in: app, "settings", title: "Settings")
+        let welcome = tabButton(in: app, Identifiers.Tabs.welcome, title: "Welcome")
+        let settings = tabButton(in: app, Identifiers.Tabs.settings, title: "Settings")
         func open(_ link: String, from tab: String) throws {
-            app.launchArguments = ["-tabs.selected", tab, "-onboarding.completedVersion", "99", "-tips.testing", "hideAll"]
-            app.open(try XCTUnwrap(URL(string: link)))
+            app.open(try XCTUnwrap(URL(string: link)), in: .tab(tab))
             try requireModuleUI("TabShell", appeared: welcome.waitForExistence(timeout: 10), "no Welcome tab")
             try requireModuleUI("Settings", appeared: settings.waitForExistence(timeout: 5), "no Settings tab")
         }
 
-        try open("\(scheme)://settings", from: "welcome")
+        try open("\(scheme)://settings", from: Identifiers.Tabs.welcome)
         XCTAssertTrue(waitUntil(settings, "isSelected == true"), "The link should select Settings")
-        XCTAssertTrue(element(app, "settings.appearance").waitForExistence(timeout: 10))
+        XCTAssertTrue(element(app, ModuleIdentifiers.Settings.appearance).waitForExistence(timeout: 10))
         attach(name: "deep-link-settings")
 
         // The first two would select Welcome if the app accepted them; the last names no tab.
         for ignored in ["\(scheme)://welcome/secrets", "\(scheme)://welcome?reset=tips", "\(scheme)://nowhere"] {
-            try open(ignored, from: "settings")
+            try open(ignored, from: Identifiers.Tabs.settings)
             XCTAssertTrue(waitUntil(settings, "isSelected == true"), "The pinned tab should load")
             XCTAssertFalse(waitUntil(welcome, "isSelected == true", timeout: 3), "\(ignored) should change nothing")
         }
 
-        try open("\(scheme)://welcome", from: "settings")
+        try open("\(scheme)://welcome", from: Identifiers.Tabs.settings)
         XCTAssertTrue(waitUntil(welcome, "isSelected == true"), "The link should select Welcome")
         XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 5))
     }
@@ -81,10 +79,11 @@ final class StarterAppUITests: StarterUITestCase {
     @MainActor
     func testThemeRendersInLightAndDark() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-tabs.selected", "welcome", "-onboarding.completedVersion", "99", "-settings.appearance", "light",
-                                "-tips.testing", "hideAll"]
-        app.launch()
-        let card = element(app, "welcome.card")
+        func appearance(_ name: String) -> UITestLaunch {
+            UITestLaunch(tab: Identifiers.Tabs.welcome, extra: ["-settings.appearance", name])
+        }
+        app.launch(appearance("light"))
+        let card = element(app, Identifiers.Welcome.card)
         try requireModuleUI("Theme", appeared: card.waitForExistence(timeout: 10), "no themed card on the welcome screen")
         let hasSettings = settingsButton(in: app).waitForExistence(timeout: 5) // The tab bar can land after the card.
         let light = try assertThemedWelcome(app, name: "theme-light")
@@ -94,9 +93,7 @@ final class StarterAppUITests: StarterUITestCase {
 
         try requireModuleUI("Settings", appeared: hasSettings, "no settings button, so dark appearance cannot be forced")
         app.terminate()
-        app.launchArguments = ["-tabs.selected", "welcome", "-onboarding.completedVersion", "99", "-settings.appearance", "dark",
-                                "-tips.testing", "hideAll"]
-        app.launch()
+        app.launch(appearance("dark"))
         XCTAssertTrue(card.waitForExistence(timeout: 10), "The themed card should render in dark appearance")
         let dark = try assertThemedWelcome(app, name: "theme-dark")
         XCTAssertLessThan(dark, 0.5, "The dark background should be dark, got luminance \(dark)")
@@ -106,10 +103,10 @@ final class StarterAppUITests: StarterUITestCase {
     /// screenshot, and returns the luminance of the screen background below the content.
     @MainActor
     private func assertThemedWelcome(_ app: XCUIApplication, name: String) throws -> CGFloat {
-        let card = element(app, "welcome.card")
+        let card = element(app, Identifiers.Welcome.card)
         XCTAssertTrue(waitUntilHittable(card), "The themed card should be visible")
         XCTAssertTrue(app.staticTexts["Replace this screen in ContentView.swift."].isHittable, "The card should show its details")
-        let replay = app.buttons["onboarding.replay"]
+        let replay = app.buttons[Identifiers.Welcome.replayTour]
         if replay.exists {
             XCTAssertTrue(replay.isHittable, "The primary-styled button should be visible")
         }
@@ -139,9 +136,7 @@ final class StarterAppUITests: StarterUITestCase {
     func testLaunchPerformance() throws {
         // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {
-            let app = XCUIApplication()
-            app.launchArguments += ["-tabs.selected", "welcome", "-onboarding.completedVersion", "99", "-tips.testing", "hideAll"] // Measure the app, not onboarding.
-            app.launch()
+            XCUIApplication().launch(.tab(Identifiers.Tabs.welcome)) // Measure the app, not onboarding.
         }
     }
 }

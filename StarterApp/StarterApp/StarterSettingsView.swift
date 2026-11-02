@@ -44,22 +44,22 @@ struct StarterSettingsView: View {
         SettingsView {
 #if canImport(Cues)
             Section {
-                CueSettingsLink()
+                CueSettingsLink(defaults: StarterDefaults.store)
             }
 #endif
             Section {
-                SecureSettingRow("API key", key: "example.apiKey")
+                SecureSettingRow("API key", key: Identifiers.Settings.exampleSecretKey)
 #if canImport(Onboarding)
                 NextLaunchResetButton("Show the welcome tour on next launch", done: "The welcome tour shows on next launch",
                                       isDone: $tourResetPending) {
-                    OnboardingRecord().reset()
+                    OnboardingRecord(defaults: StarterDefaults.store).reset()
                 }
-                .accessibilityIdentifier("settings.onboarding.reset")
+                .accessibilityIdentifier(Identifiers.Settings.onboardingReset)
                 NextLaunchResetButton("Show tips again on next launch", done: "Tips show again on next launch",
                                       isDone: $tipsResetPending) {
-                    ContextualTips.resetOnNextLaunch()
+                    ContextualTips.resetOnNextLaunch(defaults: StarterDefaults.store)
                 }
-                .accessibilityIdentifier("settings.tips.reset")
+                .accessibilityIdentifier(Identifiers.Settings.tipsReset)
 #endif
             } header: {
                 Text("Examples")
@@ -76,7 +76,7 @@ struct StarterSettingsView: View {
             }
 #if canImport(SessionTimer) && canImport(SessionActivity)
             // Module sections go after the template's own, above About: the UI tests scroll to rows above.
-            SessionActivitySettingsSection()
+            SessionActivitySettingsSection(defaults: StarterDefaults.store)
                 .onChange(of: liveActivity, StarterSessionActivity.shared.settingChanged)
 #endif
         } about: {

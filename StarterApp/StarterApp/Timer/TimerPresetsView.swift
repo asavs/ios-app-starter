@@ -31,7 +31,7 @@ struct TimerPresetsView: View {
                         TimerPresetRow(preset: preset)
                     }
                     .disabled(model.canChangePlan == false)
-                    .accessibilityIdentifier("timer.presets.row.\(preset.name)")
+                    .accessibilityIdentifier(Identifiers.Timer.Presets.row(preset.name))
 #if canImport(Attachments)
                     // Swipe from the leading edge for the preset's photos, files and links.
                     .swipeActions(edge: .leading) {
@@ -41,7 +41,7 @@ struct TimerPresetsView: View {
                             Label("Attachments", systemImage: "paperclip")
                         }
                         .tint(theme.colors.accent)
-                        .accessibilityIdentifier("timer.presets.row.\(preset.name).attachments")
+                        .accessibilityIdentifier(Identifiers.Timer.Presets.attachments(of: preset.name))
                     }
 #endif
                 }
@@ -58,11 +58,11 @@ struct TimerPresetsView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done", action: close)
-                        .accessibilityIdentifier("timer.presets.done")
+                        .accessibilityIdentifier(Identifiers.Timer.Presets.done)
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button("Save Current", systemImage: "plus", action: askForName)
-                        .accessibilityIdentifier("timer.presets.save")
+                        .accessibilityIdentifier(Identifiers.Timer.Presets.save)
                 }
             }
 #if canImport(Attachments)
@@ -72,7 +72,7 @@ struct TimerPresetsView: View {
 #endif
             .alert("Save the current plan", isPresented: $isNaming) {
                 TextField("Preset name", text: $newName)
-                    .accessibilityIdentifier("timer.presets.name")
+                    .accessibilityIdentifier(Identifiers.Timer.Presets.name)
                 Button("Save", action: save)
                     .disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty)
                 Button("Cancel", role: .cancel) {}

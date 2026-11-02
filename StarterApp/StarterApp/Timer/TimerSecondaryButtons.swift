@@ -9,10 +9,10 @@ struct TimerSecondaryButtons: View {
         let status = model.timer.snapshot.status
         Button("Skip", systemImage: "forward.end", action: model.skip)
             .disabled(status == .ready || status == .finished)
-            .accessibilityIdentifier("timer.skip")
+            .accessibilityIdentifier(Identifiers.Timer.skip)
         Button("Reset", systemImage: "arrow.counterclockwise", action: model.reset)
             .disabled(status == .ready)
-            .accessibilityIdentifier("timer.reset")
+            .accessibilityIdentifier(Identifiers.Timer.reset)
     }
 }
 #endif

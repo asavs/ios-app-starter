@@ -106,9 +106,9 @@ class StarterUITestCase: XCTestCase {
     /// Settings is a native tab when TabShell is enabled, otherwise the original toolbar button.
     @MainActor
     func settingsButton(in app: XCUIApplication) -> XCUIElement {
-        let gear = NSPredicate(format: "identifier == 'settings.open'")
-        return app.buttons.matching(NSCompoundPredicate(orPredicateWithSubpredicates: [gear, tabPredicate("settings", title: "Settings")]))
-            .firstMatch
+        let gear = NSPredicate(format: "identifier == %@", Identifiers.Welcome.settings)
+        let tab = tabPredicate(Identifiers.Tabs.settings, title: "Settings")
+        return app.buttons.matching(NSCompoundPredicate(orPredicateWithSubpredicates: [gear, tab])).firstMatch
     }
 
     /// A TabShell tab button: by its `tabs.<id>` identifier, or by its English title, because iOS 26.3
@@ -119,7 +119,7 @@ class StarterUITestCase: XCTestCase {
     }
 
     func tabPredicate(_ id: String, title: String) -> NSPredicate {
-        NSPredicate(format: "identifier == %@ OR (identifier == '' AND label == %@)", "tabs.\(id)", title)
+        NSPredicate(format: "identifier == %@ OR (identifier == '' AND label == %@)", Identifiers.Tabs.button(id), title)
     }
 
     /// Modules the lane built the app with, from `scripts/test-ios.sh` (`TEST_RUNNER_IOS_ENABLED_MODULES`);

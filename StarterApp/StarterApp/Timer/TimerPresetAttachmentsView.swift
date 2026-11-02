@@ -46,7 +46,7 @@ struct TimerPresetAttachmentsView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done", action: close)
-                        .accessibilityIdentifier("timer.presets.attachments.done")
+                        .accessibilityIdentifier(Identifiers.Timer.Presets.attachmentsDone)
                 }
                 ToolbarItem(placement: .primaryAction) {
                     AttachmentPicker(model: picker)

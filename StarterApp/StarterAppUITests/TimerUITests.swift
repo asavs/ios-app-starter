@@ -8,17 +8,16 @@ final class TimerUITests: StarterUITestCase {
     func testTimerEditsAPlan() throws {
         let app = XCUIApplication()
         // No timer.* arguments: they would outrank what the editor stores.
-        app.launchArguments = ["-tabs.selected", "timer", "-onboarding.completedVersion", "99",
-                               "-tips.testing", "hideAll"]
-        app.launch()
-        let ring = element(app, "timer.ring")
+        let scenario = UITestLaunch.tab(Identifiers.Tabs.timer)
+        app.launch(scenario)
+        let ring = element(app, Identifiers.Timer.ring)
         try requireModuleUI("SessionTimer", appeared: ring.waitForExistence(timeout: 10), "no timer ring on the Timer tab")
-        let edit = app.buttons["timer.edit"]
+        let edit = app.buttons[Identifiers.Timer.edit]
         try requireModuleUI("DurationPicker", appeared: edit.waitForExistence(timeout: 5), "no Edit button on the Timer tab")
-        element(app, "timer.plan").buttons["Intervals"].tap()
+        element(app, Identifiers.Timer.plan).buttons["Intervals"].tap()
         edit.tap()
 
-        let work = app.buttons["timer.edit.work"]
+        let work = app.buttons[Identifiers.Timer.Edit.work]
         XCTAssertTrue(work.waitForExistence(timeout: 10))
         work.tap()
         // Hours, minutes and seconds, as in the Clock app.
@@ -28,17 +27,17 @@ final class TimerUITests: StarterUITestCase {
         wheels.element(boundBy: 1).adjust(toPickerWheelValue: "0")
         wheels.element(boundBy: 2).adjust(toPickerWheelValue: "30")
         XCTAssertTrue(waitUntil(work, "value == '30 seconds'"), "The row should show the new length")
-        let rounds = element(app, "timer.edit.rounds")
+        let rounds = element(app, Identifiers.Timer.Edit.rounds)
         rounds.buttons.element(boundBy: 1).tap() // Increment.
         let roundCount = try XCTUnwrap(Int(try XCTUnwrap(rounds.label.split(separator: " ").last)))
         attach(name: "timer-edit")
-        app.buttons["timer.edit.done"].tap()
+        app.buttons[Identifiers.Timer.Edit.done].tap()
 
         XCTAssertTrue(waitUntil(ring, "value == '30 seconds remaining'"))
-        let step = element(app, "timer.step")
+        let step = element(app, Identifiers.Timer.step)
         XCTAssertEqual(step.label, "Step 1 of \(2 * roundCount - 1)")
         app.terminate()
-        app.launch()
+        app.launch(scenario.relaunch)
         XCTAssertTrue(ring.waitForExistence(timeout: 10))
         XCTAssertEqual(ring.value as? String, "30 seconds remaining", "Edited times should survive a relaunch")
     }
@@ -48,20 +47,18 @@ final class TimerUITests: StarterUITestCase {
     @MainActor
     func testTimerPresets() throws {
         let app = XCUIApplication()
-        // A store of this test's own, emptied on the first launch and kept for the second.
-        let arguments = ["-tabs.selected", "timer", "-onboarding.completedVersion", "99", "-tips.testing", "hideAll",
-                         "-database.store", "uitest-presets"]
-        app.launchArguments = arguments + ["-database.reset"]
-        app.launch()
-        let ring = element(app, "timer.ring")
+        // A named store, emptied on the first launch and kept for the second.
+        let scenario = UITestLaunch(tab: Identifiers.Tabs.timer, store: "presets")
+        app.launch(scenario)
+        let ring = element(app, Identifiers.Timer.ring)
         try requireModuleUI("SessionTimer", appeared: ring.waitForExistence(timeout: 10), "no timer ring on the Timer tab")
-        let presets = app.buttons["timer.presets"]
+        let presets = app.buttons[Identifiers.Timer.presets]
         try requireModuleUI("Database", appeared: presets.waitForExistence(timeout: 5), "no Presets button on the Timer tab")
         presets.tap()
-        let tabata = app.buttons["timer.presets.row.Tabata"]
+        let tabata = app.buttons[Identifiers.Timer.Presets.row("Tabata")]
         XCTAssertTrue(tabata.waitForExistence(timeout: 10), "The seeded presets should be listed")
 
-        app.buttons["timer.presets.save"].tap()
+        app.buttons[Identifiers.Timer.Presets.save].tap()
         // An alert's text field doesn't carry an accessibility identifier; find it through the alert.
         let alert = app.alerts.firstMatch
         XCTAssertTrue(alert.waitForExistence(timeout: 5), "Save Current should ask for a name")
@@ -69,14 +66,13 @@ final class TimerUITests: StarterUITestCase {
         name.tap()
         name.typeText("Mine")
         alert.buttons["Save"].tap()
-        let mine = app.buttons["timer.presets.row.Mine"]
+        let mine = app.buttons[Identifiers.Timer.Presets.row("Mine")]
         XCTAssertTrue(mine.waitForExistence(timeout: 5), "The saved preset should appear")
         attach(name: "timer-presets")
-        app.buttons["timer.presets.done"].tap()
+        app.buttons[Identifiers.Timer.Presets.done].tap()
 
         app.terminate()
-        app.launchArguments = arguments
-        app.launch()
+        app.launch(scenario.relaunch)
         XCTAssertTrue(presets.waitForExistence(timeout: 10))
         presets.tap()
         XCTAssertTrue(mine.waitForExistence(timeout: 10), "A saved preset should survive a relaunch")
@@ -89,7 +85,7 @@ final class TimerUITests: StarterUITestCase {
         mine.swipeLeft()
         app.buttons["Delete"].firstMatch.tap()
         XCTAssertTrue(waitUntilGone(mine), "Swiping should delete the preset")
-        app.buttons["timer.presets.done"].tap()
+        app.buttons[Identifiers.Timer.Presets.done].tap()
     }
 
     /// At the largest accessibility text size the Timer tab scrolls to its controls and stacks Skip
@@ -97,14 +93,12 @@ final class TimerUITests: StarterUITestCase {
     @MainActor
     func testTimerAtLargestTextSize() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL",
-                               "-tabs.selected", "timer", "-onboarding.completedVersion", "99", "-tips.testing", "hideAll"]
-        app.launch()
-        let ring = element(app, "timer.ring")
+        app.launch(UITestLaunch(tab: Identifiers.Tabs.timer, extra: UITestLaunch.largestTextSize))
+        let ring = element(app, Identifiers.Timer.ring)
         try requireModuleUI("SessionTimer", appeared: ring.waitForExistence(timeout: 10), "no timer ring on the Timer tab")
         attach(name: "timer-large-ring")
-        let skip = element(app, "timer.skip")
-        let reset = element(app, "timer.reset")
+        let skip = element(app, Identifiers.Timer.skip)
+        let reset = element(app, Identifiers.Timer.reset)
         XCTAssertTrue(scroll(app, to: reset), "The Timer tab should scroll to Reset")
         XCTAssertLessThan(skip.frame.maxY, reset.frame.minY, "Skip should sit above Reset at this size")
         attach(name: "timer-large-controls")
@@ -115,16 +109,15 @@ final class TimerUITests: StarterUITestCase {
     @MainActor
     func testTimerRunsAPlan() throws {
         let app = XCUIApplication()
-        // Pin the plans' times: testTimerEditsAPlan stores its own.
-        app.launchArguments = ["-tabs.selected", "timer", "-onboarding.completedVersion", "99",
-                               "-tips.testing", "hideAll", "-timer.intervals", "20,10,3", "-timer.focus", "1500,300,4"]
-        app.launch()
-        let ring = element(app, "timer.ring")
+        // The plans' times, pinned so the assertions read the same whatever the template's defaults become.
+        app.launch(UITestLaunch(tab: Identifiers.Tabs.timer,
+                                extra: ["-timer.intervals", "20,10,3", "-timer.focus", "1500,300,4"]))
+        let ring = element(app, Identifiers.Timer.ring)
         try requireModuleUI("SessionTimer", appeared: ring.waitForExistence(timeout: 10), "no timer ring on the Timer tab")
-        let primary = element(app, "timer.primary")
-        let skip = element(app, "timer.skip")
-        let reset = element(app, "timer.reset")
-        let step = element(app, "timer.step")
+        let primary = element(app, Identifiers.Timer.primary)
+        let skip = element(app, Identifiers.Timer.skip)
+        let reset = element(app, Identifiers.Timer.reset)
+        let step = element(app, Identifiers.Timer.step)
         XCTAssertEqual(ring.label, "Work")
         XCTAssertEqual(ring.value as? String, "20 seconds remaining")
         XCTAssertEqual(step.label, "Step 1 of 5")
@@ -163,7 +156,7 @@ final class TimerUITests: StarterUITestCase {
         reset.tap()
         XCTAssertTrue(waitUntil(primary, "label == 'Start'"))
         XCTAssertEqual(step.label, "Step 1 of 5")
-        element(app, "timer.plan").buttons["Focus"].tap()
+        element(app, Identifiers.Timer.plan).buttons["Focus"].tap()
         XCTAssertTrue(waitUntil(ring, "label == 'Focus'"))
         XCTAssertEqual(ring.value as? String, "25 minutes remaining")
         XCTAssertEqual(step.label, "Step 1 of 7")
@@ -176,13 +169,11 @@ final class TimerUITests: StarterUITestCase {
     @MainActor
     func testTimerLiveActivity() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-tabs.selected", "timer", "-onboarding.completedVersion", "99",
-                               "-tips.testing", "hideAll", "-timer.intervals", "20,10,3",
-                               "-sessionActivity.readout", "YES"]
-        app.launch()
-        let primary = element(app, "timer.primary")
+        app.launch(UITestLaunch(tab: Identifiers.Tabs.timer,
+                                extra: ["-timer.intervals", "20,10,3", "-sessionActivity.readout", "YES"]))
+        let primary = element(app, Identifiers.Timer.primary)
         try requireModuleUI("SessionTimer", appeared: primary.waitForExistence(timeout: 10), "no Start button on the Timer tab")
-        let count = element(app, "timer.activityCount")
+        let count = element(app, Identifiers.Timer.activityCount)
         try requireModuleUI("SessionActivity", appeared: count.waitForExistence(timeout: 5), "no Live Activity readout")
         XCTAssertEqual(count.label, "0")
 
@@ -201,7 +192,7 @@ final class TimerUITests: StarterUITestCase {
         primary.tap()
         XCTAssertTrue(waitUntil(primary, "label == 'Resume'"))
         XCTAssertEqual(count.label, "1", "Pausing keeps the activity")
-        element(app, "timer.reset").tap()
+        element(app, Identifiers.Timer.reset).tap()
         XCTAssertTrue(waitUntil(primary, "label == 'Start'"))
         XCTAssertTrue(waitUntil(count, "label == '0'", timeout: 10), "Resetting ends the activity")
     }

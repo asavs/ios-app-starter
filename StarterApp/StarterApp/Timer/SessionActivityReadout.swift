@@ -13,7 +13,7 @@ struct SessionActivityReadout: View {
     var body: some View {
         Text(String(StarterSessionActivity.shared.controller.activityCount))
             .font(.caption)
-            .accessibilityIdentifier("timer.activityCount")
+            .accessibilityIdentifier(Identifiers.Timer.activityCount)
     }
 }
 #endif

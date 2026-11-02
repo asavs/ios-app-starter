@@ -31,6 +31,7 @@ targets:
     sources:
       - path: StarterApp/StarterApp
         excludes: [Info.plist] # Read through INFOPLIST_FILE, not copied as a resource.
+      - path: StarterApp/Shared # The UI-test launch contract and identifiers, also compiled into StarterAppUITests.
     # Merged with the generated Info.plist: only what has no INFOPLIST_KEY_ build setting.
     info:
       path: StarterApp/StarterApp/Info.plist
@@ -144,6 +145,7 @@ targets:
     sources:
       - path: StarterApp/StarterAppUITests
         excludes: [Info.plist]
+      - path: StarterApp/Shared
     info:
       path: StarterApp/StarterAppUITests/Info.plist
       properties:
