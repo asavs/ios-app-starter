@@ -2,6 +2,15 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-02: Library and Notes ownership research
+
+- **Scope and tools:** source review of main at `101cb2818ba62f6fea54222663e659598cf7d473`, the feature-tabs proposal in PR #147 at `8842cd5`, Python 3.13.14, and Apple documentation checked against iOS 17 availability. Research only; [content-ownership.md](../research/content-ownership.md) records the recommendation and required implementation checks.
+- **Finding (confirmed in source):** Database without Attachments opens V1, while both modules open V2 at the same store location. Historical schemas also depend on the shared SeedMarker model and Attachment encoding. A smaller conditional schema cannot safely claim the same identity; unsupported configuration transitions must retain data and offer recovery until a bridge is tested.
+- **Finding (source-derived risk, not reproduced):** preset attachment removal can delete an original before a successful record save; reset removes attachment directories before its database step. AttachmentStore has no owner accounting and can fail partway through removal. Recommend serialized app ownership operations, durable cleanup intent and a reset journal, with originals removed only after committed ownership ends.
+- **Verification:** all 10 pinned skills verified. Existing migration tests were inspected; they create a V1 fixture from today's types and do not establish preservation of an authentic released V2 store or its original files. No Swift code, schema or runtime behavior changed.
+- **Draft review boundary:** [PR #148](https://github.com/asavs/ios-app-starter/pull/148) intentionally remains a research draft. The iOS workflow classifies drafts before documentation changes and deliberately fails `ios-gate` with simulator jobs skipped ([run 41543034630](https://github.com/asavs/ios-app-starter/actions/runs/41543034630)). This is the configured draft gate, not a migration test failure. Marking the PR ready after research review allows the documentation-only gate; no workflow change is needed.
+- **Remaining:** authentic V1/V2 writer fixtures, iOS 17 disk migration and failure tests, module-switch policy and deletion retention decisions. The research remains pending implementation; no runtime compatibility claim follows from this review.
+
 ## 2026-11-02 — Feature tabs as useful app screens
 
 - **Task and tools:** module round two, GitHub CLI, Beads 1.3.1, source inspection of main at `101cb28`. Product planning only; no app or account changes.
