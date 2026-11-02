@@ -7,8 +7,14 @@ import SessionTimer
 /// the person turns the setting off.
 ///
 /// Own one per app, not per screen: an App Intent from the activity runs in the app's process
-/// while no screen exists. Call `reattach()` on launch so an activity from an earlier process is
-/// found and ended or updated instead of leaking.
+/// while no screen exists. Call `endOthers(than:)` and `sessionChanged` on launch so an activity
+/// from an earlier process is found and ended or updated instead of leaking.
+///
+/// Every ActivityKit call runs through one queue, in the order the session changed, and decides
+/// what to do when it runs, not when it was queued: whether the session has an activity depends
+/// on the calls queued before it. A setting turned off and on again, or a session ended and
+/// started again, would otherwise read a stale answer (an update to an activity about to end, or a
+/// start that the queued end then removes).
 @MainActor @Observable
 public final class SessionActivityController {
     /// How long a finished session stays on the Lock Screen; the HIG suggests 15 to 30 minutes.
@@ -36,22 +42,22 @@ public final class SessionActivityController {
     /// The session changed: start, update or end its activity accordingly.
     public func sessionChanged(_ snapshot: SessionSnapshot, plan: SessionPlan, attributes: SessionActivityAttributes) {
         let date = now()
-        guard let state = SessionActivityState(snapshot, plan: plan, now: date) else {
-            end(sessionID: attributes.sessionID, state: nil)
-            return
-        }
-        guard isEnabled(), host.areActivitiesEnabled else {
+        guard let state = SessionActivityState(snapshot, plan: plan, now: date), isEnabled(), host.areActivitiesEnabled else {
             end(sessionID: attributes.sessionID, state: nil)
             return
         }
         switch state.status {
         case .running, .paused:
-            if host.hasActivity(for: attributes.sessionID) {
-                enqueue { [host] in await host.update(sessionID: attributes.sessionID, state: state) }
-            } else {
-                // Refused starts (in the background, too many activities) leave the timer as it is.
-                try? host.start(attributes, state: state)
-                activityCount = host.activityCount
+            enqueue { [host] in
+                if host.hasActivity(for: attributes.sessionID) {
+                    await host.update(sessionID: attributes.sessionID, state: state)
+                } else {
+                    // One session at a time: a finished session's card, or an activity left by a
+                    // launch the app never returned from, would otherwise sit beside the new one.
+                    await Self.end(host, allBut: attributes.sessionID, at: date)
+                    // Refused starts (in the background, too many activities) leave the timer as it is.
+                    try? host.start(attributes, state: state)
+                }
             }
         case .finished:
             end(sessionID: attributes.sessionID, state: state)
@@ -65,12 +71,22 @@ public final class SessionActivityController {
         if isEnabled() == false { end(sessionID: sessionID, state: nil) }
     }
 
+    /// Remove every activity but `sessionID`'s at once: on launch, with the stored session's
+    /// identifier (nil when there is no session), so an activity from an earlier process whose
+    /// session is gone doesn't stay until the system's limit.
+    public func endOthers(than sessionID: UUID?) {
+        let date = now()
+        enqueue { [host] in await Self.end(host, allBut: sessionID, at: date) }
+    }
+
     /// End the activity for `sessionID`, if there is one, keeping it on the Lock Screen for a
     /// while when it has a final state to show.
     public func end(sessionID: UUID, state: SessionActivityState?) {
-        guard host.hasActivity(for: sessionID) else { return }
         let dismissal = state == nil ? now() : now().addingTimeInterval(Self.dismissalSeconds)
-        enqueue { [host] in await host.end(sessionID: sessionID, state: state, dismissal: dismissal) }
+        enqueue { [host] in
+            guard host.hasActivity(for: sessionID) else { return }
+            await host.end(sessionID: sessionID, state: state, dismissal: dismissal)
+        }
     }
 
     /// Wait for the queued ActivityKit calls to finish; tests call it before checking the host.
@@ -78,13 +94,19 @@ public final class SessionActivityController {
         await pending?.value
     }
 
-    /// Updates run in order, one at a time, so a quick pause and resume can't arrive swapped.
+    /// Calls run in order, one at a time, so a quick pause and resume can't arrive swapped.
     private func enqueue(_ operation: @escaping @MainActor () async -> Void) {
         let previous = pending
         pending = Task { [host] in
             await previous?.value
             await operation()
             activityCount = host.activityCount
+        }
+    }
+
+    private static func end(_ host: any SessionActivityHost, allBut sessionID: UUID?, at date: Date) async {
+        for other in host.sessionIDs where other != sessionID {
+            await host.end(sessionID: other, state: nil, dismissal: date)
         }
     }
 

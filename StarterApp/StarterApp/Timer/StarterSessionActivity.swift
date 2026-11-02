@@ -13,6 +13,10 @@ final class StarterSessionActivity {
     static let shared = StarterSessionActivity(defaults: StarterDefaults.store)
 
     let controller: SessionActivityController
+    /// Called after the activity's button changed the stored record in this process, so a Timer
+    /// screen on show follows it: the island is visible, and its button works, while the app is
+    /// in the foreground, when no scene phase change would make the screen look again.
+    var recordChanged: (@MainActor () -> Void)?
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard, host: any SessionActivityHost = ActivityKitHost()) {
@@ -44,6 +48,7 @@ final class StarterSessionActivity {
         record.save(to: defaults)
         controller.sessionChanged(clock.snapshot(at: now), plan: plan,
                                   attributes: Self.attributes(for: record.plan, sessionID: record.id))
+        recordChanged?()
         await controller.drain()
     }
 
@@ -55,10 +60,16 @@ final class StarterSessionActivity {
         reattach()
     }
 
-    /// On launch: bring an activity from an earlier process up to date with the stored session, or
-    /// end it when the session is gone.
+    /// On launch: bring an activity from an earlier process up to date with the stored session, and
+    /// end every other one, the stored session's included when it is gone (a reset, or Erase Local
+    /// Data) or doesn't parse. An activity nobody ends stays until the system's limit.
     func reattach() {
-        guard let record = SessionRecord.load(from: defaults), let plan = record.sessionPlan else { return }
+        let record = SessionRecord.load(from: defaults)
+        controller.endOthers(than: record?.id)
+        guard let record, let plan = record.sessionPlan else {
+            if let record { controller.end(sessionID: record.id, state: nil) }
+            return
+        }
         let now = ContinuousClock.now
         let clock = SessionClock(plan: plan, state: record.clock, at: now, date: .now)
         controller.sessionChanged(clock.snapshot(at: now), plan: plan,

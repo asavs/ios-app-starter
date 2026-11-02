@@ -20,6 +20,10 @@ public final class ActivityKitHost: SessionActivityHost {
         Activity<SessionActivityAttributes>.activities.filter { $0.activityState == .active || $0.activityState == .stale }.count
     }
 
+    public var sessionIDs: [UUID] {
+        Activity<SessionActivityAttributes>.activities.map(\.attributes.sessionID)
+    }
+
     public func hasActivity(for sessionID: UUID) -> Bool {
         Self.activity(for: sessionID) != nil
     }

@@ -58,6 +58,18 @@ struct SessionTimerTests {
         #expect(timer.isRefreshing == false, "A finished session stops refreshing")
     }
 
+    @Test func resetAndLoadingAPlanStopRefreshing() {
+        let timer = makeTimer()
+        timer.start()
+        timer.reset()
+        #expect(timer.isRefreshing == false, "Nothing runs for a session at the start")
+        timer.start()
+        timer.load(plan)
+        #expect(timer.isRefreshing == false, "A new plan starts at the start")
+        timer.load(plan, state: SessionClockState(banked: .seconds(5), runningSince: nil, hasStarted: true))
+        #expect(timer.isRefreshing == false, "A stored paused session has nothing to refresh")
+    }
+
     @Test func pauseFreezesTheSnapshot() {
         let timer = makeTimer()
         timer.start()

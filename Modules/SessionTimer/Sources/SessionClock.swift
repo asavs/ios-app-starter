@@ -31,10 +31,16 @@ public struct SessionClock: Sendable {
     }
 
     /// The position as dates, to store. `now` and `date` are the same moment on the two clocks.
+    /// A finished session is stored as its full duration, not running: a run that reached the end
+    /// keeps its start instant here, and a reader of the stored state (an intent, a screen asking
+    /// whether the record disagrees with it) would otherwise take it for a session still running.
     public func state(at now: Instant, date: Date) -> SessionClockState {
-        SessionClockState(banked: banked,
-                          runningSince: runningSince.map { date.addingTimeInterval(-(now - $0).seconds) },
-                          hasStarted: hasStarted)
+        guard elapsed(at: now) < plan.totalDuration else {
+            return SessionClockState(banked: plan.totalDuration, runningSince: nil, hasStarted: hasStarted)
+        }
+        return SessionClockState(banked: banked,
+                                 runningSince: runningSince.map { date.addingTimeInterval(-(now - $0).seconds) },
+                                 hasStarted: hasStarted)
     }
 
     /// Start, or resume after a pause. Does nothing while running or once finished.
