@@ -2,6 +2,13 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-02 — Dynamic tab research: fixed shell membership and separate restoration contracts
+
+- **Scope/tools:** Research only on Windows, against main `101cb28` and the feature plan at PR #147 head `8842cd5`; Apple documentation and availability metadata checked on 2026-11-02. No Xcode build or runtime test was performed.
+- **Finding (confirmed in source):** TabSelection fixes ordered membership at initialization, and TabShell requires the same ordered IDs. Only selection is persisted. Updating a visible item array alone would violate that contract; stable IDs do not retain state after a destination view is destroyed.
+- **Recommendation:** Extend membership and selection together, with host-owned choices and feature state above removable views. Use one Settings/onboarding preference model for iOS 17; defer native iPad customization until its edits can round-trip through that model. Keep hidden-feature deep links and Live Activity links on one reveal/fallback policy.
+- **Evidence and next checks:** [Dynamic tab research](../research/dynamic-tabs.md) records Apple sources, OS boundaries and model/UI/accessibility acceptance requirements. Native More behavior with six or more SwiftUI destinations, iPad compact transitions and draft/session survival remain unverified. Test those on the named runtimes before accepting an overflow implementation; a new-SDK build cannot establish iOS 17 behavior.
+
 ## 2026-11-02 — Feature tabs as useful app screens
 
 - **Task and tools:** module round two, GitHub CLI, Beads 1.3.1, source inspection of main at `101cb28`. Product planning only; no app or account changes.
