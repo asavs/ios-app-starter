@@ -77,7 +77,7 @@ def check(root=ROOT):
     problems = []
     contract_path = root / CONTRACT
     if not contract_path.is_file():
-        return [f"{CONTRACT} is missing"]
+        return [f"{CONTRACT.as_posix()} is missing"]
     app_text = {path: path.read_text(encoding="utf-8") for path in swift_files(root / APP_SOURCES)}
     test_text = {path: path.read_text(encoding="utf-8") for path in swift_files(root / TEST_SOURCES)}
     module_text = "\n".join(path.read_text(encoding="utf-8")
@@ -88,23 +88,23 @@ def check(root=ROOT):
     for path, text in app_text.items():
         for number, line in enumerate(text.splitlines(), 1):
             if LITERAL_IDENTIFIER.search(code(line)):
-                problems.append(f"{path.relative_to(root)}:{number}: identifier literal; add it to {CONTRACT} and use the constant")
+                problems.append(f"{path.relative_to(root).as_posix()}:{number}: identifier literal; add it to {CONTRACT.as_posix()} and use the constant")
     for path, text in test_text.items():
         for number, line in enumerate(text.splitlines(), 1):
             for literal in DOTTED_LITERAL.findall(code(line)):
-                problems.append(f"{path.relative_to(root)}:{number}: identifier literal \"{literal}\"; use the constant from {CONTRACT}")
+                problems.append(f"{path.relative_to(root).as_posix()}:{number}: identifier literal \"{literal}\"; use the constant from {CONTRACT.as_posix()}")
 
     everything = "\n".join(list(app_text.values()) + list(test_text.values()))
     for qualified, literal in constants(contract_path.read_text(encoding="utf-8")):
         if qualified.startswith("Identifiers."):
             if qualified not in everything:
-                problems.append(f"{CONTRACT}: {qualified} is used nowhere in the app or its UI tests")
+                problems.append(f"{CONTRACT.as_posix()}: {qualified} is used nowhere in the app or its UI tests")
         elif qualified.startswith("ModuleIdentifiers."):
             prefix = literal.split("\\(")[0]
             # A constant ending in "." is a prefix for `BEGINSWITH` queries, like one with an interpolation.
             needle = f'"{prefix}' if "\\(" in literal or literal.endswith(".") else f'"{literal}"'
             if prefix and needle not in module_text:
-                problems.append(f"{CONTRACT}: {qualified} = \"{literal}\" matches no module source; the module renamed or removed it")
+                problems.append(f"{CONTRACT.as_posix()}: {qualified} = \"{literal}\" matches no module source; the module renamed or removed it")
     return problems
 
 
