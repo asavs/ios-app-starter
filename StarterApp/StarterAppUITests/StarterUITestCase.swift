@@ -71,6 +71,22 @@ class StarterUITestCase: XCTestCase {
         return false
     }
 
+    /// Flips a `Toggle` in a `Form` and waits for its value to change. The identifier lands on a
+    /// switch spanning the row, whose center is the label, so the tap goes to the knob on the row's
+    /// trailing edge by coordinate. The row is scrolled clear of the floating tab bar and left to
+    /// settle first: a tap mid-animation lands elsewhere, and asking the inner switch whether it's
+    /// hittable fails the test outright while the list settles ("Activation point invalid"), as it
+    /// did on the hosted runner.
+    @MainActor
+    func flip(_ app: XCUIApplication, _ toggle: XCUIElement) {
+        let before = toggle.value as? String ?? ""
+        XCTAssertTrue(scroll(app, to: toggle), "\(toggle) should be on screen")
+        if toggle.frame.maxY > app.windows.firstMatch.frame.maxY - 120 { app.swipeUp() }
+        XCTAssertTrue(waitUntilSettled(toggle), "\(toggle) should stop moving")
+        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+        XCTAssertTrue(waitUntil(toggle, "value != '\(before)'", timeout: 10), "\(toggle) should flip")
+    }
+
     /// Any element with this accessibility identifier; containers and combined rows vary in type.
     @MainActor
     func element(_ app: XCUIApplication, _ identifier: String) -> XCUIElement {

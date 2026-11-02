@@ -47,9 +47,12 @@ final class StarterSessionActivity {
         await controller.drain()
     }
 
-    /// The Live Activity setting changed in Settings: remove the session's activity when it's off.
+    /// The Live Activity setting changed in Settings: show the running session's activity when it's
+    /// now on, remove it when it's off. Re-sending the stored session does both, since the controller
+    /// reads the setting on every change; a tick inside a phase never reaches it, so without this a
+    /// setting turned on mid-phase would show nothing until the next pause or phase.
     func settingChanged() {
-        if let record = SessionRecord.load(from: defaults) { controller.settingChanged(sessionID: record.id) }
+        reattach()
     }
 
     /// On launch: bring an activity from an earlier process up to date with the stored session, or

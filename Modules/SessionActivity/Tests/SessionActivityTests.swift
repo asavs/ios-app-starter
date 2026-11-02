@@ -137,6 +137,21 @@ struct SessionActivityTests {
         #expect(host.events.count == 2)
     }
 
+    @Test func turningTheSettingOnStartsTheActivityOnTheNextChange() async {
+        let host = RecordingHost()
+        var enabled = false
+        let controller = SessionActivityController(host: host, isEnabled: { enabled }, now: { [date] in date })
+        controller.sessionChanged(snapshot(after: 1), plan: plan, attributes: attributes)
+        await controller.drain()
+        #expect(host.events.isEmpty, "A session started with the setting off has no activity")
+        enabled = true
+        // The app re-sends the running session when the setting changes; the same call a tick makes.
+        controller.sessionChanged(snapshot(after: 2), plan: plan, attributes: attributes)
+        await controller.drain()
+        #expect(host.events.map(\.kind) == [.start])
+        #expect(controller.activityCount == 1)
+    }
+
     @Test func aRefusedStartIsNotRetriedEveryTick() async {
         let host = RecordingHost()
         host.refusesStarts = true

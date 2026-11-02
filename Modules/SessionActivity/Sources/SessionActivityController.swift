@@ -58,7 +58,9 @@ public final class SessionActivityController {
         }
     }
 
-    /// The person turned the setting off: remove the session's activity now.
+    /// The person turned the setting off: remove the session's activity now. For the setting turned
+    /// on, re-send the current session with `sessionChanged`; it starts the activity, since the
+    /// setting is read on every change.
     public func settingChanged(sessionID: UUID) {
         if isEnabled() == false { end(sessionID: sessionID, state: nil) }
     }
