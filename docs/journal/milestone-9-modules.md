@@ -10,6 +10,14 @@ Entries for the module library mechanism, the first-round modules, their lanes a
 - **Fix:** every ActivityKit call decides inside the one queue; `SessionActivityHost.sessionIDs` and `endOthers(than:)` end the others before a start and on launch; `adoptStoredSession()` in the model's init; a `recordChanged` callback from the intent to the screen; a finished session stores as its full duration, not running. 28 new tests across the module, the clock and the app; all green. A 150-tick test shows zero ActivityKit calls and zero record writes within a phase.
 - **Remaining (by design):** a phase that ends while the app is suspended goes stale until the app runs again; the island says so. The routes out (push updates, background audio, scheduled notifications) are in docs/research/live-activities.md and need a product decision. A finished card lasts 15 minutes from when the app learns of the finish, not from the finish.
 
+## 2026-11-02 — Feature tabs as useful app screens
+
+- **Task and tools:** module round two, GitHub CLI, Beads 1.3.1, source inspection of main at `101cb28`. Product planning only; no app or account changes.
+- **Observation:** the app offers Welcome, Timer and Settings. Saved plans and their attachments make Timer the primary surface for several independent capabilities. The owner requested real feature tabs and optional tab selection rather than an Examples catalogue.
+- **Decision:** [feature-tabs.md](../design/feature-tabs.md) describes Home, Library, Notes, Timer and Settings, followed later by implemented Feed/Chat features. Preserve a minimal template and enable optional features in the demo. Settings and onboarding share persistent choices and ordering.
+- **Confirmed implementation constraints:** TabSelection fixes its IDs at initialization; Timer owns its screen model in view state; the shipped database already has V1 and V2. Runtime tab changes need deliberate session ownership and selection updates; new content needs a subsequent schema with preserved presets and attachment ownership rules.
+- **Verification and remaining work:** reviewed current source and existing PR scope, and split delivery into dependent implementation slices. No Swift compilation, runtime migration, UI or accessibility acceptance is claimed by this planning change. Each visible implementation needs its own test evidence and accessibility audit; the final slice exercises navigation with six or more destinations.
+
 ## 2026-11-01 — UI test scenarios: one launch contract, a defaults suite of the test's own, identifiers in one place
 
 - **Tools:** Xcode 27.0 on the Mac, iPhone 17 / iOS 27.0 simulator. Task `ios-6dd.4`, research in docs/research/ui-test-harness.md (2026-10-27). Three surveyed apps built this harness by hand.
