@@ -63,15 +63,32 @@ final class TimerScreenModel {
         play = player.play
         haptic = player.haptic
 #endif
+        adoptStoredSession()
     }
 
 #if canImport(SessionActivity)
     /// The Timer tab's model: the session also drives the app's Live Activity.
-    convenience init(defaults: UserDefaults = .standard, activity: StarterSessionActivity) {
-        self.init(defaults: defaults)
+    convenience init(defaults: UserDefaults = .standard, activity: StarterSessionActivity,
+                     now: @escaping () -> ContinuousClock.Instant = { .now }) {
+        self.init(defaults: defaults, now: now)
         self.activity = activity
+        // The activity's button changes the stored record in this process: follow it on the screen.
+        activity.recordChanged = { [weak self] in self?.restoreFromRecord() }
     }
 #endif
+
+    /// A session underway when the app last ran (killed in the background, or opened from its
+    /// activity) continues on this screen under its own identifier. Without this the screen showed
+    /// a fresh session beside the activity the launch had just brought up to date, and a tap on
+    /// Start made a second session and left the first's activity to the system's limit.
+    private func adoptStoredSession() {
+        guard let record = SessionRecord.load(from: defaults), let times = PlanTimes(rawValue: record.times),
+              let session = record.sessionPlan else { return }
+        plan = record.plan
+        self.times = times
+        sessionID = record.id
+        timer.load(session, state: record.clock)
+    }
 
     /// Replace the timer's plan; the next start is a new session.
     private func load() {

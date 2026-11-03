@@ -9,12 +9,12 @@ final class StarterAppUITests: StarterUITestCase {
         let app = XCUIApplication()
         let scenario = UITestLaunch.tab(Identifiers.Tabs.welcome)
         app.launch(scenario)
-        let welcome = tabButton(in: app, Identifiers.Tabs.welcome, title: "Welcome")
-        try requireModuleUI("TabShell", appeared: welcome.waitForExistence(timeout: 10), "no Welcome tab")
+        let welcome = tabButton(in: app, Identifiers.Tabs.welcome, title: "Home")
+        try requireModuleUI("TabShell", appeared: welcome.waitForExistence(timeout: 10), "no Home tab")
         let settings = tabButton(in: app, Identifiers.Tabs.settings, title: "Settings")
         try requireModuleUI("Settings", appeared: settings.waitForExistence(timeout: 5), "no Settings tab")
         XCTAssertTrue(waitUntil(welcome, "isSelected == true"))
-        XCTAssertEqual(welcome.label, "Welcome")
+        XCTAssertEqual(welcome.label, "Home", "The welcome tab reads Home; its identifier stays welcome")
         XCTAssertEqual(settings.label, "Settings")
         XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 5))
         attach(name: "tabs-welcome")
@@ -40,6 +40,50 @@ final class StarterAppUITests: StarterUITestCase {
         attach(name: "tabs-restored")
     }
 
+    /// A person's choice of tabs: order follows the choice, a feature left out has no tab, and a deep
+    /// link to that feature brings its tab back and keeps it there after a relaunch.
+    @MainActor
+    func testChosenTabsOrderHideAndRevealFeatures() throws {
+        let scheme = try XCTUnwrap(Bundle(for: Self.self).object(forInfoDictionaryKey: "StarterAppURLScheme") as? String,
+                                   "project.yml should pass APP_URL_SCHEME to the UI tests")
+        let app = XCUIApplication()
+        var scenario = UITestLaunch.tab(Identifiers.Tabs.settings)
+        scenario.tabs = [Identifiers.Tabs.settings, Identifiers.Tabs.welcome]
+        app.launch(scenario)
+        let settings = tabButton(in: app, Identifiers.Tabs.settings, title: "Settings")
+        let home = tabButton(in: app, Identifiers.Tabs.welcome, title: "Home")
+        let timer = tabButton(in: app, Identifiers.Tabs.timer, title: "Timer")
+        try requireModuleUI("TabShell", appeared: settings.waitForExistence(timeout: 10), "no Settings tab")
+        try requireModuleUI("Settings", appeared: settings.exists, "no Settings tab")
+        XCTAssertTrue(home.waitForExistence(timeout: 5), "Home is chosen")
+        XCTAssertFalse(timer.exists, "A feature left out of the choice has no tab")
+        XCTAssertLessThan(settings.frame.minX, home.frame.minX, "Tabs follow the chosen order")
+        XCTAssertTrue(waitUntil(settings, "isSelected == true"))
+        attach(name: "tabs-chosen")
+
+        // The link to the hidden feature reveals it. Without the Timer modules the app says the
+        // feature isn't in this build instead; that path has no simulator lane yet.
+        try requireModuleUI("SessionTimer", appeared: Self.enabledModules?.contains("SessionTimer") ?? true,
+                            "Timer isn't in this build, so the link would show the unavailable alert")
+        app.open(try XCTUnwrap(URL(string: "\(scheme)://timer")), in: scenario.relaunch)
+        XCTAssertTrue(timer.waitForExistence(timeout: 10), "The link should reveal the Timer tab")
+        XCTAssertTrue(waitUntil(timer, "isSelected == true"), "The link should select the revealed tab")
+        XCTAssertGreaterThan(timer.frame.minX, home.frame.minX, "A revealed tab goes last")
+        XCTAssertTrue(element(app, Identifiers.Timer.primary).waitForExistence(timeout: 10))
+        attach(name: "tabs-revealed")
+
+        app.terminate()
+        // Neither the choice nor the selection pinned: both come from what the app stored.
+        var restored = scenario.relaunch
+        restored.tabs = nil
+        restored.tab = nil
+        app.launch(restored)
+        XCTAssertTrue(timer.waitForExistence(timeout: 10), "The revealed tab stays chosen")
+        XCTAssertTrue(waitUntil(timer, "isSelected == true"), "Relaunch restores the revealed tab")
+        XCTAssertTrue(settings.exists && home.exists)
+        XCTAssertLessThan(settings.frame.minX, home.frame.minX, "The chosen order survives a relaunch")
+    }
+
     /// The app's own link selects a tab; a link with a route, query or unknown tab changes nothing.
     /// `open(_:in:)` relaunches the app with the URL into the scenario, so each link starts from the
     /// pinned tab: this covers links that launch the app. Skips without TabShell or Settings.
@@ -48,11 +92,11 @@ final class StarterAppUITests: StarterUITestCase {
         let scheme = try XCTUnwrap(Bundle(for: Self.self).object(forInfoDictionaryKey: "StarterAppURLScheme") as? String,
                                    "project.yml should pass APP_URL_SCHEME to the UI tests")
         let app = XCUIApplication()
-        let welcome = tabButton(in: app, Identifiers.Tabs.welcome, title: "Welcome")
+        let welcome = tabButton(in: app, Identifiers.Tabs.welcome, title: "Home")
         let settings = tabButton(in: app, Identifiers.Tabs.settings, title: "Settings")
         func open(_ link: String, from tab: String) throws {
             app.open(try XCTUnwrap(URL(string: link)), in: .tab(tab))
-            try requireModuleUI("TabShell", appeared: welcome.waitForExistence(timeout: 10), "no Welcome tab")
+            try requireModuleUI("TabShell", appeared: welcome.waitForExistence(timeout: 10), "no Home tab")
             try requireModuleUI("Settings", appeared: settings.waitForExistence(timeout: 5), "no Settings tab")
         }
 
@@ -69,7 +113,7 @@ final class StarterAppUITests: StarterUITestCase {
         }
 
         try open("\(scheme)://welcome", from: Identifiers.Tabs.settings)
-        XCTAssertTrue(waitUntil(welcome, "isSelected == true"), "The link should select Welcome")
+        XCTAssertTrue(waitUntil(welcome, "isSelected == true"), "The link should select Home")
         XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 5))
     }
 

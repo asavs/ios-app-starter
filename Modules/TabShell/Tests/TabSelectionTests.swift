@@ -40,6 +40,28 @@ struct TabSelectionTests {
         #expect(selection.selectedTab == .settings)
     }
 
+    @Test func changingTheTabsKeepsASelectionThatIsStillListed() {
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let selection = makeSelection()
+        selection.selectedTab = .settings
+        selection.setTabs([TestTab.settings, .activity, .library], defaultTab: .library)
+        #expect(selection.tabs == [.settings, .activity, .library])
+        #expect(selection.selectedTab == .settings, "Reordering doesn't move the selection")
+        #expect(defaults.string(forKey: "tabs.selected") == "settings")
+    }
+
+    @Test func removingTheSelectedTabFallsBackToTheDefaultAndStoresIt() {
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let selection = makeSelection()
+        selection.selectedTab = .activity
+        selection.setTabs([TestTab.library, .settings], defaultTab: .settings)
+        #expect(selection.selectedTab == .settings)
+        #expect(defaults.string(forKey: "tabs.selected") == "settings", "A relaunch lands on a tab that exists")
+        #expect(selection.select(rawValue: "activity") == false, "The removed tab can't be selected")
+        selection.setTabs([TestTab.library, .activity, .settings], defaultTab: .library)
+        #expect(selection.selectedTab == .settings, "Bringing a tab back doesn't move the selection")
+    }
+
     @Test func deepLinkSelectionPersistsOnlyAvailableTabs() {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let selection = TabSelection(tabs: [TestTab.library, .settings], defaultTab: .library, defaults: defaults)
