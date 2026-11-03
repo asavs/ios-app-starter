@@ -1,7 +1,7 @@
 import Foundation
 #if canImport(SessionTimer) && canImport(Database)
 
-extension TimerScreenModel {
+extension TimerSession {
     /// Loads a preset's plan and times. Does nothing while a session is underway.
     func apply(_ preset: TimerPreset) {
         guard canChangePlan else { return }

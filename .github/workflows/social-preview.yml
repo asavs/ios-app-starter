@@ -48,7 +48,7 @@ jobs:
             echo "::warning::No passing iOS run on main yet; the cards will have no screenshots."
             exit 0
           fi
-          gh run download "$run_id" --name ios-test-results-starter --dir "$RUNNER_TEMP/ios-results"
+          gh run download "$run_id" --name ios-test-results-starter-shell --dir "$RUNNER_TEMP/ios-results"
           attachments=$(find "$RUNNER_TEMP/ios-results" -path '*/attachments/manifest.json' -print -quit)
           if [ -n "$attachments" ]; then
             echo "ATTACHMENTS=$(dirname "$attachments")" >> "$GITHUB_ENV"

@@ -25,16 +25,13 @@ struct LiveActivityEdgeCaseTests {
         activity = StarterSessionActivity(defaults: defaults, host: host)
     }
 
-    private func makeModel() -> TimerScreenModel {
-        TimerScreenModel(defaults: defaults, activity: activity) { [clock] in clock.now }
+    private func makeModel() -> TimerSession {
+        TimerSession(defaults: defaults, activity: activity) { [clock] in clock.now }
     }
 
-    /// Plays the screen: after `change`, the model hears the old and new snapshot as the view's
-    /// `onChange` would pass them.
-    private func step(_ model: TimerScreenModel, _ change: () -> Void) {
-        let before = model.timer.snapshot
+    /// A change to the session: the timer reports it to its owner itself, so no screen is played.
+    private func step(_ model: TimerSession, _ change: () -> Void) {
         change()
-        model.sessionChanged(from: before, to: model.timer.snapshot)
     }
 
     private var record: SessionRecord? { SessionRecord.load(from: defaults) }
@@ -284,30 +281,25 @@ struct LiveActivityEdgeCaseTests {
         let counting = try #require(CountingDefaults(suiteName: suiteName))
         defer { counting.removePersistentDomain(forName: suiteName) }
         let activity = StarterSessionActivity(defaults: counting, host: host)
-        let model = TimerScreenModel(defaults: counting, activity: activity) { [clock] in clock.now }
+        let model = TimerSession(defaults: counting, activity: activity) { [clock] in clock.now }
         step(model, model.primaryAction)
         await activity.controller.drain()
         let writes = counting.writes
         let lookups = host.lookups
         #expect(host.events.count == 1)
 
-        // What the view's onChange passes on each refresh: the same phase, less remaining.
-        var mirror = SessionClock(plan: model.timer.plan)
-        mirror.start(at: clock.now)
-        var previous = mirror.snapshot(at: clock.now)
-        for tick in 1...150 { // 15 s at 100 ms, all inside the 20 s work phase.
-            let now = clock.now + .milliseconds(100 * tick)
-            let next = mirror.snapshot(at: now)
-            model.sessionChanged(from: previous, to: next)
-            previous = next
+        // The refresh loop's ticks: the same phase, less remaining.
+        for _ in 1...150 { // 15 s at 100 ms, all inside the 20 s work phase.
+            clock.now += .milliseconds(100)
+            model.timer.refresh()
         }
         await activity.controller.drain()
         #expect(host.events.count == 1, "No tick publishes to ActivityKit")
         #expect(host.lookups == lookups, "No tick asks ActivityKit anything")
         #expect(counting.writes == writes, "No tick writes the record")
 
-        let boundary = mirror.snapshot(at: clock.now + .seconds(20))
-        model.sessionChanged(from: previous, to: boundary)
+        clock.now += .seconds(5) // Past the 20 s boundary.
+        model.timer.refresh()
         await activity.controller.drain()
         #expect(host.events.count == 2, "A phase change is one update")
         #expect(counting.writes == writes + 1, "And one record save")
