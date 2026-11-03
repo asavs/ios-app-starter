@@ -5,7 +5,7 @@ import Theme
 /// Start, pause or resume, plus Skip and Reset. Skip and Reset sit side by side, or stacked when
 /// they don't fit, such as at the accessibility text sizes.
 struct TimerControls: View {
-    let model: TimerScreenModel
+    let model: TimerSession
     @Environment(\.appTheme) private var theme
 
     var body: some View {

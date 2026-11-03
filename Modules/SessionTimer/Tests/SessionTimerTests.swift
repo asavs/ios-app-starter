@@ -44,6 +44,29 @@ struct SessionTimerTests {
         #expect(timer.snapshot.phaseRemaining == .seconds(5))
     }
 
+    @Test func everyChangeReachesTheObserverOnceWithBothSnapshots() {
+        let timer = makeTimer()
+        var changes: [(SessionSnapshot.Status, Int)] = []
+        timer.onChange = { old, new in
+            #expect(old != new, "Only a change is reported")
+            changes.append((new.status, new.phaseIndex))
+        }
+        timer.refresh()
+        #expect(changes.isEmpty, "A refresh that changes nothing reports nothing")
+        timer.start()
+        clock.now += .seconds(21) // Into the rest phase.
+        timer.refresh()
+        timer.pause()
+        timer.pause() // Already paused: no change.
+        timer.start()
+        timer.reset()
+        #expect(changes.map(\.0) == [.running, .running, .paused, .running, .ready])
+        #expect(changes.map(\.1) == [0, 1, 1, 1, 0])
+        timer.onChange = nil
+        timer.start()
+        #expect(changes.count == 5, "Nothing listens any more")
+    }
+
     @Test func refreshesOnlyWhileRunning() {
         let timer = makeTimer()
         #expect(timer.isRefreshing == false)

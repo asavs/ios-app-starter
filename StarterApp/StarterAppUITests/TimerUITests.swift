@@ -163,6 +163,47 @@ final class TimerUITests: StarterUITestCase {
         attach(name: "timer-focus")
     }
 
+    /// The session lives above the Timer screen: it survives a relaunch on another tab with the Timer tab
+    /// left out of the chosen tabs, and the link that brings the tab back shows the same session running.
+    @MainActor
+    func testTimerSessionSurvivesRelaunchWithTheTabHidden() throws {
+        let scheme = try XCTUnwrap(Bundle(for: Self.self).object(forInfoDictionaryKey: "StarterAppURLScheme") as? String,
+                                   "project.yml should pass APP_URL_SCHEME to the UI tests")
+        let app = XCUIApplication()
+        let scenario = UITestLaunch(tab: Identifiers.Tabs.timer, extra: ["-timer.intervals", "600,10,3"])
+        app.launch(scenario)
+        let primary = element(app, Identifiers.Timer.primary)
+        try requireModuleUI("SessionTimer", appeared: primary.waitForExistence(timeout: 10), "no Start button on the Timer tab")
+        let timerTab = tabButton(in: app, Identifiers.Tabs.timer, title: "Timer")
+        try requireModuleUI("TabShell", appeared: timerTab.waitForExistence(timeout: 5), "no Timer tab")
+        primary.tap()
+        XCTAssertTrue(waitUntil(primary, "label == 'Pause'"), "The session should start")
+        let step = element(app, Identifiers.Timer.step)
+        XCTAssertEqual(step.label, "Step 1 of 5")
+        app.terminate()
+
+        // Back without the Timer tab, on Settings: the session is adopted with no Timer screen anywhere.
+        var hidden = scenario.relaunch
+        hidden.tab = Identifiers.Tabs.settings
+        hidden.tabs = [Identifiers.Tabs.settings, Identifiers.Tabs.welcome]
+        app.launch(hidden)
+        let settingsTab = tabButton(in: app, Identifiers.Tabs.settings, title: "Settings")
+        try requireModuleUI("Settings", appeared: settingsTab.waitForExistence(timeout: 10), "no Settings tab")
+        XCTAssertFalse(timerTab.exists, "The Timer tab is left out of the choice")
+        attach(name: "session-hidden-tab")
+
+        // The link brings the tab back: the same session, still running, a few seconds in.
+        app.terminate()
+        app.open(try XCTUnwrap(URL(string: "\(scheme)://timer")), in: hidden)
+        XCTAssertTrue(timerTab.waitForExistence(timeout: 10), "The link should reveal the Timer tab")
+        XCTAssertTrue(primary.waitForExistence(timeout: 10))
+        XCTAssertEqual(primary.label, "Pause", "The session kept running while its tab was hidden")
+        XCTAssertEqual(step.label, "Step 1 of 5", "The same session, in its first phase")
+        attach(name: "session-revealed-running")
+        element(app, Identifiers.Timer.reset).tap()
+        XCTAssertTrue(waitUntil(primary, "label == 'Start'"))
+    }
+
     /// The SessionActivity module's main path: starting a session starts one Live Activity, pausing keeps it,
     /// resetting ends it. A test can't read another process's Dynamic Island, so the app reports its activity
     /// count under `-sessionActivity.readout`, and the screenshot taken from the Home Screen shows the island.

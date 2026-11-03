@@ -10,12 +10,12 @@ import Cues
 
 /// The Timer tab's logic against an isolated defaults suite and a controlled clock.
 @MainActor
-struct TimerScreenModelTests {
+struct TimerSessionTests {
     private final class TestClock {
         var now = ContinuousClock.now
     }
 
-    private let suiteName = "TimerScreenModelTests.\(UUID().uuidString)"
+    private let suiteName = "TimerSessionTests.\(UUID().uuidString)"
     private let defaults: UserDefaults
     private let clock = TestClock()
 
@@ -23,8 +23,8 @@ struct TimerScreenModelTests {
         defaults = try #require(UserDefaults(suiteName: suiteName))
     }
 
-    private func makeModel(plan: TimerPlan = .intervals) -> TimerScreenModel {
-        TimerScreenModel(defaults: defaults, plan: plan) { [clock] in clock.now }
+    private func makeModel(plan: TimerPlan = .intervals) -> TimerSession {
+        TimerSession(defaults: defaults, plan: plan) { [clock] in clock.now }
     }
 
     @Test func startsWithEachPlansDefaults() {
@@ -115,6 +115,7 @@ struct TimerScreenModelTests {
         other.primaryAction()
         other.apply(TimerPreset(name: "Ignored", plan: "intervals", work: 5, rest: 5, rounds: 1))
         #expect(other.plan == .focus, "A running session keeps its plan")
+        other.reset() // The running session is on record now; a new session would adopt it and refuse the preset too.
         let odd = makeModel(plan: .focus)
         odd.apply(TimerPreset(name: "Odd", plan: "unknown", work: 5, rest: 5, rounds: 1))
         #expect(odd.plan == .intervals, "An unknown plan name falls back to intervals")
@@ -127,18 +128,16 @@ struct TimerScreenModelTests {
         let model = makeModel()
         var played: [Cue] = []
         model.play = { played.append($0) }
-        var previous = model.timer.snapshot
-        func step(_ change: () -> Void) {
-            change()
-            model.sessionChanged(from: previous, to: model.timer.snapshot)
-            previous = model.timer.snapshot
-        }
+        // The timer reports each change to the session itself; nothing plays the screen here.
+        func step(_ change: () -> Void) { change() }
         step(model.primaryAction) // Start.
-        step { clock.now += .seconds(21) ; model.timer.pause() } // Into the rest, then paused: no cue for the pause.
+        step { clock.now += .seconds(21); model.timer.refresh(); model.timer.pause() } // Into the rest, then paused: no cue for the pause.
         step(model.primaryAction) // Resume.
         step { clock.now += .seconds(9); model.skip() }
         step { clock.now += .seconds(3600); model.skip() } // Finish.
-        #expect(played == [.start, .start, .phaseChange, .finished])
+        // The refresh into the rest plays the phase change; the pause plays nothing; the resume plays a
+        // start; the skip lands in the next rest; the last skip finds the session over.
+        #expect(played == [.start, .phaseChange, .start, .phaseChange, .finished])
     }
 
     @Test func hapticsFollowTheSettingAndTheTransition() {

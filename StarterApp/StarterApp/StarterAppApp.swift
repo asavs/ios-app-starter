@@ -32,6 +32,11 @@ struct StarterAppApp: App {
         StarterSessionActivity.shared.installIntents()
         StarterSessionActivity.shared.reattach()
 #endif
+#if canImport(SessionTimer) && canImport(TimerRing)
+        // The session lives here, not in the Timer tab: a stored session is adopted now, whichever
+        // tab shows first, and the app's return to the foreground reconciles it.
+        TimerSession.shared.observeForeground()
+#endif
     }
 
     var body: some Scene {
@@ -66,10 +71,26 @@ struct StarterAppApp: App {
     }
 
     @ViewBuilder private var appContent: some View {
+        tabs
+            .modifier(Sessions())
+    }
+
+    @ViewBuilder private var tabs: some View {
 #if canImport(TabShell)
         StarterTabsView()
 #else
         ContentView()
+#endif
+    }
+}
+
+/// Hands the app's timer session to every screen when the Timer modules are enabled.
+private struct Sessions: ViewModifier {
+    func body(content: Content) -> some View {
+#if canImport(SessionTimer) && canImport(TimerRing)
+        content.environment(TimerSession.shared)
+#else
+        content
 #endif
     }
 }

@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Skip and Reset; `TimerControls` arranges them.
 struct TimerSecondaryButtons: View {
-    let model: TimerScreenModel
+    let model: TimerSession
 
     var body: some View {
         let status = model.timer.snapshot.status
