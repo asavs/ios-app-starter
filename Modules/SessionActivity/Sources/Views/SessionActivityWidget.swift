@@ -22,36 +22,39 @@ public struct SessionActivityWidget: Widget {
 
     public var body: some WidgetConfiguration {
         ActivityConfiguration(for: SessionActivityAttributes.self) { context in
-            SessionLockScreenView(attributes: context.attributes, state: context.state, isStale: context.isStale)
+            let shown = context.state.shown(at: .now, isStale: context.isStale)
+            SessionLockScreenView(attributes: context.attributes, state: shown.state, isStale: shown.isStale)
         } dynamicIsland: { context in
-            DynamicIsland {
+            // Resolved once per presentation: a stale render shows the schedule's next phase.
+            let shown = context.state.shown(at: .now, isStale: context.isStale)
+            return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    SessionRingView(state: context.state)
+                    SessionRingView(state: shown.state)
                         .frame(width: 44, height: 44)
                         .padding(.leading, theme.spacing.extraSmall)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    SessionCountdownText(state: context.state, isStale: context.isStale)
+                    SessionCountdownText(state: shown.state, isStale: shown.isStale)
                         .font(.system(.title, design: .rounded, weight: .semibold))
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 DynamicIslandExpandedRegion(.center) {
-                    SessionPhaseLabel(attributes: context.attributes, state: context.state)
+                    SessionPhaseLabel(attributes: context.attributes, state: shown.state)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    SessionActivityFooter(attributes: context.attributes, state: context.state, isStale: context.isStale)
+                    SessionActivityFooter(attributes: context.attributes, state: shown.state, isStale: shown.isStale)
                 }
             } compactLeading: {
-                SessionRingView(state: context.state)
+                SessionRingView(state: shown.state)
                     .frame(width: 24, height: 24)
                     .padding(.leading, theme.spacing.extraSmall)
             } compactTrailing: {
-                SessionCountdownText(state: context.state, isStale: context.isStale)
+                SessionCountdownText(state: shown.state, isStale: shown.isStale)
                     .font(.system(.body, design: .rounded, weight: .semibold))
                     .frame(width: 52)
                     .padding(.trailing, theme.spacing.extraSmall)
             } minimal: {
-                SessionRingView(state: context.state)
+                SessionRingView(state: shown.state)
                     .frame(width: 24, height: 24)
             }
             .widgetURL(context.attributes.link)

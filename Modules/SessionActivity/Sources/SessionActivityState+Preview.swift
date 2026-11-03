@@ -5,7 +5,15 @@ public extension SessionActivityState {
     static var previewRunning: SessionActivityState {
         SessionActivityState(status: .running, phaseIndex: 1, phaseCount: 5, phaseTitle: "Rest", phaseKind: "rest",
                              phaseDuration: .seconds(10), phase: Date.now...Date.now.addingTimeInterval(8),
-                             pausedRemaining: nil, sessionEnd: Date.now.addingTimeInterval(58))
+                             pausedRemaining: nil, sessionEnd: Date.now.addingTimeInterval(58),
+                             upcoming: [
+                                 ScheduledPhase(index: 2, title: "Work", kind: "work",
+                                                range: Date.now.addingTimeInterval(8)...Date.now.addingTimeInterval(28)),
+                                 ScheduledPhase(index: 3, title: "Rest", kind: "rest",
+                                                range: Date.now.addingTimeInterval(28)...Date.now.addingTimeInterval(38)),
+                                 ScheduledPhase(index: 4, title: "Work", kind: "work",
+                                                range: Date.now.addingTimeInterval(38)...Date.now.addingTimeInterval(58)),
+                             ])
     }
 
     static var previewPaused: SessionActivityState {
