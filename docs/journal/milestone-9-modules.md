@@ -22,6 +22,14 @@ Entries for the module library mechanism, the first-round modules, their lanes a
 - Draft gate behavior: [PR #150](https://github.com/asavs/ios-app-starter/pull/150), [run 41543158080](https://github.com/asavs/ios-app-starter/actions/runs/41543158080), skips simulator/module/build lanes and deliberately fails `ios-gate` because the change is a draft. Confirmed in the workflow and failed-job output, reviewed with `scripts/review_ci.py`. Keep the requested research draft; when approved for landing, marking it ready allows documentation-only classification. A draft's skipped lanes provide no runtime evidence.
 - Remaining uncertainty: phase changes cannot execute while suspended under the current local-only activity design; clock changes across termination, manual activity dismissal and cue catch-up policy need explicit implementation decisions and verification.
 
+## 2026-11-03 — The starter lane in two jobs: one simulator each, half the suite each
+
+- **Tools:** GitHub-hosted macOS runner (`xcode-27`), Xcode 27.0. Task `ios-6dd.13`, after #150's lane hit the 25-minute step cap twice on 2026-11-03.
+- **Symptom (confirmed):** no test failed. The build took five minutes, then fourteen UI tests took fifteen minutes (91 s for the first, 200 s and more per class of four or five) and the step was still running when it was cut. The suite is 27 UI tests now, so even the fast runner of the 14.6-minute green run would land near the cap.
+- **Decision:** the test job gets a `lane` matrix dimension, `shell` and `features`, each a job with its own simulator and build, since clones in one job never came up on the hosted runner (entry of 2026-11-01). `scripts/test-ios.sh` maps the lane to `-only-testing` classes (shell: unit tests, `StarterAppUITests`, `OnboardingUITests`; features: `TimerUITests`, `AttachmentsUITests`, `SettingsUITests`), balanced from the measured durations; unset means everything, so local runs and the compatibility workflow are unchanged. Artifacts carry the lane; the icon render and the social preview read the `shell` lane's.
+- **Cost:** two builds per configuration, about five runner minutes more per run, for roughly half the wall time. Still well over the ten-minute aim; trimming the slowest tests stays on `ios-6dd.13`.
+- **Verified:** `bash -n` on the script and the unknown-lane guard (exit 2) locally; the `features` lane run end to end on the Mac simulator; the two `test (starter, <lane>)` jobs on this PR's own run are the hosted evidence, read with `scripts/review_ci.py`.
+
 ## 2026-11-03 — Feature registry: the shell's tabs follow a stored choice, and a link can bring a hidden tab back
 
 - **Tools:** Xcode 27.0, iPhone 17 / iOS 27.0 simulator, `swift test` on the host. Task `ios-125.1`, slice 1 of docs/design/feature-tabs.md. Asa moved it ahead of the Timer-tab overlay move and off the lane-speed work.
