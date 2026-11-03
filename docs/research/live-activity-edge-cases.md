@@ -42,6 +42,8 @@ xcodebuild -project StarterApp/StarterApp.xcodeproj -scheme StarterApp \
 
 ## Design limitations, recorded not fixed
 
+*Update, later on 2026-11-02 (task ios-d2o):* the state now carries the schedule after the current phase (`upcoming`, at most eight phases) and `shown(at:isStale:)` turns the one stale re-render into the next phase, counting down to its own end, or into the finished session once `sessionEnd` has passed. The island moves one phase on its own; a second boundary without the app still ends in "Phase over", and past the eight carried phases so does the first. The routes that remove the limit altogether are in board task ios-0ik.
+
 **A phase that ends while the app is suspended is not followed by the next one.** The activity holds one phase range the system counts down and a stale date at the phase's end; when the phase ends with nothing running in the app, the view shows 0:00 and "Phase over. Open the app for the next one." until the app next runs (foreground, or an intent from the button). `aPhaseThatEndsWithoutAChangeOnlyGoesStale` pins this. With the template's 20 s work / 10 s rest intervals on the phone this is the first thing a person sees: the island counts the current phase down and then stalls. The session end ("Ends at 3:42 PM") stays right throughout, since it is one date.
 
 What it would take to change, from [live-activities.md](live-activities.md) (lines 11, 35, 90 and the "Scheduled Live Activities" paragraph):
