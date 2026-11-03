@@ -306,6 +306,82 @@ struct SessionActivityTests {
         #expect(try JSONEncoder().encode(attributes).count < 1024)
     }
 
+    // MARK: The schedule and the stale render
+
+    @Test func upcomingPhasesFollowTheCurrentOneBackToBack() throws {
+        let state = try #require(SessionActivityState(snapshot(after: 5), plan: plan, now: date))
+        #expect(state.phase == date.addingTimeInterval(-5)...date.addingTimeInterval(15))
+        #expect(state.upcoming == [
+            SessionActivityState.ScheduledPhase(index: 1, title: "Rest", kind: "rest",
+                                                range: date.addingTimeInterval(15)...date.addingTimeInterval(25)),
+            SessionActivityState.ScheduledPhase(index: 2, title: "Work", kind: "work",
+                                                range: date.addingTimeInterval(25)...date.addingTimeInterval(45)),
+        ])
+        #expect(state.upcoming.last?.range.upperBound == state.sessionEnd, "The schedule ends where the session does")
+        let lastPhase = try #require(SessionActivityState(snapshot(after: 35), plan: plan, now: date))
+        #expect(lastPhase.upcoming.isEmpty)
+    }
+
+    @Test func upcomingIsEmptyWhilePausedOrFinished() throws {
+        let paused = try #require(SessionActivityState(snapshot(after: 5, paused: true), plan: plan, now: date))
+        #expect(paused.upcoming.isEmpty)
+        let finished = try #require(SessionActivityState(snapshot(after: 60), plan: plan, now: date))
+        #expect(finished.status == .finished && finished.upcoming.isEmpty)
+    }
+
+    @Test func upcomingIsCappedAndStaysUnderFourKilobytesWithLongTitles() throws {
+        let longTitle = String(repeating: "A rather long phase title ", count: 8) // 208 characters.
+        let long = SessionPlan.intervals(
+            work: SessionPhase(kind: String(repeating: "k", count: 100), title: "\(longTitle)", duration: .seconds(86_400)),
+            rest: SessionPhase(kind: String(repeating: "r", count: 100), title: "\(longTitle)", duration: .seconds(86_400)),
+            rounds: 30)
+        var clock = SessionClock(plan: long)
+        clock.start(at: t0)
+        let state = try #require(SessionActivityState(clock.snapshot(at: t0 + .seconds(1)), plan: long, now: date))
+        #expect(state.upcoming.count == SessionActivityState.upcomingLimit)
+        #expect(state.upcoming.first?.index == 1 && state.upcoming.last?.index == SessionActivityState.upcomingLimit)
+        #expect(try JSONEncoder().encode(state).count < 4096)
+    }
+
+    @Test func aStaleRenderShowsTheNextPhaseThenTheFinish() throws {
+        let state = try #require(SessionActivityState(snapshot(after: 5), plan: plan, now: date))
+        let fresh = state.shown(at: date.addingTimeInterval(10), isStale: false)
+        #expect(fresh.state == state && fresh.isStale == false, "Nothing changes while the system still counts")
+
+        let early = state.shown(at: date.addingTimeInterval(14.9), isStale: true)
+        #expect(early.state == state && early.isStale == false, "A render a moment early keeps counting the same phase")
+
+        let rest = state.shown(at: date.addingTimeInterval(15.5), isStale: true)
+        #expect(rest.isStale == false)
+        #expect(rest.state.status == .running && rest.state.phaseIndex == 1 && rest.state.phaseTitle == "Rest" && rest.state.phaseKind == "rest")
+        #expect(rest.state.phase == date.addingTimeInterval(15)...date.addingTimeInterval(25))
+        #expect(rest.state.phaseDuration == .seconds(10))
+        #expect(rest.state.sessionEnd == state.sessionEnd)
+        #expect(rest.state.upcoming.map(\.index) == [2], "The schedule moves on with the phase")
+        #expect(rest.state.staleDate == date.addingTimeInterval(25))
+
+        let work = state.shown(at: date.addingTimeInterval(30), isStale: true)
+        #expect(work.state.phaseIndex == 2 && work.state.upcoming.isEmpty && work.isStale == false)
+
+        let done = state.shown(at: date.addingTimeInterval(45), isStale: true)
+        #expect(done.state.status == .finished && done.state.phase == nil && done.state.phaseIndex == 2 && done.isStale == false)
+        #expect(done.state.sessionEnd == state.sessionEnd)
+    }
+
+    @Test func aStaleRenderPastTheScheduleSaysThePhaseIsOver() throws {
+        let long = SessionPlan.intervals(work: SessionPhase(kind: "work", title: "Work", duration: .seconds(20)),
+                                         rest: SessionPhase(kind: "rest", title: "Rest", duration: .seconds(10)),
+                                         rounds: 30)
+        var clock = SessionClock(plan: long)
+        clock.start(at: t0)
+        let state = try #require(SessionActivityState(clock.snapshot(at: t0 + .seconds(1)), plan: long, now: date))
+        let lastScheduled = try #require(state.upcoming.last)
+        let beyond = state.shown(at: lastScheduled.range.upperBound.addingTimeInterval(1), isStale: true)
+        #expect(beyond.state == state && beyond.isStale, "Beyond the eight carried phases the view says the phase is over")
+        let paused = try #require(SessionActivityState(snapshot(after: 5, paused: true), plan: plan, now: date))
+        #expect(paused.shown(at: date.addingTimeInterval(100), isStale: true).state == paused)
+    }
+
     // MARK: Edge cases: other sessions' activities
 
     @Test func aNewSessionEndsTheOldSessionsActivityAtOnce() async {
