@@ -136,7 +136,7 @@ def diagnose(records=None, account=False, binary=None, environment=None, reader=
     else:
         bundle = None
         findings.append(finding("project_configuration", "not_verified", "No Xcode configuration export supplied.",
-            "Run iOS CI, download ios-test-results-starter, then supply its configuration.json with --configuration."))
+            "Run iOS CI, download ios-test-results-starter-shell, then supply its configuration.json with --configuration."))
     kind = environment.get("ASC_KEY_TYPE", "team")
     complete = bool(environment.get("ASC_KEY_ID")) and kind in ("team", "individual") and bool(
         environment.get("ASC_PRIVATE_KEY") or environment.get("ASC_PRIVATE_KEY_B64") or environment.get("ASC_PRIVATE_KEY_PATH")) and (kind == "individual" or bool(environment.get("ASC_ISSUER_ID")))
