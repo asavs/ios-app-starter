@@ -24,6 +24,14 @@ struct UITestLaunchTests {
         #expect(!scenario.relaunch.arguments.contains("-database.reset"))
     }
 
+    @Test func chosenTabsTravelAsOneValue() throws {
+        let launch = UITestLaunch(tab: "settings", tabs: ["settings", "welcome"])
+        let arguments = launch.arguments
+        let index = try #require(arguments.firstIndex(of: "-tabs.chosen"))
+        #expect(arguments[index + 1] == "settings,welcome")
+        #expect(UITestLaunch(tab: "settings").arguments.contains("-tabs.chosen") == false)
+    }
+
     @Test func everyFlagCarriesAValue() {
         let arguments = UITestLaunch(tab: Identifiers.Tabs.welcome, store: "x", extra: ["-attachments.fakeCamera", "YES"]).arguments
         for (index, argument) in arguments.enumerated() where argument.hasPrefix("-") {

@@ -2,6 +2,16 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-03 — Feature registry: the shell's tabs follow a stored choice, and a link can bring a hidden tab back
+
+- **Tools:** Xcode 27.0, iPhone 17 / iOS 27.0 simulator, `swift test` on the host. Task `ios-125.1`, slice 1 of docs/design/feature-tabs.md. Asa moved it ahead of the Timer-tab overlay move and off the lane-speed work.
+- **Decision:** the registry stays in the host (`StarterFeature`, `FeatureChoices`), as the design asks, until a second app needs it. `StarterTab` now has every case in every build and the registry says which are available, so a stored choice naming a feature this build left out is skipped rather than failed, and a deep link to it can say so.
+- **Decision (module contract):** `TabSelection.tabs` changes through `setTabs(_:defaultTab:)` and `TabShell` draws the selection's list in its order from the descriptors it was given, which may be more than the selection uses. Before, both were fixed at init and had to match exactly; a changing list would have meant a new selection and a new shell, losing the selection and every tab's navigation state.
+- **Decision:** the choice is one comma-joined string under `tabs.chosen`, apart from `tabs.selected`, so a UI test seeds it through the argument domain like the selected tab, and choosing tabs and switching tabs never overwrite each other. Reading never writes: opening the app or replaying onboarding leaves a stored choice alone. Nothing stored means the configuration's defaults (every available feature today), so existing installations see the same tabs; a stored list never gains a feature the app added later.
+- **Finding:** the welcome tab's label is Home now and its identifier stays `welcome`, as the design asks; the UI tests look tabs up by identifier and fall back to the title, so only the title fallback changed.
+- **Verified:** TabShell module tests 9/9 on the host. App unit tests 38/38 (FeatureChoicesTests, UITestLaunchTests included) and the four shell UI tests (`testChosenTabsOrderHideAndRevealFeatures` 118 s, `testDeepLinkSelectsTab`, `testTabShellSwitchesAndRestoresSelection`, `testThemeRendersInLightAndDark`) on iPhone 17 / iOS 27.0. Identifier contract holds; Python suite passes.
+- **Remaining:** the Choose-tabs screen (slice 6) and the onboarding step (slice 7) will drive `FeatureChoices.set`; this slice ships the model, the contract and the launch argument. The unavailable-feature alert has no simulator lane (every lane with TabShell also has the Timer modules); its policy is unit-tested. The design's navigation-scale check (six or more destinations) is slice 9.
+
 ## 2026-11-02 — Feature tabs as useful app screens
 
 - **Task and tools:** module round two, GitHub CLI, Beads 1.3.1, source inspection of main at `101cb28`. Product planning only; no app or account changes.

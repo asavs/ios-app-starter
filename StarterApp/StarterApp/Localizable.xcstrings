@@ -1,6 +1,50 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%@ isn't in this build": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ isn't in this build"
+          }
+        }
+      }
+    },
+    "%@ was left out when this app was built.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ was left out when this app was built."
+          }
+        }
+      }
+    },
+    "%@ was left out when this app was built. The link opened nothing.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ was left out when this app was built. The link opened nothing."
+          }
+        }
+      }
+    },
+    "%lld attachments": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld attachments"
+          }
+        }
+      }
+    },
     "API key": {
       "extractionState": "manual",
       "localizations": {
@@ -8,6 +52,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "API key"
+          }
+        }
+      }
+    },
+    "Add a photo, a file or a link that goes with this preset.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a photo, a file or a link that goes with this preset."
+          }
+        }
+      }
+    },
+    "Appearance, sounds, privacy and your local data.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance, sounds, privacy and your local data."
+          }
+        }
+      }
+    },
+    "Attachments": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attachments"
           }
         }
       }
@@ -122,6 +199,17 @@
         }
       }
     },
+    "Home": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Home"
+          }
+        }
+      }
+    },
     "Intervals": {
       "extractionState": "manual",
       "localizations": {
@@ -155,6 +243,17 @@
         }
       }
     },
+    "No attachments yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No attachments yet"
+          }
+        }
+      }
+    },
     "No presets yet": {
       "extractionState": "manual",
       "localizations": {
@@ -162,6 +261,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "No presets yet"
+          }
+        }
+      }
+    },
+    "OK": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
           }
         }
       }
@@ -228,6 +338,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Presets"
+          }
+        }
+      }
+    },
+    "Recent content and shortcuts to the features you use.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent content and shortcuts to the features you use."
           }
         }
       }
@@ -316,6 +437,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rows a real app replaces: a secret kept in the Keychain, and the welcome tour's reset."
+          }
+        }
+      }
+    },
+    "Run interval sessions, save plans and follow them from the Lock Screen.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run interval sessions, save plans and follow them from the Lock Screen."
           }
         }
       }
@@ -518,6 +650,17 @@
         }
       }
     },
+    "This feature": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This feature"
+          }
+        }
+      }
+    },
     "Timer": {
       "extractionState": "manual",
       "localizations": {
@@ -591,50 +734,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your data"
-          }
-        }
-      }
-    },
-    "Attachments": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Attachments"
-          }
-        }
-      }
-    },
-    "No attachments yet": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No attachments yet"
-          }
-        }
-      }
-    },
-    "Add a photo, a file or a link that goes with this preset.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add a photo, a file or a link that goes with this preset."
-          }
-        }
-      }
-    },
-    "%lld attachments": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld attachments"
           }
         }
       }
