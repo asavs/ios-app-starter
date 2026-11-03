@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import SwiftUI
+import UIKit
 #if canImport(SessionTimer)
 import SessionTimer
 #if canImport(Cues)
@@ -10,11 +11,17 @@ import Cues
 import SessionActivity
 #endif
 
-/// What the Timer tab does, apart from drawing it: which plan is chosen, its stored times, the
-/// primary button, which cue each change of the session plays, and the session's record and Live
-/// Activity. The view only lays it out.
+/// The app's one timer session, owned above any screen: which plan is chosen, its stored times,
+/// the primary button, which cue each change of the session plays, and the session's record and
+/// Live Activity. The Timer screen reads it from the environment and sends commands; hiding,
+/// reordering or rebuilding that screen changes nothing here, and a session keeps its record, its
+/// cues and its activity current while no screen shows it, because the timer reports every change
+/// to this owner directly (`SessionTimer.onChange`), not through a view.
+///
+/// `shared` is the app's instance, created at launch after the Live Activity service; tests make
+/// their own with an isolated defaults suite, a controlled clock and a recording activity host.
 @MainActor @Observable
-final class TimerScreenModel {
+final class TimerSession {
     let timer: SessionTimer
 
     /// Choosing a plan loads its stored times and starts over.
@@ -64,6 +71,25 @@ final class TimerScreenModel {
         haptic = player.haptic
 #endif
         adoptStoredSession()
+        timer.onChange = { [weak self] old, new in self?.sessionChanged(from: old, to: new) }
+    }
+
+    /// The app's session. Created once, at launch, so a stored session is adopted and its activity
+    /// reconciled before any tab shows, whichever tab that is.
+#if canImport(SessionActivity)
+    static let shared = TimerSession(defaults: StarterDefaults.store, activity: .shared)
+#else
+    static let shared = TimerSession(defaults: StarterDefaults.store)
+#endif
+
+    /// Follow the stored record whenever the app returns to the foreground: the activity's button
+    /// may have paused or resumed the session while the app was away. The owner listens, not a
+    /// screen, so it works with the Timer tab hidden or never shown. Call once, for `shared`.
+    func observeForeground() {
+        NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil,
+                                               queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.restoreFromRecord() }
+        }
     }
 
 #if canImport(SessionActivity)
@@ -131,10 +157,13 @@ final class TimerScreenModel {
         timer.start()
     }
 
-    /// Called with each pair of snapshots: plays the cue for a start, a new phase or the end, keeps
-    /// the stored record current, and passes the change on to the Live Activity. Ticks within a
-    /// phase change nothing but the remaining time, which the record and the activity derive.
-    func sessionChanged(from old: SessionSnapshot, to new: SessionSnapshot) {
+    /// Called by the timer with each pair of snapshots: plays the cue for a start, a new phase or
+    /// the end, keeps the stored record current, and passes the change on to the Live Activity.
+    /// Ticks within a phase change nothing but the remaining time, which the record and the
+    /// activity derive. A load (adopting a record, a new plan) also arrives here: a plan change
+    /// returns the session to ready, which clears the record of the one before.
+    private func sessionChanged(from old: SessionSnapshot, to new: SessionSnapshot) {
+        guard !isRestoring else { return }
 #if canImport(Cues)
         if let cue = Self.cue(for: new.transition(from: old)) { play(cue) }
 #endif
@@ -151,12 +180,18 @@ final class TimerScreenModel {
     }
 
     /// The app is back in the foreground: if the Live Activity's button paused or resumed this
-    /// session meanwhile, take the stored position over.
+    /// session meanwhile, take the stored position over. The intent already saved the record and
+    /// published the change, so this load is silent: no second save, publication or cue.
     func restoreFromRecord() {
         guard let record = SessionRecord.load(from: defaults), record.id == sessionID,
               record.clock.isRunning != (timer.snapshot.status == .running) else { return }
+        isRestoring = true
+        defer { isRestoring = false }
         timer.load(plan.session(times), state: record.clock)
     }
+
+    /// While a stored position is being loaded: the change came from the record, not from here.
+    @ObservationIgnored private var isRestoring = false
 
     /// The haptic for the change between two snapshots, for the view's `sensoryFeedback`. Nil
     /// for pauses, resets and plan changes, and for everything with haptics off.

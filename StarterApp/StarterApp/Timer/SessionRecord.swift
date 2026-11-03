@@ -4,7 +4,7 @@ import SessionTimer
 
 /// The session underway, as stored values: which plan, its times and where the clock is, as dates.
 ///
-/// `TimerScreenModel` saves it on every change and clears it when the session resets. An App
+/// `TimerSession` saves it on every change and clears it when the session resets. An App
 /// Intent from the Live Activity (pause or resume) runs in the app's process while no screen
 /// exists, so it works on this record; the Timer screen picks the change up when it returns.
 struct SessionRecord: Codable, Equatable {

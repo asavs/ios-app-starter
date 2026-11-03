@@ -19,15 +19,13 @@ struct SessionRecordTests {
         defaults = try #require(UserDefaults(suiteName: suiteName))
     }
 
-    private func makeModel() -> TimerScreenModel {
-        TimerScreenModel(defaults: defaults, plan: .intervals) { [clock] in clock.now }
+    private func makeModel() -> TimerSession {
+        TimerSession(defaults: defaults, plan: .intervals) { [clock] in clock.now }
     }
 
-    /// Drive the model the way the view does: each snapshot change reaches `sessionChanged`.
-    private func change(_ model: TimerScreenModel, _ action: () -> Void) {
-        let old = model.timer.snapshot
+    /// A change to the session; the timer reports it to the session itself.
+    private func change(_ model: TimerSession, _ action: () -> Void) {
         action()
-        model.sessionChanged(from: old, to: model.timer.snapshot)
     }
 
     @Test func roundTripsThroughDefaults() throws {

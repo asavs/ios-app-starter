@@ -10,7 +10,7 @@ import Attachments
 /// Accessibility identifiers: `timer.presets.save`, `timer.presets.name`, `timer.presets.done`,
 /// `timer.presets.row.<name>`.
 struct TimerPresetsView: View {
-    let model: TimerScreenModel
+    let model: TimerSession
     @Query(sort: \TimerPreset.createdAt) private var presets: [TimerPreset]
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss

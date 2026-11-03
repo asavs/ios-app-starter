@@ -12,6 +12,13 @@ public final class SessionTimer {
     public private(set) var snapshot: SessionSnapshot
     public var plan: SessionPlan { clock.plan }
 
+    /// Called with the previous and the new snapshot whenever the snapshot changes: on every
+    /// command, on every refresh while running, and on a load. The owner of a session reacts here
+    /// (stores it, plays a cue, updates a Live Activity) without a view watching the snapshot, so
+    /// a session keeps its effects while no screen shows it. Ticks inside a phase change only the
+    /// remaining time; filter on status and phase for anything that costs.
+    @ObservationIgnored public var onChange: ((_ old: SessionSnapshot, _ new: SessionSnapshot) -> Void)?
+
     private var clock: SessionClock
     private let refreshInterval: Duration
     private let now: () -> SessionClock.Instant
@@ -67,9 +74,12 @@ public final class SessionTimer {
         clock.state(at: now(), date: date)
     }
 
-    /// Read the clock now. The refresh loop calls this while running; tests call it directly.
-    func refresh() {
+    /// Read the clock now. The refresh loop calls this while running; an owner calls it when the
+    /// app returns to the foreground, and tests call it to play a tick.
+    public func refresh() {
+        let old = snapshot
         snapshot = clock.snapshot(at: now())
+        if snapshot != old { onChange?(old, snapshot) }
         if snapshot.status == .running {
             if refresher == nil { startRefreshing() }
         } else {

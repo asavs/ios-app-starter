@@ -5,21 +5,19 @@ import Theme
 import TimerRing
 
 /// The template's timer: the SessionTimer and TimerRing modules configured as short intervals or
-/// as a Pomodoro-style focus session. `TimerScreenModel` holds the logic.
+/// as a Pomodoro-style focus session. `TimerSession`, the app's session, holds the logic and lives
+/// above this screen: hiding the Timer tab, switching away or rebuilding the shell leaves a running
+/// session running, and a rebuilt screen shows it where it is.
 struct StarterTimerView: View {
-#if canImport(SessionActivity)
-    @State private var model = TimerScreenModel(defaults: StarterDefaults.store, activity: .shared)
-#else
-    @State private var model = TimerScreenModel(defaults: StarterDefaults.store)
-#endif
+    @Environment(TimerSession.self) private var model
     @State private var isEditing = false
 #if canImport(Database)
     @State private var isChoosingPreset = false
 #endif
     @Environment(\.appTheme) private var theme
-    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
+        @Bindable var model = model
         let snapshot = model.timer.snapshot
         let phase = model.timer.plan.phases[snapshot.phaseIndex]
         ScrollView {
@@ -76,15 +74,13 @@ struct StarterTimerView: View {
         }
 #endif
 #endif
-        .onChange(of: snapshot, model.sessionChanged)
-        // The Live Activity's button may have paused or resumed the session while the app was away.
-        .onChange(of: scenePhase) { _, phase in
-            if phase == .active { model.restoreFromRecord() }
-        }
-        // A tap for starting, each new phase and finishing, unless haptics are off in Settings.
+        // A tap for starting, each new phase and finishing, unless haptics are off in Settings. The
+        // session's record, cues and Live Activity are the session's own business (TimerSession).
         .sensoryFeedback(trigger: snapshot, model.haptic)
-        // The screen stays on only while a session runs on this screen.
-        .onChange(of: model.isRunning, initial: true) { _, running in
+        // The screen stays on only while a session runs on this screen: asked for on appearing
+        // (a tab round trip brings the screen back with the same `isRunning`), released on leaving.
+        .onAppear { UIApplication.shared.isIdleTimerDisabled = model.isRunning }
+        .onChange(of: model.isRunning) { _, running in
             UIApplication.shared.isIdleTimerDisabled = running
         }
         .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
@@ -103,5 +99,6 @@ struct StarterTimerView: View {
 
 #Preview {
     NavigationStack { StarterTimerView() }
+        .environment(TimerSession(defaults: .standard))
 }
 #endif
