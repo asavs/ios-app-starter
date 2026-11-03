@@ -11,6 +11,9 @@ public protocol SessionActivityHost: AnyObject {
     func hasActivity(for sessionID: UUID) -> Bool
     /// The number of this app's activities, for tests and a UI-test readout.
     var activityCount: Int { get }
+    /// The sessions with an activity the system still holds, ended ones awaiting dismissal
+    /// included, so the controller can end the ones a new session or a launch shouldn't keep.
+    var sessionIDs: [UUID] { get }
     /// Start an activity. Throws when the system refuses (disabled, too many, in the background).
     func start(_ attributes: SessionActivityAttributes, state: SessionActivityState) throws
     func update(sessionID: UUID, state: SessionActivityState) async

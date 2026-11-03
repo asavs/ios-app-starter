@@ -60,6 +60,7 @@ private final class FakeActivityHost: SessionActivityHost {
     var updates: [SessionActivityState] = []
 
     var activityCount: Int { existing.count }
+    var sessionIDs: [UUID] { Array(existing) }
     func hasActivity(for sessionID: UUID) -> Bool { existing.contains(sessionID) }
     func start(_ attributes: SessionActivityAttributes, state: SessionActivityState) throws {
         existing.insert(attributes.sessionID)

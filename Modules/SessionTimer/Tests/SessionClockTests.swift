@@ -139,6 +139,23 @@ struct SessionClockTests {
         #expect(paused.snapshot(at: t0 + .seconds(999)).elapsed == .seconds(7))
     }
 
+    @Test func aFinishedSessionIsStoredAsNotRunning() {
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        var clock = SessionClock(plan: plan)
+        clock.start(at: t0)
+        let ranOut = clock.state(at: t0 + .seconds(500), date: date)
+        #expect(ranOut.isRunning == false)
+        #expect(ranOut.banked == .seconds(80))
+        let restored = SessionClock(plan: plan, state: ranOut, at: t0, date: date)
+        #expect(restored.snapshot(at: t0).status == .finished)
+        #expect(restored.snapshot(at: t0 + .seconds(999)).elapsed == .seconds(80))
+
+        var skipped = SessionClock(plan: plan)
+        skipped.start(at: t0)
+        for second in 1...5 { skipped.skipToNextPhase(at: t0 + .seconds(second)) } // Skipped to the end while running.
+        #expect(skipped.state(at: t0 + .seconds(6), date: date).isRunning == false)
+    }
+
     @Test func aStartDateInTheFutureCountsAsNow() {
         // The wall clock moved backwards between saving and restoring.
         let date = Date(timeIntervalSince1970: 1_700_000_000)
