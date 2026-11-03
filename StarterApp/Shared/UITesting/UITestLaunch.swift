@@ -28,6 +28,9 @@ struct UITestLaunch: Equatable {
 
     /// The tab to open (a `StarterTab` raw value, see `Identifiers.Tabs`); nil restores the stored selection.
     var tab: String?
+    /// The tabs the person chose, in order (`StarterTab` raw values); nil shows the stored choice or
+    /// the configuration's defaults. Unknown and unavailable names are skipped by the app.
+    var tabs: [String]?
     var onboarding: Onboarding = .completed
     var tips: Tips = .hidden
     /// A named store under `directory`, for a test that relaunches into the same records; nil keeps
@@ -39,9 +42,10 @@ struct UITestLaunch: Equatable {
     /// A module's own arguments, appended as given, such as `-attachments.fakeCamera`.
     var extra: [String] = []
 
-    init(tab: String? = nil, onboarding: Onboarding = .completed, tips: Tips = .hidden,
+    init(tab: String? = nil, tabs: [String]? = nil, onboarding: Onboarding = .completed, tips: Tips = .hidden,
          store: String? = nil, resets: Bool = true, extra: [String] = []) {
         self.tab = tab
+        self.tabs = tabs
         self.onboarding = onboarding
         self.tips = tips
         self.store = store
@@ -62,6 +66,7 @@ struct UITestLaunch: Equatable {
         var arguments = [Self.flag, "YES"]
         if resets { arguments += [Self.resetFlag, "YES"] }
         if let tab { arguments += ["-tabs.selected", tab] }
+        if let tabs { arguments += ["-tabs.chosen", tabs.joined(separator: ",")] }
         switch onboarding {
         case .shows: arguments += ["-onboarding.completedVersion", "0"]
         case .completed: arguments += ["-onboarding.completedVersion", "99"]
