@@ -30,6 +30,7 @@
 		54281E6C0901B28EA0C2E0AB /* StoreFixtureMigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDC3495AD7376EDFA2C7FEF /* StoreFixtureMigrationTests.swift */; };
 		591FD65C1477F79BD667A33B /* TimerPlanEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45ADA6D7788892C1B0D25777 /* TimerPlanEditor.swift */; };
 		5CA7774427638FAC1976CDD5 /* UITestLaunch.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBFB99742D9B26C934634E13 /* UITestLaunch.swift */; };
+		5CEDD02D4C69F6CDDEB02994 /* ResetJournalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83D2A1BE31AFB44B1ABC5154 /* ResetJournalTests.swift */; };
 		5EB40DD72AB95E7B7C111EF0 /* StarterAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD60802B2CF34042A128A2F5 /* StarterAppApp.swift */; };
 		5F2F3388F81AD734F133A184 /* StarterPrivacyNotice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28F75A176D52A286E2E4E17E /* StarterPrivacyNotice.swift */; };
 		604B783C86A6AC5B9F0FDBDF /* SessionTimer in Frameworks */ = {isa = PBXBuildFile; productRef = A864AA5ECBBD6DAD34E5AB65 /* SessionTimer */; };
@@ -56,6 +57,7 @@
 		9107E9765A60C6B4A906D978 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C993C2D64191E0D24B90D89 /* ContentView.swift */; };
 		949B7F99B198CA0893897F1E /* DurationPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 9E1CE64E7084D7884445BB73 /* DurationPicker */; };
 		98CCDFB1ADADEC649F5D7EE6 /* Database in Frameworks */ = {isa = PBXBuildFile; productRef = 9E9D6DF129F87F5B995DD574 /* Database */; };
+		9B0019F4B1FC8AD392C5AC50 /* ResetJournal.swift in Sources */ = {isa = PBXBuildFile; fileRef = CABB652738264E62B3FA1A4E /* ResetJournal.swift */; };
 		A1F5B6A9E9D0EE20D1350130 /* StarterWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = EAF2B2D99EE0BDA0183DD88F /* StarterWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A84DA15EE809FFE0CB3047CA /* Settings in Frameworks */ = {isa = PBXBuildFile; productRef = 5067BD6B2C63627070B6F3EE /* Settings */; };
 		A8C521C6837D605D12B9BCA1 /* StarterTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 386EE368F8097B8E57069E68 /* StarterTimerView.swift */; };
@@ -152,6 +154,7 @@
 		7DE0659B0536082E59441CE6 /* ContentCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentCoordinatorTests.swift; sourceTree = "<group>"; };
 		7E216E14C4A7B18659825B63 /* TimerControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerControls.swift; sourceTree = "<group>"; };
 		81985762715118C68FC81834 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		83D2A1BE31AFB44B1ABC5154 /* ResetJournalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResetJournalTests.swift; sourceTree = "<group>"; };
 		847739973FEEF3BA9ABCF8D3 /* AttachmentsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentsUITests.swift; sourceTree = "<group>"; };
 		8ABE3AA6D883F620276F55E9 /* StarterSchema.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterSchema.swift; sourceTree = "<group>"; };
 		8B3C3CC14404AF8DDFF6D038 /* SchemaMigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaMigrationTests.swift; sourceTree = "<group>"; };
@@ -169,6 +172,7 @@
 		BD60802B2CF34042A128A2F5 /* StarterAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterAppApp.swift; sourceTree = "<group>"; };
 		BFA89F2A8E976E6C61DE308B /* PlanTimes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanTimes.swift; sourceTree = "<group>"; };
 		BFC8C980EED17B2EF12538B5 /* ContentCoordination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentCoordination.swift; sourceTree = "<group>"; };
+		CABB652738264E62B3FA1A4E /* ResetJournal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResetJournal.swift; sourceTree = "<group>"; };
 		CB5374BCD950D688AEBE08F6 /* StarterDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterDefaults.swift; sourceTree = "<group>"; };
 		CCCFD8BF4D4A93A8CEFC3B41 /* FeatureChoicesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureChoicesTests.swift; sourceTree = "<group>"; };
 		D14AB0C531DF53AEA90F1409 /* ContentCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentCoordinator.swift; sourceTree = "<group>"; };
@@ -241,6 +245,7 @@
 			children = (
 				BFC8C980EED17B2EF12538B5 /* ContentCoordination.swift */,
 				D14AB0C531DF53AEA90F1409 /* ContentCoordinator.swift */,
+				CABB652738264E62B3FA1A4E /* ResetJournal.swift */,
 				0FB5F21D3A61FCAFA8826FFB /* SeedOnLaunch.swift */,
 				B5E1354F576A199BD797B8AB /* StarterAttachments.swift */,
 				3279CF8E5B2EB0BF1B518AD1 /* StarterDatabase.swift */,
@@ -334,6 +339,7 @@
 				654F33A3879B95B64B8167EA /* DeepLinkTests.swift */,
 				CCCFD8BF4D4A93A8CEFC3B41 /* FeatureChoicesTests.swift */,
 				D68DEDDAA061D6C3DF7C2653 /* LiveActivityEdgeCaseTests.swift */,
+				83D2A1BE31AFB44B1ABC5154 /* ResetJournalTests.swift */,
 				8B3C3CC14404AF8DDFF6D038 /* SchemaMigrationTests.swift */,
 				66791CC01A89795A62DB698F /* SessionRecordTests.swift */,
 				505187150B7A25E42E197DFD /* StarterAppTests.swift */,
@@ -531,6 +537,7 @@
 				D7B5AD8FB970F8134A61427B /* DeepLinkTests.swift in Sources */,
 				214286E34115BE61B6D6EE3E /* FeatureChoicesTests.swift in Sources */,
 				6711644DE8F983C08797D76C /* LiveActivityEdgeCaseTests.swift in Sources */,
+				5CEDD02D4C69F6CDDEB02994 /* ResetJournalTests.swift in Sources */,
 				CFC0109DF2AFE60293FF85E5 /* SchemaMigrationTests.swift in Sources */,
 				25AA2FC8C0DFFD1D29FB8991 /* SessionRecordTests.swift in Sources */,
 				F24148395D75C0C443626A30 /* StarterAppTests.swift in Sources */,
@@ -570,6 +577,7 @@
 				527DC9DE29FEB0113E448DDD /* Identifiers.swift in Sources */,
 				E9F33202AB227077B286A4DE /* NextLaunchResetButton.swift in Sources */,
 				E87C1035C99E480FA66FA58C /* PlanTimes.swift in Sources */,
+				9B0019F4B1FC8AD392C5AC50 /* ResetJournal.swift in Sources */,
 				625C7E6796405F7F86B15417 /* SeedOnLaunch.swift in Sources */,
 				C4B94BFD78A83E153638BE0C /* SessionActivityReadout.swift in Sources */,
 				F7BD763857F86DA4851494F1 /* SessionRecord.swift in Sources */,

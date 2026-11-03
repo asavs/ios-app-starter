@@ -1,6 +1,6 @@
 # Library and Notes: migration and file ownership
 
-Built as: pending. Research only. Checked 2026-11-02 against iOS 17 API availability; no migration or runtime verification was performed.
+Built as: `StarterSchemaV3` and `StarterSchemaText2` in StarterApp/StarterApp/Data/StarterSchema.swift, `ContentCoordinator` for ownership and cleanup, `ResetJournal` for Erase Local Data, with the authentic V1 and V2 fixtures under StarterApp/StarterAppTests/Fixtures (2026-11-03, task ios-125.3; journal entry of that date). The rest of this document is the research as written on 2026-11-02 against iOS 17 API availability, before that implementation.
 
 Recommend an additive next schema, app-owned UUID references from Notes to Library, and one app coordinator for record mutations and file cleanup. Preserve shipped V1 and V2, including their attachment encoding and seed markers. Commit record removal before deleting an original; persist enough cleanup intent to retry after a crash. Hiding a tab changes navigation only.
 
