@@ -42,6 +42,23 @@ fi
 # collide. Serial by default: measured on 2026-11-01, two clones ran each test about twice as slowly on
 # a Mac and never came up on the hosted runner (docs/ci.md), so the switch is for the next attempt.
 workers="${IOS_TEST_WORKERS:-1}"
+
+# IOS_TEST_LANE picks the test classes: `shell` (the unit tests, the shell, theme and deep links, and
+# onboarding) or `features` (the Timer, Attachments and Settings classes); unset or `all` runs everything.
+# CI runs the two lanes as separate jobs, each with its own simulator, since one runner takes over 25
+# minutes for the whole suite (ios-6dd.13). The classes are listed here so the workflow needn't know them.
+lane_settings=()
+case "${IOS_TEST_LANE:-all}" in
+  shell)
+    lane_settings=(-only-testing:StarterAppTests -only-testing:StarterAppUITests/StarterAppUITests
+      -only-testing:StarterAppUITests/OnboardingUITests) ;;
+  features)
+    lane_settings=(-only-testing:StarterAppUITests/TimerUITests -only-testing:StarterAppUITests/AttachmentsUITests
+      -only-testing:StarterAppUITests/SettingsUITests) ;;
+  all) ;;
+  *) echo "test-ios: unknown IOS_TEST_LANE '$IOS_TEST_LANE' (shell, features or all)" >&2; exit 2 ;;
+esac
+printf 'Test lane: %s\n' "${IOS_TEST_LANE:-all}"
 parallel_settings=(-parallel-testing-enabled NO)
 if [[ "$workers" =~ ^[0-9]+$ ]] && (( workers > 1 )); then
   parallel_settings=(-parallel-testing-enabled YES -parallel-testing-worker-count "$workers")
@@ -62,6 +79,7 @@ xcodebuild \
   -resultBundlePath "$report_dir/Tests.xcresult" \
   -skip-testing:StarterAppUITests/StarterAppUITests/testLaunchPerformance \
   -skip-testing:StarterAppUITests/StarterAppUITestsLaunchTests \
+  ${lane_settings[@]+"${lane_settings[@]}"} \
   "${parallel_settings[@]}" \
   -test-timeouts-enabled YES \
   -default-test-execution-time-allowance 300 \
