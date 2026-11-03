@@ -133,7 +133,11 @@ targets:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - StarterApp/StarterAppTests
+      - path: StarterApp/StarterAppTests
+        # Fixtures/ holds authentic stores the migration tests read from the source tree (#filePath),
+        # not from the bundle: they are neither sources nor resources.
+        excludes:
+          - Fixtures/**
     dependencies:
       - target: StarterApp
     settings:
