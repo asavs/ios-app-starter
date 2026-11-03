@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-02 — Live Activity edge cases: the controller decided before its queue ran, and the screen forgot the session
+
+- **Tools:** Xcode 27.0, iPhone 17 / iOS 27.0 simulator, `swift test` on the host. Task `ios-r7k` and Asa's request for an edge-case suite after the first look at the island on the phone. Findings and how to run: docs/research/live-activity-edge-cases.md.
+- **Symptom (confirmed):** after the system killed the app in the background, the Timer screen showed a fresh session beside the activity the launch had just updated, and Start made a second session. The setting turned off then on again brought no activity back. The island's pause button did nothing on an open screen. A finished session's card sat beside a new session's island.
+- **Cause (confirmed):** the controller asked ActivityKit whether an activity existed when a change was queued, not when the queued call ran, so an end still in the queue made the next change an update to nothing. Lookups by session identifier never ended other sessions' activities. `TimerScreenModel` never read the stored record at init. The intent reached the screen only through a scene phase change. A finished clock kept its start instant in the stored state, so it read as running.
+- **Fix:** every ActivityKit call decides inside the one queue; `SessionActivityHost.sessionIDs` and `endOthers(than:)` end the others before a start and on launch; `adoptStoredSession()` in the model's init; a `recordChanged` callback from the intent to the screen; a finished session stores as its full duration, not running. 28 new tests across the module, the clock and the app; all green. A 150-tick test shows zero ActivityKit calls and zero record writes within a phase.
+- **Remaining (by design):** a phase that ends while the app is suspended goes stale until the app runs again; the island says so. The routes out (push updates, background audio, scheduled notifications) are in docs/research/live-activities.md and need a product decision. A finished card lasts 15 minutes from when the app learns of the finish, not from the finish.
+
 ## 2026-11-02 — Feature tabs as useful app screens
 
 - **Task and tools:** module round two, GitHub CLI, Beads 1.3.1, source inspection of main at `101cb28`. Product planning only; no app or account changes.

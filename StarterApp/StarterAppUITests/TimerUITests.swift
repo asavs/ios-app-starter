@@ -196,4 +196,45 @@ final class TimerUITests: StarterUITestCase {
         XCTAssertTrue(waitUntil(primary, "label == 'Start'"))
         XCTAssertTrue(waitUntil(count, "label == '0'", timeout: 10), "Resetting ends the activity")
     }
+
+    /// The Live Activity setting changed while a session runs: off removes the activity at once, on
+    /// brings it back at once, without waiting for a pause or the next phase.
+    @MainActor
+    func testLiveActivitySettingMidSession() throws {
+        let app = XCUIApplication()
+        app.launch(UITestLaunch(tab: Identifiers.Tabs.timer,
+                                extra: ["-timer.intervals", "600,10,3", "-sessionActivity.readout", "YES"]))
+        let primary = element(app, Identifiers.Timer.primary)
+        try requireModuleUI("SessionTimer", appeared: primary.waitForExistence(timeout: 10), "no Start button on the Timer tab")
+        let count = element(app, Identifiers.Timer.activityCount)
+        try requireModuleUI("SessionActivity", appeared: count.waitForExistence(timeout: 5), "no Live Activity readout")
+        primary.tap()
+        XCTAssertTrue(waitUntil(primary, "label == 'Pause'"))
+        if !waitUntil(count, "label == '1'", timeout: 10) {
+            throw XCTSkip("Live Activities are not available in this environment; the phone check covers them")
+        }
+
+        // A ten-minute work phase: nothing else changes the session while the setting does.
+        let settingsTab = tabButton(in: app, Identifiers.Tabs.settings, title: "Settings")
+        try requireModuleUI("TabShell", appeared: settingsTab.waitForExistence(timeout: 5), "no Settings tab")
+        let timerTab = tabButton(in: app, Identifiers.Tabs.timer, title: "Timer")
+        let toggle = app.switches[ModuleIdentifiers.SessionActivity.enabled]
+
+        settingsTab.tap()
+        XCTAssertTrue(scroll(app, to: toggle), "Settings should show the Live Activity toggle")
+        XCTAssertTrue(waitUntil(toggle, "value == '1'"), "The setting starts on")
+        flip(app, toggle)
+        timerTab.tap()
+        XCTAssertTrue(waitUntil(count, "label == '0'", timeout: 10), "Turning the setting off removes the activity at once")
+        attach(name: "live-activity-setting-off")
+
+        settingsTab.tap()
+        flip(app, toggle)
+        timerTab.tap()
+        XCTAssertTrue(waitUntil(count, "label == '1'", timeout: 10), "Turning the setting on shows the running session at once")
+        XCTAssertEqual(primary.label, "Pause", "The session kept running throughout")
+        attach(name: "live-activity-setting-on")
+        element(app, Identifiers.Timer.reset).tap()
+        XCTAssertTrue(waitUntil(count, "label == '0'", timeout: 10))
+    }
 }

@@ -86,32 +86,17 @@ final class SettingsUITests: StarterUITestCase {
         let sound = app.switches[ModuleIdentifiers.Cues.sound]
         XCTAssertTrue(sound.waitForExistence(timeout: 5), "The row should push the Sounds & Haptics screen")
         let silentMode = app.switches[ModuleIdentifiers.Cues.silentMode]
-        // A Toggle's identifier lands on a switch spanning the row, whose center is the label; tap
-        // the switch inside it. The section sits near the floating tab bar, so keep it clear first.
-        func flip(_ toggle: XCUIElement) {
-            let before = toggle.value as? String ?? ""
-            XCTAssertTrue(scroll(app, to: toggle))
-            // The section sits near the floating tab bar; keep the row clear of it.
-            if toggle.frame.maxY > app.windows.firstMatch.frame.maxY - 120 { app.swipeUp() }
-            // Let the push or the swipe finish first: a tap mid-animation lands elsewhere, and a retry
-            // after a slow tap would flip it back. Then tap the knob on the row's trailing edge by
-            // coordinate; asking the inner switch whether it's hittable fails the test outright while
-            // the list settles ("Activation point invalid"), as it did on the hosted runner.
-            XCTAssertTrue(waitUntilSettled(toggle), "\(toggle) should stop moving")
-            toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
-            XCTAssertTrue(waitUntil(toggle, "value != '\(before)'", timeout: 10), "\(toggle) should flip")
-        }
         XCTAssertTrue(waitUntil(sound, "value == '1'"), "Sounds start on in a fresh suite")
         XCTAssertTrue(silentMode.isEnabled)
 
-        flip(sound)
+        flip(app, sound)
         XCTAssertTrue(waitUntil(sound, "value == '0'"))
         XCTAssertTrue(waitUntil(silentMode, "isEnabled == false"), "Silent mode only applies with sounds on")
 
         let haptics = app.switches[ModuleIdentifiers.Cues.haptics]
         XCTAssertTrue(haptics.isEnabled, "Haptics don't depend on sounds")
         XCTAssertTrue(waitUntil(haptics, "value == '1'"), "Haptics start on in a fresh suite")
-        flip(haptics)
+        flip(app, haptics)
         XCTAssertTrue(waitUntil(haptics, "value == '0'"))
         attach(name: "cues-settings-off")
         app.terminate()
