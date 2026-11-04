@@ -55,13 +55,7 @@
 		8EBA48B932ADC8BD90163360 /* StarterWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C09D1A5A8C7C5E48E54E2A6 /* StarterWidgets.swift */; };
 		90E97DEAA3BB1D3DC6175446 /* ContentCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE0659B0536082E59441CE6 /* ContentCoordinatorTests.swift */; };
 		9107E9765A60C6B4A906D978 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C993C2D64191E0D24B90D89 /* ContentView.swift */; };
-<<<<<<< HEAD
-		949B7F99B198CA0893897F1E /* DurationPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 9E1CE64E7084D7884445BB73 /* DurationPicker */; };
-		98CCDFB1ADADEC649F5D7EE6 /* Database in Frameworks */ = {isa = PBXBuildFile; productRef = 9E9D6DF129F87F5B995DD574 /* Database */; };
 		9B0019F4B1FC8AD392C5AC50 /* ResetJournal.swift in Sources */ = {isa = PBXBuildFile; fileRef = CABB652738264E62B3FA1A4E /* ResetJournal.swift */; };
-		A1F5B6A9E9D0EE20D1350130 /* StarterWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = EAF2B2D99EE0BDA0183DD88F /* StarterWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-=======
->>>>>>> origin/main
 		A84DA15EE809FFE0CB3047CA /* Settings in Frameworks */ = {isa = PBXBuildFile; productRef = 5067BD6B2C63627070B6F3EE /* Settings */; };
 		A8C521C6837D605D12B9BCA1 /* StarterTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 386EE368F8097B8E57069E68 /* StarterTimerView.swift */; };
 		AA85815535849E1F54B586D4 /* DeepLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCAAD5B3D9897A4CFA6CD55C /* DeepLink.swift */; };
