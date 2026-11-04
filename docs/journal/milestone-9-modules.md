@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-04 — Pull requests test the demo configuration only
+
+- **Tools:** GitHub-hosted macOS runner (`xcode-27`). Task `ios-6dd.13`; Asa chose this over more trimming while the queue was hours deep.
+- **Decision:** a pull request runs the demo configuration's two lanes, the one module-tests job and the no-modules build: two simulator lanes instead of eight. The demo enables every module, so its lanes run every test the minimal template's lanes would; the minimal and pocket-notes configurations run on every push to main and on dispatch, where a problem in the minimal template still fails the merge commit's run within the hour. The icon render and the social-preview artifact come from whichever configuration's shell lane runs, so a main run keeps `ios-test-results-starter-shell` and a pull request produces the demo's.
+- **Cost:** a regression that only shows in the minimal template (a `canImport` guard, say) is caught on main rather than on the pull request. The no-modules lane keeps the template building without modules on every pull request.
+- **Verified:** the workflow parses; the Python suite holds. The evidence is this change's own pull-request run (two `test (starter-app-demo, <lane>)` jobs, `module-tests`, `no-modules`) and the push run on main after it (the minimal and pocket-notes configurations too), read with `scripts/review_ci.py`.
+- **Remaining:** a second runner is the lever that none of this touches (ios-j3t).
+
 ## 2026-11-03 — The welcome header stops floating: content starts at the top of the safe area
 
 - **Tools:** Xcode 27.0; iPhone 17 (Dynamic Island) and iPad Air 11-inch (M4) on iOS 27.0, iPhone 13 mini (notch) on its own runtime, all local simulators. Task `ios-s5.16`.
