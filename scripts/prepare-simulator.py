@@ -31,12 +31,8 @@ subprocess.run(['xcrun', 'simctl', 'bootstatus', device_id, '-b'], check=True)
 # Booted isn't settled: on a simulator booted seconds earlier, the UI test runner twice died in XCTest's
 # stall detector while bootstrapping ("operation never finished bootstrapping", abort in XCTWaiter
 # handleStalledWait), locally and on the hosted runner (2026-11-03, ios-6dd.13); the same simulators
-# passed every time once they had been up for half a minute. Launching and quitting a system app
-# exercises SpringBoard's launch path, then a short wait lets the daemons finish coming up.
-subprocess.run(['xcrun', 'simctl', 'launch', device_id, 'com.apple.Preferences'], check=False,
-               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-time.sleep(5)
-subprocess.run(['xcrun', 'simctl', 'terminate', device_id, 'com.apple.Preferences'], check=False,
-               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+# passed every time once they had been up for half a minute. A fixed wait, nothing that can hang: a
+# first version also launched and quit a system app here, and with twelve module jobs loading the
+# runners that launch hung past the step's five-minute limit (2026-11-04).
 time.sleep(int(os.environ.get('IOS_SIMULATOR_SETTLE_SECONDS', '20')))
 print('Simulator settled', flush=True)
