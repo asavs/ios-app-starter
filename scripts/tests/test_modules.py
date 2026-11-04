@@ -133,6 +133,16 @@ class ProjectReferenceTests(unittest.TestCase):
         self.assertEqual(enabled, ["Theme"])
         self.assertEqual(remote, ["https://example.invalid/x", "Other"])
 
+
+    def test_enabled_means_linked_by_the_app_not_by_an_extension(self):
+        objects = project(products=("Theme", "SessionActivity"))
+        objects["APP"] = {"isa": "PBXNativeTarget", "productType": "com.apple.product-type.application",
+                          "packageProductDependencies": ["DEP0"]}
+        objects["EXT"] = {"isa": "PBXNativeTarget", "productType": "com.apple.product-type.app-extension",
+                          "packageProductDependencies": ["DEP1"]}
+        enabled, remote = check_modules.check_project(objects, {"Theme", "SessionActivity"}, self.project_dir, self.root)
+        self.assertEqual(enabled, ["Theme"], "The widget's own module isn't enabled for the app")
+        self.assertEqual(remote, [])
     def test_project_minimum_is_read(self):
         self.assertEqual(check_modules.project_minimum(project(minimum="18.0")), "18.0")
 

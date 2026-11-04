@@ -2,6 +2,16 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-03 — The timer leaves the default template for the demo overlay
+
+- **Tools:** Xcode 27.0, iPhone 17 / iOS 27.0 simulator. Task `ios-6dd.10`, after the registry (#152) made a missing feature a normal state of the shell.
+- **Decision:** `project.yml` keeps the essentials (TemplateVersion, Theme, Onboarding, Settings, TabShell, Cues, Database, Attachments); `examples/starter-app-demo.yml` restates them and adds SessionTimer, TimerRing, DurationPicker, SessionActivity and the StarterWidgets extension, since an overlay replaces the whole dependency list. SessionActivity and the widget go with the timer: the Live Activity shows a timer session and nothing else. Cues stays, as the task asked, for its Settings section.
+- **Finding (confirmed):** `check-modules.py` counted every package product dependency in the project, so the widget target's SessionActivity made the default build look as if it had the module, and `requireModuleUI` would have failed a test instead of skipping it. It now counts the application target's dependencies.
+- **Finding:** nothing in the app needed a change. Every timer file was already under `#if canImport`, `StarterFeature` reports the timer unavailable and the choice normalizes it away, and the UI tests skip through `requireModuleUI` where the build has no timer. The default app shows Home and Settings.
+- **Decision (CI):** pull requests now test two configurations, `starter` (minimal; its lanes are short since the timer and attachment-on-preset tests skip) and `starter-app-demo` (everything), so the timer stays tested on every change. Dispatch runs can still add `pocket-notes`.
+- **Verified:** on iPhone 17 / iOS 27.0 through `scripts/test-ios.sh`: default template, shell lane 22 unit tests and 9 UI tests (the reveal test skips its timer half), features lane with every `TimerUITests` case skipped and the Attachments and Settings classes green; demo overlay, features lane 12 UI tests green including all of `TimerUITests`. `check-modules.py` reports the default as the eight essentials once "enabled" means linked by the app (the widget target still depends on SessionActivity).
+- **Remaining:** the Val Time port (`ios-fx8`) enables the four modules by tag; a generated app that wants the timer copies the demo's dependency list.
+
 ## 2026-11-03 — The timer session moves above its screen
 
 - **Tools:** Xcode 27.0, iPhone 17 / iOS 27.0 simulator, `swift test` on the host. Task `ios-125.2`, slice 2 of docs/design/feature-tabs.md, from the research in docs/research/session-lifetime.md; later commits on codex/session-lifetime (draft #150), the research kept as the first.

@@ -17,12 +17,12 @@
 		264FE5A08BFF4B78E4DBAC2F /* Theme in Frameworks */ = {isa = PBXBuildFile; productRef = 144F0453F5E7CB7218BACDCE /* Theme */; };
 		27BD4EEA00899CDC48EEB0CD /* TimerSession+Presets.swift in Sources */ = {isa = PBXBuildFile; fileRef = F59A7DFA28BB431E40109A90 /* TimerSession+Presets.swift */; };
 		2AA6E3D825A17D7F9B127354 /* TimerPresetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 225E72C4DAD358F8151F4D58 /* TimerPresetsView.swift */; };
-		338C33E092092319761BC3EE /* TimerRing in Frameworks */ = {isa = PBXBuildFile; productRef = 9045CC256BB4DEC8AB599588 /* TimerRing */; };
+		338C33E092092319761BC3EE /* Database in Frameworks */ = {isa = PBXBuildFile; productRef = 9E9D6DF129F87F5B995DD574 /* Database */; };
 		4373411B683AC6A1449A225B /* StarterTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9218B03F8BC10E8E6907F4D3 /* StarterTab.swift */; };
 		46C0B1C171E433E997E37D77 /* StarterSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C1F23018F09539BF2772719 /* StarterSettingsView.swift */; };
 		4B48C5757CC208A69EF31E9F /* StarterFeature.swift in Sources */ = {isa = PBXBuildFile; fileRef = 529DB17EF12E4084E08C98EC /* StarterFeature.swift */; };
 		4BA16119ACA346106FCF0090 /* Identifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBF95A0DFA12EB1B7C48E9D9 /* Identifiers.swift */; };
-		4C1A198402FFB26972BB5E9E /* Cues in Frameworks */ = {isa = PBXBuildFile; productRef = 018B4E5F2D881F40E68BD1EB /* Cues */; };
+		4C1A198402FFB26972BB5E9E /* Attachments in Frameworks */ = {isa = PBXBuildFile; productRef = 5CACC947BADB79A7E9F1E387 /* Attachments */; };
 		509C4A5A3106C2DF698A764D /* TimerPresetAttachmentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F238A08E01C45EEE7FD3B5B7 /* TimerPresetAttachmentsView.swift */; };
 		512371249DBA34D74BBE7469 /* StarterDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3279CF8E5B2EB0BF1B518AD1 /* StarterDatabase.swift */; };
 		51244ADB69B4894AE62919AD /* StarterAcknowledgements.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFD333462B8CE881849236A /* StarterAcknowledgements.swift */; };
@@ -31,7 +31,7 @@
 		5CA7774427638FAC1976CDD5 /* UITestLaunch.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBFB99742D9B26C934634E13 /* UITestLaunch.swift */; };
 		5EB40DD72AB95E7B7C111EF0 /* StarterAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD60802B2CF34042A128A2F5 /* StarterAppApp.swift */; };
 		5F2F3388F81AD734F133A184 /* StarterPrivacyNotice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28F75A176D52A286E2E4E17E /* StarterPrivacyNotice.swift */; };
-		604B783C86A6AC5B9F0FDBDF /* SessionTimer in Frameworks */ = {isa = PBXBuildFile; productRef = A864AA5ECBBD6DAD34E5AB65 /* SessionTimer */; };
+		604B783C86A6AC5B9F0FDBDF /* Cues in Frameworks */ = {isa = PBXBuildFile; productRef = 018B4E5F2D881F40E68BD1EB /* Cues */; };
 		6076E2F52C83AA1D7B4CE8E0 /* StarterLocalData.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA62E19C04CBCC9D8C01949 /* StarterLocalData.swift */; };
 		623273AC4B57F76DFB0D0E4F /* OnboardingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CFFEDEBFC317C598BC30DFF /* OnboardingUITests.swift */; };
 		625C7E6796405F7F86B15417 /* SeedOnLaunch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FB5F21D3A61FCAFA8826FFB /* SeedOnLaunch.swift */; };
@@ -51,9 +51,6 @@
 		8ACBD7534E01CDE5045806DD /* Onboarding in Frameworks */ = {isa = PBXBuildFile; productRef = 62CD511B7596E8CDAA0489CD /* Onboarding */; };
 		8EBA48B932ADC8BD90163360 /* StarterWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C09D1A5A8C7C5E48E54E2A6 /* StarterWidgets.swift */; };
 		9107E9765A60C6B4A906D978 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C993C2D64191E0D24B90D89 /* ContentView.swift */; };
-		949B7F99B198CA0893897F1E /* DurationPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 9E1CE64E7084D7884445BB73 /* DurationPicker */; };
-		98CCDFB1ADADEC649F5D7EE6 /* Database in Frameworks */ = {isa = PBXBuildFile; productRef = 9E9D6DF129F87F5B995DD574 /* Database */; };
-		A1F5B6A9E9D0EE20D1350130 /* StarterWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = EAF2B2D99EE0BDA0183DD88F /* StarterWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A84DA15EE809FFE0CB3047CA /* Settings in Frameworks */ = {isa = PBXBuildFile; productRef = 5067BD6B2C63627070B6F3EE /* Settings */; };
 		A8C521C6837D605D12B9BCA1 /* StarterTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 386EE368F8097B8E57069E68 /* StarterTimerView.swift */; };
 		AA85815535849E1F54B586D4 /* DeepLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCAAD5B3D9897A4CFA6CD55C /* DeepLink.swift */; };
@@ -67,14 +64,12 @@
 		D10ED263A335E0800B3E1C26 /* StarterAppUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 208BC1917057466CB928A5D6 /* StarterAppUITestsLaunchTests.swift */; };
 		D7B5AD8FB970F8134A61427B /* DeepLinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654F33A3879B95B64B8167EA /* DeepLinkTests.swift */; };
 		DB0A60D9C1DBDFA33AF622CE /* FeatureChoices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3341E6998B8082A764280159 /* FeatureChoices.swift */; };
-		DBEEFF410935B0FF9ADC4388 /* Attachments in Frameworks */ = {isa = PBXBuildFile; productRef = 5CACC947BADB79A7E9F1E387 /* Attachments */; };
 		DC11005178A7152DF9C2FACA /* SettingsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF382ADC5AD4A8BDE903D252 /* SettingsUITests.swift */; };
 		E04A7ABC0EDD9890DEE5AFDC /* TimerSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9210887AEF9DA46866504BE1 /* TimerSession.swift */; };
 		E87C1035C99E480FA66FA58C /* PlanTimes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFA89F2A8E976E6C61DE308B /* PlanTimes.swift */; };
 		E9F33202AB227077B286A4DE /* NextLaunchResetButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CCD6ADA8856F313C21A74C1 /* NextLaunchResetButton.swift */; };
 		EEA850E7281C6DDE300A37C9 /* TimerPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7693B07DAD1FFA3DD0B95C56 /* TimerPlan.swift */; };
 		F24148395D75C0C443626A30 /* StarterAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505187150B7A25E42E197DFD /* StarterAppTests.swift */; };
-		F576DA027BF92652C411D15E /* SessionActivity in Frameworks */ = {isa = PBXBuildFile; productRef = B5AA2D4D2F2FCA6EDE3DC1E2 /* SessionActivity */; };
 		F57D5EA591103D88E4ECC237 /* StarterUITestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = A39D3A06D15BC609EAE52C30 /* StarterUITestCase.swift */; };
 		F7BD763857F86DA4851494F1 /* SessionRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBBA9B19281BD46FC1E3F9BC /* SessionRecord.swift */; };
 		F942D2BCB5F148646A399C49 /* UITestLaunch.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBFB99742D9B26C934634E13 /* UITestLaunch.swift */; };
@@ -88,13 +83,6 @@
 			remoteGlobalIDString = 77BB0999D503BC959EC52252;
 			remoteInfo = StarterApp;
 		};
-		5258D5A9FEC05A0707A7B815 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = F8848B27828023B13E084F5D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = CD858EB89707ED5255A7041C;
-			remoteInfo = StarterWidgets;
-		};
 		9F616BDA4186C9472E6504BD /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = F8848B27828023B13E084F5D /* Project object */;
@@ -103,20 +91,6 @@
 			remoteInfo = StarterApp;
 		};
 /* End PBXContainerItemProxy section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		A794E7416264A3CA64347FB0 /* Embed Foundation Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-				A1F5B6A9E9D0EE20D1350130 /* StarterWidgets.appex in Embed Foundation Extensions */,
-			);
-			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		0A5864471EC8F0242C38AA7E /* StarterTabsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarterTabsView.swift; sourceTree = "<group>"; };
@@ -198,13 +172,9 @@
 				8ACBD7534E01CDE5045806DD /* Onboarding in Frameworks */,
 				A84DA15EE809FFE0CB3047CA /* Settings in Frameworks */,
 				71EC3E811114F8825AC06772 /* TabShell in Frameworks */,
-				604B783C86A6AC5B9F0FDBDF /* SessionTimer in Frameworks */,
-				338C33E092092319761BC3EE /* TimerRing in Frameworks */,
-				4C1A198402FFB26972BB5E9E /* Cues in Frameworks */,
-				949B7F99B198CA0893897F1E /* DurationPicker in Frameworks */,
-				98CCDFB1ADADEC649F5D7EE6 /* Database in Frameworks */,
-				F576DA027BF92652C411D15E /* SessionActivity in Frameworks */,
-				DBEEFF410935B0FF9ADC4388 /* Attachments in Frameworks */,
+				604B783C86A6AC5B9F0FDBDF /* Cues in Frameworks */,
+				338C33E092092319761BC3EE /* Database in Frameworks */,
+				4C1A198402FFB26972BB5E9E /* Attachments in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -358,12 +328,10 @@
 				EAFBBB32089F22956111FCEB /* Sources */,
 				8166C6AFBB9034F893D9CE6E /* Resources */,
 				5F9B28CBE6858092418A586E /* Frameworks */,
-				A794E7416264A3CA64347FB0 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				EAA2E1BF5E19B16392EFA700 /* PBXTargetDependency */,
 			);
 			name = StarterApp;
 			packageProductDependencies = (
@@ -372,12 +340,8 @@
 				62CD511B7596E8CDAA0489CD /* Onboarding */,
 				5067BD6B2C63627070B6F3EE /* Settings */,
 				E9C8F87566DEC9C8980FE2CD /* TabShell */,
-				A864AA5ECBBD6DAD34E5AB65 /* SessionTimer */,
-				9045CC256BB4DEC8AB599588 /* TimerRing */,
 				018B4E5F2D881F40E68BD1EB /* Cues */,
-				9E1CE64E7084D7884445BB73 /* DurationPicker */,
 				9E9D6DF129F87F5B995DD574 /* Database */,
-				B5AA2D4D2F2FCA6EDE3DC1E2 /* SessionActivity */,
 				5CACC947BADB79A7E9F1E387 /* Attachments */,
 			);
 			productName = StarterApp;
@@ -596,11 +560,6 @@
 			isa = PBXTargetDependency;
 			target = 77BB0999D503BC959EC52252 /* StarterApp */;
 			targetProxy = 9F616BDA4186C9472E6504BD /* PBXContainerItemProxy */;
-		};
-		EAA2E1BF5E19B16392EFA700 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = CD858EB89707ED5255A7041C /* StarterWidgets */;
-			targetProxy = 5258D5A9FEC05A0707A7B815 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -978,25 +937,9 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = Onboarding;
 		};
-		9045CC256BB4DEC8AB599588 /* TimerRing */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = TimerRing;
-		};
-		9E1CE64E7084D7884445BB73 /* DurationPicker */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = DurationPicker;
-		};
 		9E9D6DF129F87F5B995DD574 /* Database */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Database;
-		};
-		A864AA5ECBBD6DAD34E5AB65 /* SessionTimer */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = SessionTimer;
-		};
-		B5AA2D4D2F2FCA6EDE3DC1E2 /* SessionActivity */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = SessionActivity;
 		};
 		E9C8F87566DEC9C8980FE2CD /* TabShell */ = {
 			isa = XCSwiftPackageProductDependency;
