@@ -46,6 +46,7 @@ struct StarterAppApp: App {
                 root
                     .modifier(Appearance())
                     .modifier(SeedOnLaunch())
+                    .modifier(ContentOwnership())
             }
             .defaultAppStorage(StarterDefaults.store)
 #else
@@ -80,6 +81,18 @@ struct StarterAppApp: App {
         StarterTabsView()
 #else
         ContentView()
+#endif
+    }
+}
+
+/// Puts the content coordinator in the environment and runs pending file deletions, when the
+/// Database and Attachments modules are enabled.
+private struct ContentOwnership: ViewModifier {
+    func body(content: Content) -> some View {
+#if canImport(Database) && canImport(Attachments)
+        content.modifier(ContentCoordination())
+#else
+        content
 #endif
     }
 }
