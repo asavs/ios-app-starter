@@ -10,6 +10,14 @@ Entries for the module library mechanism, the first-round modules, their lanes a
 - **Cost:** the module job runs longer than any single matrix lane did, for the same test coverage with one build instead of twelve; the artifact is one `module-test-results-all`.
 - **Verified:** `bash scripts/test-module.sh all` locally on iPhone 17 / iOS 27.0: one build, every module test target green (twelve result bundles in one run, 160 tests). Python suite and the identifier contract hold. Hosted evidence is this change's own run and the ones after it.
 - **Remaining:** the ten-minute aim for the required lanes; trimming the slowest UI tests.
+## 2026-11-04 — Let the simulator settle before the UI test runner starts
+
+- **Tools:** GitHub-hosted macOS runner (`xcode-27`), Xcode 27.0; the Mac's simulators. Task `ios-6dd.13`.
+- **Symptom (confirmed):** the UI test runner died while preparing to run tests ("Early unexpected exit, operation never finished bootstrapping", signal abrt), with XCTest's stall detector in the crash report (`XCTWaiter handleStalledWait` then abort). Once on #155's starter features lane while the three other lanes of the same run passed, and twice locally on an iPad Air and an iPhone 13 mini booted seconds before the run, while the long-booted iPhone 17 passed. The same two simulators passed every time after thirty seconds up.
+- **Fix:** `scripts/prepare-simulator.py` no longer stops at `bootstatus -b`: it waits twenty seconds (`IOS_SIMULATOR_SETTLE_SECONDS`). Cheap against a 25-minute lane, and the evidence above is correlation on three occurrences, not a documented cause.
+- **Finding (confirmed):** a first version also launched and quit a system app after the boot, to exercise SpringBoard's launch path; on the hosted runner, with twelve module-test jobs preparing simulators at once, `simctl launch` hung in three of them past the step's five-minute limit. Nothing in this step may block without a bound.
+- **Verified:** the script runs locally against the iPhone 17 simulator; the hosted evidence is the runs after this lands, read with `scripts/review_ci.py`, and whether the signature recurs.
+- **Remaining:** if it recurs with the settle in place, the next diagnostic is the runner's crash report from the lane's diagnostics artifact rather than a longer wait.
 
 ## 2026-11-03 — Content schema and ownership: two store histories, one coordinator, a journaled erase
 
