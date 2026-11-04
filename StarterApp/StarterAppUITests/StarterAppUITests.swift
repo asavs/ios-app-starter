@@ -40,6 +40,67 @@ final class StarterAppUITests: StarterUITestCase {
         attach(name: "tabs-restored")
     }
 
+    /// The welcome header sits at the top of the safe area: right under the navigation title when the
+    /// shell shows one, right under the status bar otherwise, plus the layout's own padding. It used to
+    /// float to the middle of the screen (ios-s5.16). Measured in portrait and landscape on whatever
+    /// device the lane runs; `scripts/test-ios.sh` takes `IOS_TEST_DESTINATION` for the other classes.
+    @MainActor
+    func testHeaderSitsAtTheTopOfTheSafeArea() throws {
+        try measureHeader(UITestLaunch.tab(Identifiers.Tabs.welcome), size: "default")
+    }
+
+    /// The same at the largest accessibility text size: the content starts at the top and scrolls,
+    /// instead of sliding under the chrome or growing a false inset.
+    @MainActor
+    func testHeaderSitsAtTheTopOfTheSafeAreaAtTheLargestTextSize() throws {
+        try measureHeader(UITestLaunch(tab: Identifiers.Tabs.welcome, extra: UITestLaunch.largestTextSize), size: "largest")
+    }
+
+    @MainActor
+    private func measureHeader(_ scenario: UITestLaunch, size: String) throws {
+        XCUIDevice.shared.orientation = .portrait // A previous test may have left the device rotated.
+        let app = XCUIApplication()
+        app.launch(scenario)
+        let header = app.staticTexts["Hello, world!"]
+        XCTAssertTrue(header.waitForExistence(timeout: 10), "The welcome header should show")
+        // Above the header: the 16-point padding, the decorative globe (hidden from the hierarchy; about
+        // one and a half times the body text) and the stack's 16-point spacing. The allowance scales
+        // with the header's own height, so the largest text size gets the room its glyphs take and
+        // nothing more. The centred layout measured about 200 points on an iPhone 17 at the default size.
+        let allowance: CGFloat = 32 + 2.5 * header.frame.height
+
+        func check(_ name: String) {
+            let window = app.windows.firstMatch
+            XCTAssertTrue(waitUntilSettled(header), "The header should stop moving (\(name))")
+            let navigationBar = app.navigationBars.firstMatch
+            let chromeBottom: CGFloat
+            if navigationBar.exists, navigationBar.frame.height > 0 {
+                chromeBottom = navigationBar.frame.maxY
+            } else {
+                // No navigation bar (the no-modules build): the status bar is the top chrome and the safe
+                // area starts under it. It belongs to the system, not the app, so it's asked of SpringBoard;
+                // measured from the app alone, a Dynamic Island phone showed its 62-point safe area as a gap.
+                // SpringBoard reports the bar in its own orientation, so a frame that isn't a thin strip
+                // along the top (a phone in landscape hides it; a stale rotation reports a tall one) means
+                // no bar: the content starts at the window's top.
+                let statusBar = XCUIApplication(bundleIdentifier: "com.apple.springboard").statusBars.firstMatch
+                let frame = statusBar.exists ? statusBar.frame : .zero
+                chromeBottom = frame.minY == window.frame.minY && frame.height > 0 && frame.height < 100 ? frame.maxY : window.frame.minY
+            }
+            let gap = header.frame.minY - chromeBottom
+            print("header gap \(size) \(name): \(gap) points under the chrome (allowance \(allowance), header height \(header.frame.height))")
+            XCTAssertGreaterThanOrEqual(gap, 0, "\(name): the header overlaps the chrome by \(-gap) points")
+            XCTAssertLessThanOrEqual(gap, allowance, "\(name): the header sits \(gap) points under the chrome; the layout allows \(allowance)")
+            XCTAssertTrue(window.frame.contains(header.frame), "\(name): the header is on screen")
+            attach(name: "header-\(size)-\(name)")
+        }
+
+        check("portrait")
+        XCUIDevice.shared.orientation = .landscapeLeft
+        defer { XCUIDevice.shared.orientation = .portrait }
+        check("landscape")
+    }
+
     /// A person's choice of tabs: order follows the choice, a feature left out has no tab, and a deep
     /// link to that feature brings its tab back and keeps it there after a relaunch.
     @MainActor

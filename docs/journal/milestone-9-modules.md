@@ -11,6 +11,16 @@ Entries for the module library mechanism, the first-round modules, their lanes a
 - **Verified:** the six tests on the iPad Air 11-inch simulator; the tab tests on the iPhone 17 simulator after the change.
 - **Remaining:** the app's full-width controls on iPad (`ios-93k`, a design follow-up); a physical iPad on iPadOS 17 or later for a device run.
 
+## 2026-11-03 — The welcome header stops floating: content starts at the top of the safe area
+
+- **Tools:** Xcode 27.0; iPhone 17 (Dynamic Island) and iPad Air 11-inch (M4) on iOS 27.0, iPhone 13 mini (notch) on its own runtime, all local simulators. Task `ios-s5.16`.
+- **Symptom (confirmed):** the welcome screen's header sat a third of the way down the screen on every phone. Cause: the content was centred in the scroll view's height (`GeometryReader` plus `minHeight: proxy.size.height`), a choice made so a short page looked balanced before the shell had a navigation title. No double safe-area inset, no spacer, no TabView inset: the system chrome and background were already edge to edge.
+- **Fix:** the content is a plain top-aligned scroll view with its own padding; the navigation title, status bar and tab bar keep their safe areas. One place, `ContentView.welcome`, for both the shell and the no-modules path.
+- **Test:** `testHeaderSitsAtTheTopOfTheSafeArea` (and its largest-text twin) measures the header's top against the bottom of the navigation bar, or of the system status bar when the build has no shell, in portrait and landscape, with an allowance that scales with the header's height (32 points plus two and a half header heights); the centred layout measured about 200 points. Screenshots per size, orientation and device class are its attachments.
+- **Finding (confirmed):** the status bar isn't in the app's accessibility hierarchy on iOS 27; asked of the app, the fallback measured from the screen edge and the no-modules build showed a 62-point "gap" that was the Dynamic Island's safe area. The test asks SpringBoard for the status bar.
+- **Finding (confirmed):** on a simulator booted seconds before the run, the UI test runner twice died in XCTest's stall detector while bootstrapping ("operation never finished bootstrapping", abort in `XCTWaiter handleStalledWait`); the same signature took a lane on #155. Pre-booted simulators passed every time. Recorded on `ios-6dd.13`.
+- **Verified:** header gap under the chrome, in points: full build on iPhone 17, 58 at the default size and 112 at the largest, portrait and landscape alike; iPad Air 11-inch and iPhone 13 mini pass the same assertions; no-modules build (status bar only), 66 and 120 in portrait, 58 and 112 in landscape. Allowances 83 and 190. All local simulators; the iPhone 13 mini runs its own older runtime, the others iOS 27.0.
+- **Remaining:** iPad Split View and Stage Manager aren't claimed by the template, so not measured; the largest text size scrolls from the top like any other size, measured in the same test.
 ## 2026-11-04 — One module-tests job, and longer first waits in the scenario harness test
 
 - **Tools:** GitHub-hosted macOS runners (`xcode-27`). Task `ios-6dd.13`.

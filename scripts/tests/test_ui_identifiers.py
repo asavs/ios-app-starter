@@ -79,7 +79,8 @@ class ContractTests(unittest.TestCase):
             root = Path(directory)
             layout(root, test='app.buttons["settings.appearance"]\napp.buttons[ModuleIdentifiers.Settings.appearance]\n'
                               'ModuleIdentifiers.Settings.field("k")\n'
-                              'let extra = ["-timer.intervals", "20,10,3", "Hello, world!", "www.example.com/plan", "Modules 0.3.1"]\n')
+                              'let extra = ["-timer.intervals", "20,10,3", "Hello, world!", "www.example.com/plan", "Modules 0.3.1"]\n'
+                              'let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")\n')
             problems = check_ui_identifiers.check(root)
             self.assertEqual(len(problems), 1)
             self.assertIn('T.swift:1: identifier literal "settings.appearance"', problems[0])

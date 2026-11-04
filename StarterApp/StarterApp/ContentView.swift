@@ -54,29 +54,30 @@ struct ContentView: View {
 #endif
     }
 
-    /// Centred when it fits; scrolls instead of overflowing when Dynamic Type needs the room.
+    /// Starts at the top of the safe area, under the navigation title when there is one, and scrolls
+    /// when Dynamic Type needs the room. It used to centre itself in the screen's height, which put
+    /// the header a third of the way down on every phone (ios-s5.16); the chrome and the system
+    /// background go edge to edge on their own, and text stays in the safe area.
     private var welcome: some View {
-        GeometryReader { proxy in
-            ScrollView {
-                VStack(spacing: 16) {
+        ScrollView {
+            VStack(spacing: 16) {
 #if canImport(Onboarding) && canImport(Settings) && !canImport(TabShell)
-                    // Inline, because a popover anchored to a toolbar button does not appear on iOS 26.
-                    ContextualTipView("settings", in: tips)
+                // Inline, because a popover anchored to a toolbar button does not appear on iOS 26.
+                ContextualTipView("settings", in: tips)
 #endif
-                    Image(systemName: "globe")
-                        .imageScale(.large)
-                        .foregroundStyle(.tint)
-                        .accessibilityHidden(true) // Decorative.
-                    Text("Hello, world!")
-                        .accessibilityAddTraits(.isHeader)
-                    details
-                    replayTour
-                }
-                .padding()
-                .frame(maxWidth: .infinity, minHeight: proxy.size.height)
+                Image(systemName: "globe")
+                    .imageScale(.large)
+                    .foregroundStyle(.tint)
+                    .accessibilityHidden(true) // Decorative.
+                Text("Hello, world!")
+                    .accessibilityAddTraits(.isHeader)
+                details
+                replayTour
             }
-            .scrollBounceBehavior(.basedOnSize)
+            .padding()
+            .frame(maxWidth: .infinity)
         }
+        .scrollBounceBehavior(.basedOnSize)
     }
 
     /// Replays the onboarding flow in a sheet; the theme's prominent style, as on onboarding's Continue.
