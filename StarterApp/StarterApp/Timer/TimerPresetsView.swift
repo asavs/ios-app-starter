@@ -13,6 +13,9 @@ struct TimerPresetsView: View {
     let model: TimerSession
     @Query(sort: \TimerPreset.createdAt) private var presets: [TimerPreset]
     @Environment(\.modelContext) private var context
+#if canImport(Attachments)
+    @Environment(\.contentCoordinator) private var coordinator
+#endif
     @Environment(\.dismiss) private var dismiss
     @Environment(\.appTheme) private var theme
     @State private var isNaming = false
@@ -85,7 +88,17 @@ struct TimerPresetsView: View {
         dismiss()
     }
 
+    /// With Attachments, the coordinator deletes the preset and releases the files nothing else
+    /// owns, after the save; without it the record just goes.
     private func delete(at offsets: IndexSet) {
+#if canImport(Attachments)
+        if let coordinator {
+            for index in offsets {
+                do { try coordinator.deletePreset(presets[index]) } catch { assertionFailure("Deleting a preset failed: \(error)") }
+            }
+            return
+        }
+#endif
         for index in offsets { context.delete(presets[index]) }
         try? context.save()
     }

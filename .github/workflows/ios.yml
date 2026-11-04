@@ -73,7 +73,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        configuration: ${{ fromJSON(github.event_name == 'pull_request' && '["starter"]' || (github.event_name == 'workflow_dispatch' && inputs.configuration != 'all') && format('["{0}"]', inputs.configuration) || '["starter","pocket-notes","starter-app-demo"]') }}
+        # Pull requests test the minimal template and the demo, which is where the timer feature lives.
+        configuration: ${{ fromJSON(github.event_name == 'pull_request' && '["starter","starter-app-demo"]' || (github.event_name == 'workflow_dispatch' && inputs.configuration != 'all') && format('["{0}"]', inputs.configuration) || '["starter","pocket-notes","starter-app-demo"]') }}
         # Two lanes per configuration, each on its own simulator: the whole UI suite on one runner takes
         # 20 to 25 minutes on a slow one (ios-6dd.13). `scripts/test-ios.sh` maps the lane to test classes.
         lane: [shell, features]
