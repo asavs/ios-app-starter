@@ -10,11 +10,32 @@ enum Identifiers {
     /// `StarterTab` raw values, and the tab bar buttons TabShell draws for them.
     enum Tabs {
         static let welcome = "welcome"
+        static let library = "library"
         static let timer = "timer"
         static let settings = "settings"
 
         /// The tab bar button for a tab.
         static func button(_ tab: String) -> String { "tabs.\(tab)" }
+    }
+
+    /// The Library tab (`LibraryView` and `LibraryItemView`); the grid, its cells and the Add menu
+    /// are the Attachments module's (`ModuleIdentifiers.Attachments`).
+    enum Library {
+        /// The empty state, before anything is collected.
+        static let empty = "library.empty"
+        /// The no-results state of a search.
+        static let noResults = "library.noResults"
+        /// The confirmation dialog's Delete button.
+        static let deleteConfirm = "library.delete.confirm"
+
+        enum Detail {
+            static let title = "library.detail.title"
+            static let preview = "library.detail.preview"
+            static let share = "library.detail.share"
+            /// The notice shown when the original file is missing.
+            static let missing = "library.detail.missing"
+            static let delete = "library.detail.delete"
+        }
     }
 
     /// The welcome screen (`ContentView`).

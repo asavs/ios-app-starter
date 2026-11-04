@@ -46,6 +46,14 @@ struct StarterTabsView: View {
                 ContentView()
                     .navigationTitle(Text(StarterFeature.feature(.welcome).title))
             }
+        case .library:
+#if canImport(Database) && canImport(Attachments)
+            NavigationStack {
+                LibraryView()
+            }
+#else
+            FeatureUnavailableView(feature: StarterFeature.feature(.library))
+#endif
         case .timer:
 #if canImport(SessionTimer) && canImport(TimerRing)
             NavigationStack {

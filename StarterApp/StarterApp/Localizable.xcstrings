@@ -67,6 +67,28 @@
         }
       }
     },
+    "Added": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Added"
+          }
+        }
+      }
+    },
+    "Address": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Address"
+          }
+        }
+      }
+    },
     "Appearance, sounds, privacy and your local data.": {
       "extractionState": "manual",
       "localizations": {
@@ -118,6 +140,94 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cancel"
+          }
+        }
+      }
+    },
+    "Collect photos, files and links here to find them again. Add imports the first one.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collect photos, files and links here to find them again. Add imports the first one."
+          }
+        }
+      }
+    },
+    "Collect photos, files and links, and find them again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collect photos, files and links, and find them again."
+          }
+        }
+      }
+    },
+    "Couldn't Add to Your Library": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't Add to Your Library"
+          }
+        }
+      }
+    },
+    "Couldn't Delete": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't Delete"
+          }
+        }
+      }
+    },
+    "Delete": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        }
+      }
+    },
+    "Delete from Library": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete from Library"
+          }
+        }
+      }
+    },
+    "Delete this item?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this item?"
+          }
+        }
+      }
+    },
+    "Discard": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard"
           }
         }
       }
@@ -177,6 +287,17 @@
         }
       }
     },
+    "File": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File"
+          }
+        }
+      }
+    },
     "Focus": {
       "extractionState": "manual",
       "localizations": {
@@ -217,6 +338,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Intervals"
+          }
+        }
+      }
+    },
+    "Kind": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kind"
+          }
+        }
+      }
+    },
+    "Library": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Library"
+          }
+        }
+      }
+    },
+    "Link": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link"
           }
         }
       }
@@ -276,6 +430,17 @@
         }
       }
     },
+    "Open Link": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Link"
+          }
+        }
+      }
+    },
     "Open Settings to pick light or dark, store secrets and show the tour again.": {
       "extractionState": "manual",
       "localizations": {
@@ -294,6 +459,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pause"
+          }
+        }
+      }
+    },
+    "Photo": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo"
           }
         }
       }
@@ -338,6 +514,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Presets"
+          }
+        }
+      }
+    },
+    "Preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview"
           }
         }
       }
@@ -540,6 +727,17 @@
         }
       }
     },
+    "Size": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Size"
+          }
+        }
+      }
+    },
     "Skip": {
       "extractionState": "manual",
       "localizations": {
@@ -617,6 +815,17 @@
         }
       }
     },
+    "The Library wasn't ready to save this item.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Library wasn't ready to save this item."
+          }
+        }
+      }
+    },
     "The example API key, in this device's Keychain": {
       "extractionState": "manual",
       "localizations": {
@@ -624,6 +833,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "The example API key, in this device's Keychain"
+          }
+        }
+      }
+    },
+    "The original file is missing. Its details are kept; preview and sharing need the file.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The original file is missing. Its details are kept; preview and sharing need the file."
           }
         }
       }
@@ -683,6 +903,61 @@
         }
       }
     },
+    "Title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Title"
+          }
+        }
+      }
+    },
+    "Titles and links": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titles and links"
+          }
+        }
+      }
+    },
+    "Try Again": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try Again"
+          }
+        }
+      }
+    },
+    "Used in ^[%lld notes](inflect: true). Deleting it removes it from those notes. Their text stays.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used in ^[%lld notes](inflect: true). Deleting it removes it from those notes. Their text stays."
+          }
+        }
+      }
+    },
+    "Video": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Video"
+          }
+        }
+      }
+    },
     "Welcome": {
       "extractionState": "manual",
       "localizations": {
@@ -712,6 +987,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Work"
+          }
+        }
+      }
+    },
+    "Your Library is empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Library is empty"
           }
         }
       }

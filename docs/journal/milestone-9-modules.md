@@ -10,6 +10,16 @@ Entries for the module library mechanism, the first-round modules, their lanes a
 - **Verified:** the workflow parses; the Python suite holds. The evidence is this change's own pull-request run (two `test (starter-app-demo, <lane>)` jobs, `module-tests`, `no-modules`) and the push run on main after it (the minimal and pocket-notes configurations too), read with `scripts/review_ci.py`.
 - **Remaining:** a second runner is the lever that none of this touches (ios-j3t).
 
+## 2026-11-04 — The Library tab: what iOS 27 does with a search field and a confirmation dialog inside a tab
+
+- **Tools:** Xcode 27.0, iPhone 17 simulator on iOS 27.0. Task `ios-125.4`.
+- **Finding (confirmed):** `searchable` with the automatic placement, on a `ScrollView` at the root of a tab's `NavigationStack`, drew no search field at all on iOS 27: the hierarchy had the large title and the toolbar button and nothing else. Pinning the placement (`.navigationBarDrawer(displayMode: .always)`) puts the field under the title, where the HIG asks for it on a screen whose point is finding things.
+- **Finding (confirmed):** on iOS 27 a `confirmationDialog` on an iPhone is a popover pointing at the view it is attached to, with no Cancel button (a tap outside cancels). Attached to the whole form it pointed at the picture at the top; attached to the Delete button it points at the button. A UI test cancels by tapping outside when there is no Cancel button, and the search field's dismiss button reads Close on iOS 27 (Cancel before it).
+- **Finding (confirmed):** after typing into a `Form` text field the keyboard stays up and covers the rows below, and `scroll(_:to:)` never reaches them; the test presses Return first.
+- **Found on the way:** the main checkout builds the plain template (no Timer modules), so `testChosenTabsOrderHideAndRevealFeatures` fails there with the "Timer isn't in this build" alert unless `IOS_ENABLED_MODULES` is set as `scripts/test-ios.sh` does; the demo configuration (`IOS_PROJECT_SPEC=examples/starter-app-demo.yml`) is what CI and the phone run.
+- **Verified:** `LibraryUITests` (collect a photo and a link with the fakes, search to one and to none, rename, Quick Look, relaunch, delete from the detail and from a cell) and `LibraryTests` pass on the iPhone 17 simulator; screenshots are the test's attachments.
+- **Remaining:** the real Photos, camera and Files pickers and sharing are the phone check; a `LibraryItem` whose original file is missing is shown with a notice and no preview, and nothing removes it (content-ownership.md keeps a missing original out of automatic cleanup).
+
 ## 2026-11-03 — The welcome header stops floating: content starts at the top of the safe area
 
 - **Tools:** Xcode 27.0; iPhone 17 (Dynamic Island) and iPad Air 11-inch (M4) on iOS 27.0, iPhone 13 mini (notch) on its own runtime, all local simulators. Task `ios-s5.16`.
