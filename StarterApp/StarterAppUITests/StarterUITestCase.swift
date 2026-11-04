@@ -134,10 +134,15 @@ class StarterUITestCase: XCTestCase {
     /// isn't a tab bar to the accessibility tree, so the lookup falls back to any button that
     /// carries the tab's identifier (or its title where the identifier is missing).
     func tabButton(in app: XCUIApplication, _ id: String, title: String) -> XCUIElement {
-        let inTabBar = app.tabBars.buttons.matching(tabPredicate(id, title: title))
-        if inTabBar.count > 0 { return inTabBar.firstMatch }
-        return app.buttons.matching(tabPredicate(id, title: title)).firstMatch
+        if hasTabBar == nil { hasTabBar = app.tabBars.firstMatch.waitForExistence(timeout: 10) }
+        let predicate = tabPredicate(id, title: title)
+        return hasTabBar == true ? app.tabBars.buttons.matching(predicate).firstMatch
+            : app.buttons.matching(predicate).firstMatch
     }
+
+    /// Whether this app draws a tab bar, asked once per test: on an iPhone the buttons are queried
+    /// inside it (a narrow query a loaded runner answers in time), on an iPad among all buttons.
+    private var hasTabBar: Bool?
 
     func tabPredicate(_ id: String, title: String) -> NSPredicate {
         NSPredicate(format: "identifier == %@ OR (identifier == '' AND label == %@)", Identifiers.Tabs.button(id), title)

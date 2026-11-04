@@ -11,6 +11,7 @@ Entries for the module library mechanism, the first-round modules, their lanes a
 - **Verified:** the six tests on the iPad Air 11-inch simulator; the tab tests on the iPhone 17 simulator after the change.
 - **Remaining:** the app's full-width controls on iPad (`ios-93k`, a design follow-up); a physical iPad on iPadOS 17 or later for a device run.
 
+- **Finding (confirmed, 2026-11-04):** querying a tab button among all the app's buttons (the first iPad version of the helper) timed out a hierarchy snapshot on a loaded hosted runner ("Timed out while evaluating UI query", PR #159's first run). The helper now asks once per test whether the app draws a tab bar and keeps the narrow `tabBars.buttons` query on an iPhone; the broad query is only for the iPad's top bar. Verified under the demo configuration on the iPhone 17 and iPad Air simulators.
 ## 2026-11-03 — The welcome header stops floating: content starts at the top of the safe area
 
 - **Tools:** Xcode 27.0; iPhone 17 (Dynamic Island) and iPad Air 11-inch (M4) on iOS 27.0, iPhone 13 mini (notch) on its own runtime, all local simulators. Task `ios-s5.16`.
