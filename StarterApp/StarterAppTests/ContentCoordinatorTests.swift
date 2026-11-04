@@ -163,24 +163,4 @@ struct ContentCoordinatorTests {
         #expect(listed.count == 1 && listed[0].item == nil)
     }
 }
-
-/// Records removals; `failures` makes the next removals throw.
-private final class RecordingFileStore: AttachmentStoring, @unchecked Sendable {
-    private(set) var removed: [Attachment.ID] = []
-    var failures = 0
-
-    struct Failure: Error {}
-
-    func add(copying source: URL, displayName: String?, contentType: UTType?) async throws -> Attachment { fatalError("unused") }
-    func add(imageData: Data, contentType: UTType, displayName: String) async throws -> Attachment { fatalError("unused") }
-    func add(link: URL) async throws -> Attachment { fatalError("unused") }
-    func fileURL(for attachment: Attachment) -> URL? { nil }
-    func thumbnail(for attachment: Attachment, pixelSize: Int) async -> CGImage? { nil }
-    func linkMetadataArchive(for attachment: Attachment) async -> Data? { nil }
-    func remove(_ attachment: Attachment) async throws {
-        if failures > 0 { failures -= 1; throw Failure() }
-        removed.append(attachment.id)
-    }
-    func sweep(keeping ids: Set<Attachment.ID>) async throws -> Int { 0 }
-}
 #endif

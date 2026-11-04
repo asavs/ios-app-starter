@@ -46,7 +46,7 @@ targets:
         NSSupportsLiveActivities: true
         # The Attachments module's Camera entry; the only permission attachments need. scripts/check-modules.py
         # requires it while the module is enabled. Photos and Files pickers run out of process and need none.
-        NSCameraUsageDescription: Take a photo to attach it to a preset.
+        NSCameraUsageDescription: Take a photo to add it to your Library or attach it to a preset.
     # Enabled modules: one product line each. Remove a line to disable that module. The essentials every
     # app needs are here; the timer feature (SessionTimer, TimerRing, DurationPicker, SessionActivity and
     # the StarterWidgets extension that draws its Live Activity) is enabled by examples/starter-app-demo.yml,

@@ -54,7 +54,7 @@ case "${IOS_TEST_LANE:-all}" in
       -only-testing:StarterAppUITests/OnboardingUITests) ;;
   features)
     lane_settings=(-only-testing:StarterAppUITests/TimerUITests -only-testing:StarterAppUITests/AttachmentsUITests
-      -only-testing:StarterAppUITests/SettingsUITests) ;;
+      -only-testing:StarterAppUITests/LibraryUITests -only-testing:StarterAppUITests/SettingsUITests) ;;
   all) ;;
   *) echo "test-ios: unknown IOS_TEST_LANE '$IOS_TEST_LANE' (shell, features or all)" >&2; exit 2 ;;
 esac
