@@ -2,14 +2,16 @@
 set -euo pipefail
 
 # Builds the module library and runs one module's tests on an iOS simulator, with the same
-# report layout as scripts/test-ios.sh. Usage: bash scripts/test-module.sh <Module>
+# report layout as scripts/test-ios.sh. Usage: bash scripts/test-module.sh <Module>|all
+# `all` runs every module's tests from one build, which is what CI does: one simulator for the
+# package instead of one per module (ios-6dd.13).
 # Xcode derives schemes from Package.swift: with one product, a single scheme named after the
 # package; with several, one scheme per product plus "<Package>-Package". Only the package-wide
 # scheme has a test action (per-product schemes report "not currently configured for the test
 # action"), so the module is selected with -only-testing on that scheme's <Module>Tests target.
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 module="${1:-}"
-if [[ -z "$module" || ! -d "$repo_dir/Modules/$module" ]]; then
+if [[ "$module" != "all" && ( -z "$module" || ! -d "$repo_dir/Modules/$module" ) ]]; then
   printf 'Usage: %s <Module>\nModules:\n' "$0" >&2
   ls "$repo_dir/Modules" >&2
   exit 2
@@ -18,6 +20,8 @@ destination="${IOS_TEST_DESTINATION:-platform=iOS Simulator,name=iPhone 17,OS=27
 report_root="${IOS_TEST_OUTPUT_DIR:-$repo_dir/build/test-results}"
 mkdir -p "$report_root"
 report_dir="$(mktemp -d "$report_root/module-$module.XXXXXX")"
+only_testing=()
+if [[ "$module" != "all" ]]; then only_testing=(-only-testing:"${module}Tests"); fi
 printf 'Test reports: %s\n' "$report_dir"
 
 cd "$repo_dir" # xcodebuild reads Package.swift from the working directory; there is no project here.
@@ -39,7 +43,7 @@ xcodebuild \
   -derivedDataPath "$report_dir/DerivedData" \
   -clonedSourcePackagesDirPath "${IOS_SPM_CACHE_DIR:-$report_dir/SourcePackages}" \
   -resultBundlePath "$report_dir/Tests.xcresult" \
-  -only-testing:"${module}Tests" \
+  ${only_testing[@]+"${only_testing[@]}"} \
   -parallel-testing-enabled NO \
   -test-timeouts-enabled YES \
   -default-test-execution-time-allowance 300 \

@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-04 — One module-tests job, and longer first waits in the scenario harness test
+
+- **Tools:** GitHub-hosted macOS runners (`xcode-27`). Task `ios-6dd.13`.
+- **Symptom (confirmed):** since pull requests began testing two configurations (#155), each ran eight app lanes and twelve module-test jobs; with three PRs in flight the app lanes showed load: `SettingsUITests.testScenarioKeepsDataUntilReset` failed four times in three hours with three different symptoms (a picker not yet showing its state, a UI query timing out with the app's main thread idle, a relaunch not yet reflecting the wipe), each rerun at a quieter moment passed, and the test passes locally in both configurations.
+- **Fix:** the module tests run as one job from one build of the package (`scripts/test-module.sh all`), one simulator instead of twelve; the three state waits in the harness test are 30 s, like the onboarding first step.
+- **Cost:** the module job runs longer than any single matrix lane did, for the same test coverage with one build instead of twelve; the artifact is one `module-test-results-all`.
+- **Verified:** `bash scripts/test-module.sh all` locally on iPhone 17 / iOS 27.0: one build, every module test target green (twelve result bundles in one run, 160 tests). Python suite and the identifier contract hold. Hosted evidence is this change's own run and the ones after it.
+- **Remaining:** the ten-minute aim for the required lanes; trimming the slowest UI tests.
 ## 2026-11-04 — Let the simulator settle before the UI test runner starts
 
 - **Tools:** GitHub-hosted macOS runner (`xcode-27`), Xcode 27.0; the Mac's simulators. Task `ios-6dd.13`.

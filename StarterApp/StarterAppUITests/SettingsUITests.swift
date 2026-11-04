@@ -55,19 +55,20 @@ final class SettingsUITests: StarterUITestCase {
         app.launch(scenario)
         let picker = element(app, ModuleIdentifiers.Settings.appearance)
         try requireModuleUI("Settings", appeared: picker.waitForExistence(timeout: 10), "no appearance picker")
-        XCTAssertTrue(waitUntil(picker.buttons["System"], "isSelected == true"), "A reset launch starts from the default")
+        // 30 s like the onboarding first step: on a loaded hosted runner the first screen can take that long.
+        XCTAssertTrue(waitUntil(picker.buttons["System"], "isSelected == true", timeout: 30), "A reset launch starts from the default")
         picker.buttons["Dark"].tap()
         XCTAssertTrue(waitUntil(picker.buttons["Dark"], "isSelected == true"))
 
         app.terminate()
         app.launch(scenario.relaunch)
         XCTAssertTrue(picker.waitForExistence(timeout: 10))
-        XCTAssertTrue(waitUntil(picker.buttons["Dark"], "isSelected == true"), "A relaunch keeps the test's data")
+        XCTAssertTrue(waitUntil(picker.buttons["Dark"], "isSelected == true", timeout: 30), "A relaunch keeps the test's data")
 
         app.terminate()
         app.launch(scenario)
         XCTAssertTrue(picker.waitForExistence(timeout: 10))
-        XCTAssertTrue(waitUntil(picker.buttons["System"], "isSelected == true"), "A reset launch empties the suite")
+        XCTAssertTrue(waitUntil(picker.buttons["System"], "isSelected == true", timeout: 30), "A reset launch empties the suite")
         attach(name: "scenario-reset")
     }
 
