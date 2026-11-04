@@ -1,6 +1,6 @@
 # The Library: a collection screen for photos, files and links
 
-Built as: pending. Research for board task `ios-125.4` (slice 4 of [feature-tabs.md](../design/feature-tabs.md)), written 2026-11-04 by claude-mac. Source grades: A = Apple documentation or the Human Interface Guidelines; B = maintained third-party source; C = forum. The HIG pages were read through their documentation JSON endpoints on 2026-11-04. The schema, ownership rules and file store this screen sits on are in [content-ownership.md](content-ownership.md) and [attachments.md](attachments.md); this document covers the screen itself.
+Built as the Library tab (2026-11-04, `ios-125.4`): `StarterApp/StarterApp/Library`, see [modules.md](../modules.md#attachments) for what shipped. Research for board task `ios-125.4` (slice 4 of [feature-tabs.md](../design/feature-tabs.md)), written 2026-11-04 by claude-mac. Source grades: A = Apple documentation or the Human Interface Guidelines; B = maintained third-party source; C = forum. The HIG pages were read through their documentation JSON endpoints on 2026-11-04. The schema, ownership rules and file store this screen sits on are in [content-ownership.md](content-ownership.md) and [attachments.md](attachments.md); this document covers the screen itself.
 
 ## What the screen is
 

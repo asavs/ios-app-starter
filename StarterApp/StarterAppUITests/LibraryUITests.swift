@@ -54,8 +54,10 @@ final class LibraryUITests: StarterUITestCase {
         let noResults = element(app, Identifiers.Library.noResults)
         XCTAssertTrue(noResults.waitForExistence(timeout: 10), "No match shows the system's no-results state")
         attach(name: "library-no-results")
-        app.buttons["Cancel"].firstMatch.tap()
-        XCTAssertTrue(waitUntil(photo, "exists == true", timeout: 10), "Cancelling the search shows everything again")
+        // The button beside the field reads Close on iOS 27 and Cancel before it.
+        let close = app.buttons["Close"].firstMatch
+        (close.exists ? close : app.buttons["Cancel"].firstMatch).tap()
+        XCTAssertTrue(waitUntil(photo, "exists == true", timeout: 10), "Closing the search shows everything again")
 
         // Open the photo, rename it, preview it.
         photo.tap()
@@ -64,8 +66,9 @@ final class LibraryUITests: StarterUITestCase {
         XCTAssertEqual(title.value as? String, "Capture", "The title starts as the attachment's name")
         title.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap() // Cursor at the end.
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 10))
-        app.typeText(" drill")
+        app.typeText(" drill\n") // Return puts the keyboard away, which otherwise covers the actions below.
         XCTAssertEqual(title.value as? String, "Capture drill")
+        XCTAssertTrue(waitUntilGone(app.keyboards.firstMatch, timeout: 5))
         XCTAssertTrue(app.buttons[Identifiers.Library.Detail.share].firstMatch.exists, "A stored file can be shared")
         XCTAssertFalse(element(app, Identifiers.Library.Detail.missing).exists, "Its original is present")
         attach(name: "library-detail")
@@ -94,7 +97,9 @@ final class LibraryUITests: StarterUITestCase {
         let confirm = app.buttons[Identifiers.Library.deleteConfirm].firstMatch
         XCTAssertTrue(confirm.waitForExistence(timeout: 5), "Deleting asks first")
         attach(name: "library-delete-confirmation")
-        app.buttons["Cancel"].firstMatch.tap()
+        // iOS 27 shows the dialog as a popover without a Cancel button: a tap outside cancels.
+        let cancel = app.buttons["Cancel"].firstMatch
+        if cancel.exists { cancel.tap() } else { app.staticTexts["Kind"].firstMatch.tap() }
         XCTAssertTrue(waitUntilGone(confirm, timeout: 5))
         XCTAssertTrue(delete.waitForExistence(timeout: 5), "Cancel keeps the item and its screen")
         delete.tap()

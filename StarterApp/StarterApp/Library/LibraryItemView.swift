@@ -72,18 +72,20 @@ struct LibraryItemView: View {
             Section {
                 Button("Delete from Library", role: .destructive) { deleting = item }
                     .accessibilityIdentifier(Identifiers.Library.Detail.delete)
+                    // On the button, so a dialog shown as a popover (iOS 27) points at it.
+                    .libraryDeleteConfirmation(item: $deleting) {
+                        isGone = true
+                        dismiss()
+                    }
             }
         }
+        .navigationTitle(Text(verbatim: item.title))
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: item.title) {
             item.modifiedAt = .now
             try? context.save()
         }
         .attachmentPreview($previewing, in: [item.attachment], store: store)
-        .libraryDeleteConfirmation(item: $deleting) {
-            isGone = true
-            dismiss()
-        }
     }
 
     @ViewBuilder private var picture: some View {
