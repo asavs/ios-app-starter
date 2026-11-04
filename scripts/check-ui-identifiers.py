@@ -27,6 +27,9 @@ MODULE_SOURCES = Path("Modules")
 
 LITERAL_IDENTIFIER = re.compile(r'accessibilityIdentifier\(\s*"')
 DOTTED_LITERAL = re.compile(r'"([a-z][A-Za-z0-9]*(?:\.[A-Za-z0-9_\\()]+)+)"')
+# Reverse-DNS bundle identifiers look like dotted identifiers but name apps, not controls: a test
+# that asks SpringBoard for the status bar names "com.apple.springboard".
+BUNDLE_PREFIXES = ("com.", "org.", "net.", "io.")
 ENUM = re.compile(r'\benum\s+(\w+)\s*\{')
 CONSTANT = re.compile(r'static\s+(?:let|func)\s+(\w+)\b[^"]*"([^"]*)"')
 
@@ -92,6 +95,8 @@ def check(root=ROOT):
     for path, text in test_text.items():
         for number, line in enumerate(text.splitlines(), 1):
             for literal in DOTTED_LITERAL.findall(code(line)):
+                if literal.startswith(BUNDLE_PREFIXES):
+                    continue
                 problems.append(f"{path.relative_to(root).as_posix()}:{number}: identifier literal \"{literal}\"; use the constant from {CONTRACT.as_posix()}")
 
     everything = "\n".join(list(app_text.values()) + list(test_text.values()))
