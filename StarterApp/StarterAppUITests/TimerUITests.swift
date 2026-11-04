@@ -100,7 +100,13 @@ final class TimerUITests: StarterUITestCase {
         let skip = element(app, Identifiers.Timer.skip)
         let reset = element(app, Identifiers.Timer.reset)
         XCTAssertTrue(scroll(app, to: reset), "The Timer tab should scroll to Reset")
-        XCTAssertLessThan(skip.frame.maxY, reset.frame.minY, "Skip should sit above Reset at this size")
+        if app.windows.firstMatch.frame.width < 500 {
+            // A phone: the two labels don't fit beside each other at this size, so they stack.
+            XCTAssertLessThan(skip.frame.maxY, reset.frame.minY, "Skip should sit above Reset at this size")
+        } else {
+            // An iPad: the width keeps them side by side, and neither label wraps.
+            XCTAssertEqual(skip.frame.midY, reset.frame.midY, accuracy: 1, "Skip and Reset share a row at this width")
+        }
         attach(name: "timer-large-controls")
     }
 
