@@ -13,6 +13,7 @@ struct TimerPresetAttachmentsView: View {
     @State private var picker: AttachmentPickerModel
     @State private var selection: Attachment?
     @Environment(\.modelContext) private var context
+    @Environment(\.contentCoordinator) private var coordinator
     @Environment(\.dismiss) private var dismiss
     @Environment(\.appTheme) private var theme
 
@@ -57,9 +58,19 @@ struct TimerPresetAttachmentsView: View {
         }
     }
 
+    /// The coordinator saves the record first and removes the file only when nothing else (a Library
+    /// item) still owns it; a failed save leaves the file. Without a coordinator (a preview) the value
+    /// just comes off the list.
     private func remove(_ attachment: Attachment) {
-        preset.attachments.removeAll { $0.id == attachment.id }
-        Task { try? await StarterAttachments.store.remove(attachment) }
+        guard let coordinator else {
+            preset.attachments.removeAll { $0.id == attachment.id }
+            return
+        }
+        do {
+            try coordinator.removeAttachment(attachment, from: preset)
+        } catch {
+            assertionFailure("Removing an attachment failed: \(error)") // The record and the file are as they were.
+        }
     }
 
     private func save() {

@@ -1,0 +1,38 @@
+# The app with the Database module but without Attachments: the text-only store history
+# (StarterSchemaV1 -> StarterSchemaText2). Everything else stays enabled. Used to build and test the
+# second schema history (docs/research/content-ownership.md); a store from the media history must fail
+# to open here and land in recovery with its files kept.
+include: ../project.yml
+
+# Restated like the other overlays: XcodeGen rebases an included spec's package path relative to
+# this file, which would point one directory too high.
+packages:
+  StarterModules:
+    path: ..
+
+targets:
+  StarterApp:
+    dependencies:REPLACE:
+      - package: StarterModules
+        product: TemplateVersion
+      - package: StarterModules
+        product: Theme
+      - package: StarterModules
+        product: Onboarding
+      - package: StarterModules
+        product: Settings
+      - package: StarterModules
+        product: TabShell
+      - package: StarterModules
+        product: SessionTimer
+      - package: StarterModules
+        product: TimerRing
+      - package: StarterModules
+        product: Cues
+      - package: StarterModules
+        product: DurationPicker
+      - package: StarterModules
+        product: Database
+      - package: StarterModules
+        product: SessionActivity
+      - target: StarterWidgets
