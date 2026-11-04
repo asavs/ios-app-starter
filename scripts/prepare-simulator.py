@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 
 destination = os.environ['IOS_TEST_DESTINATION']
 parts = dict(part.split('=', 1) for part in destination.split(','))
@@ -27,3 +28,15 @@ else:
     device_id = matches[0]
 print(f'Preparing simulator {device_id} for {destination}', flush=True)
 subprocess.run(['xcrun', 'simctl', 'bootstatus', device_id, '-b'], check=True)
+# Booted isn't settled: on a simulator booted seconds earlier, the UI test runner twice died in XCTest's
+# stall detector while bootstrapping ("operation never finished bootstrapping", abort in XCTWaiter
+# handleStalledWait), locally and on the hosted runner (2026-11-03, ios-6dd.13); the same simulators
+# passed every time once they had been up for half a minute. Launching and quitting a system app
+# exercises SpringBoard's launch path, then a short wait lets the daemons finish coming up.
+subprocess.run(['xcrun', 'simctl', 'launch', device_id, 'com.apple.Preferences'], check=False,
+               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+time.sleep(5)
+subprocess.run(['xcrun', 'simctl', 'terminate', device_id, 'com.apple.Preferences'], check=False,
+               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+time.sleep(int(os.environ.get('IOS_SIMULATOR_SETTLE_SECONDS', '20')))
+print('Simulator settled', flush=True)

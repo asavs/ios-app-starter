@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-04 — Let the simulator settle before the UI test runner starts
+
+- **Tools:** GitHub-hosted macOS runner (`xcode-27`), Xcode 27.0; the Mac's simulators. Task `ios-6dd.13`.
+- **Symptom (confirmed):** the UI test runner died while preparing to run tests ("Early unexpected exit, operation never finished bootstrapping", signal abrt), with XCTest's stall detector in the crash report (`XCTWaiter handleStalledWait` then abort). Once on #155's starter features lane while the three other lanes of the same run passed, and twice locally on an iPad Air and an iPhone 13 mini booted seconds before the run, while the long-booted iPhone 17 passed. The same two simulators passed every time after thirty seconds up.
+- **Fix:** `scripts/prepare-simulator.py` no longer stops at `bootstatus -b`: it launches and quits a system app, then waits twenty seconds (`IOS_SIMULATOR_SETTLE_SECONDS`). Cheap against a 25-minute lane, and the evidence above is correlation on three occurrences, not a documented cause.
+- **Verified:** the script runs locally against the iPhone 17 simulator; the hosted evidence is the runs after this lands, read with `scripts/review_ci.py`, and whether the signature recurs.
+- **Remaining:** if it recurs with the settle in place, the next diagnostic is the runner's crash report from the lane's diagnostics artifact rather than a longer wait.
+
 ## 2026-11-03 — The timer leaves the default template for the demo overlay
 
 - **Tools:** Xcode 27.0, iPhone 17 / iOS 27.0 simulator. Task `ios-6dd.10`, after the registry (#152) made a missing feature a normal state of the shell.
