@@ -1,6 +1,6 @@
 # Choose and update app features
 
-Each feature of the starter is a module you enable in `project.yml`; keep the ones your app needs and remove the rest. The modules are `TemplateVersion`, `Theme`, `Onboarding`, `Settings` and `TabShell`. TabShell is unreleased; use the local path until a new tag includes it. Authentication and persistence modules are planned.
+Each feature of the starter is a module you enable in `project.yml`; keep the ones your app needs and remove the rest. The default `project.yml` enables the essentials every app needs; the timer feature (`SessionTimer`, `TimerRing`, `DurationPicker`, `SessionActivity` and the `StarterWidgets` extension) is enabled by `examples/starter-app-demo.yml`, the build on the owner's phone, so a new app doesn't inherit a timer while the modules stay available. The Timer tab, its screens and its tests are under `#if canImport`, and the UI tests skip the timer where the build has none. The modules are `TemplateVersion`, `Theme`, `Onboarding`, `Settings` and `TabShell`. TabShell is unreleased; use the local path until a new tag includes it. Authentication and persistence modules are planned.
 
 "Use this template" copies the app into your repository once. After that, module improvements reach your app as versioned packages: the modules are products of one Swift package in this repository, which the template app depends on by local path and apps created from it by tagged URL. To share an improvement, open a pull request here, release a tag, then update the version in each app that needs it.
 

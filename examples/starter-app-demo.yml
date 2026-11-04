@@ -14,6 +14,35 @@ settings:
 
 targets:
   StarterApp:
+    # The demo shows every feature a builder could keep, the timer included: the template's essentials
+    # plus SessionTimer, TimerRing, DurationPicker, SessionActivity and the widget extension that draws
+    # the Live Activity. An overlay replaces the whole list, so the essentials are restated here.
+    dependencies:REPLACE:
+      - package: StarterModules
+        product: TemplateVersion
+      - package: StarterModules
+        product: Theme
+      - package: StarterModules
+        product: Onboarding
+      - package: StarterModules
+        product: Settings
+      - package: StarterModules
+        product: TabShell
+      - package: StarterModules
+        product: Cues
+      - package: StarterModules
+        product: Database
+      - package: StarterModules
+        product: Attachments
+      - package: StarterModules
+        product: SessionTimer
+      - package: StarterModules
+        product: TimerRing
+      - package: StarterModules
+        product: DurationPicker
+      - package: StarterModules
+        product: SessionActivity
+      - target: StarterWidgets
     settings:
       base:
         INFOPLIST_KEY_CFBundleDisplayName: "Starter App"
