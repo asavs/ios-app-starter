@@ -73,8 +73,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Pull requests test the minimal template and the demo, which is where the timer feature lives.
-        configuration: ${{ fromJSON(github.event_name == 'pull_request' && '["starter","starter-app-demo"]' || (github.event_name == 'workflow_dispatch' && inputs.configuration != 'all') && format('["{0}"]', inputs.configuration) || '["starter","pocket-notes","starter-app-demo"]') }}
+        # Pull requests test the demo only: it enables every module, so its lanes run every test the
+        # minimal template's would and more, and the no-modules lane still builds the template without
+        # any. The minimal and pocket-notes configurations run on every push to main and on dispatch.
+        # Two lanes per pull request instead of eight (2026-11-04, ios-6dd.13).
+        configuration: ${{ fromJSON(github.event_name == 'pull_request' && '["starter-app-demo"]' || (github.event_name == 'workflow_dispatch' && inputs.configuration != 'all') && format('["{0}"]', inputs.configuration) || '["starter","pocket-notes","starter-app-demo"]') }}
         # Two lanes per configuration, each on its own simulator: the whole UI suite on one runner takes
         # 20 to 25 minutes on a slow one (ios-6dd.13). `scripts/test-ios.sh` maps the lane to test classes.
         lane: [shell, features]
@@ -135,13 +138,13 @@ jobs:
         run: python3 scripts/check-ui-identifiers.py
 
       - name: Check app icon document and render previews
-        if: matrix.configuration == 'starter' && matrix.lane == 'shell'
+        if: matrix.lane == 'shell' && (matrix.configuration == 'starter' || matrix.configuration == 'starter-app-demo')
         env:
           IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
         run: python3 scripts/check-app-icon.py --output "$IOS_TEST_OUTPUT_DIR/icon"
 
       - name: Verify invalid configurations fail clearly
-        if: matrix.configuration == 'starter' && matrix.lane == 'shell'
+        if: matrix.lane == 'shell' && (matrix.configuration == 'starter' || matrix.configuration == 'starter-app-demo')
         run: python3 scripts/tests/check-configurations.py
 
       - name: Verify report handling
