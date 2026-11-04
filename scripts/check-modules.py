@@ -106,7 +106,13 @@ def check_project(project_objects, products, project_dir, root=ROOT):
             references[identifier] = "StarterModules"
         elif isa == "XCRemoteSwiftPackageReference":
             remote.append(obj.get("repositoryURL", ""))
+    # "Enabled" means linked by the app: an extension target (the widget drawing a Live Activity) may
+    # depend on a module the default app doesn't, and that module isn't enabled for the app or its tests.
+    app_dependencies = set()
     for obj in project_objects.values():
+        if obj.get("isa") == "PBXNativeTarget" and obj.get("productType") == "com.apple.product-type.application":
+            app_dependencies.update(obj.get("packageProductDependencies", []))
+    for identifier, obj in project_objects.items():
         if obj.get("isa") != "XCSwiftPackageProductDependency":
             continue
         name = obj.get("productName", "")
@@ -114,7 +120,8 @@ def check_project(project_objects, products, project_dir, root=ROOT):
         if obj.get("package") is None or obj.get("package") in references:
             if name not in products:
                 raise ValueError(f"project.yml enables product {name!r}, which Package.swift does not define")
-            enabled.append(name)
+            if not app_dependencies or identifier in app_dependencies:
+                enabled.append(name)
         else:
             remote.append(name)
     return sorted(set(enabled)), remote
