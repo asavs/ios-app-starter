@@ -12,6 +12,15 @@ Entries for the module library mechanism, the first-round modules, their lanes a
 - **Finding (confirmed):** on a simulator booted seconds before the run, the UI test runner twice died in XCTest's stall detector while bootstrapping ("operation never finished bootstrapping", abort in `XCTWaiter handleStalledWait`); the same signature took a lane on #155. Pre-booted simulators passed every time. Recorded on `ios-6dd.13`.
 - **Verified:** header gap under the chrome, in points: full build on iPhone 17, 58 at the default size and 112 at the largest, portrait and landscape alike; iPad Air 11-inch and iPhone 13 mini pass the same assertions; no-modules build (status bar only), 66 and 120 in portrait, 58 and 112 in landscape. Allowances 83 and 190. All local simulators; the iPhone 13 mini runs its own older runtime, the others iOS 27.0.
 - **Remaining:** iPad Split View and Stage Manager aren't claimed by the template, so not measured; the largest text size scrolls from the top like any other size, measured in the same test.
+## 2026-11-04 — Let the simulator settle before the UI test runner starts
+
+- **Tools:** GitHub-hosted macOS runner (`xcode-27`), Xcode 27.0; the Mac's simulators. Task `ios-6dd.13`.
+- **Symptom (confirmed):** the UI test runner died while preparing to run tests ("Early unexpected exit, operation never finished bootstrapping", signal abrt), with XCTest's stall detector in the crash report (`XCTWaiter handleStalledWait` then abort). Once on #155's starter features lane while the three other lanes of the same run passed, and twice locally on an iPad Air and an iPhone 13 mini booted seconds before the run, while the long-booted iPhone 17 passed. The same two simulators passed every time after thirty seconds up.
+- **Fix:** `scripts/prepare-simulator.py` no longer stops at `bootstatus -b`: it waits twenty seconds (`IOS_SIMULATOR_SETTLE_SECONDS`). Cheap against a 25-minute lane, and the evidence above is correlation on three occurrences, not a documented cause.
+- **Finding (confirmed):** a first version also launched and quit a system app after the boot, to exercise SpringBoard's launch path; on the hosted runner, with twelve module-test jobs preparing simulators at once, `simctl launch` hung in three of them past the step's five-minute limit. Nothing in this step may block without a bound.
+- **Verified:** the script runs locally against the iPhone 17 simulator; the hosted evidence is the runs after this lands, read with `scripts/review_ci.py`, and whether the signature recurs.
+- **Remaining:** if it recurs with the settle in place, the next diagnostic is the runner's crash report from the lane's diagnostics artifact rather than a longer wait.
+
 ## 2026-11-03 — Content schema and ownership: two store histories, one coordinator, a journaled erase
 
 - **Tools:** Xcode 27.0, iPhone 17 / iOS 27.0 simulator. Task `ios-125.3`, slice 3 of docs/design/feature-tabs.md, from docs/research/content-ownership.md; later commits on codex/content-ownership (draft #148), the research kept first.
