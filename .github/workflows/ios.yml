@@ -209,17 +209,15 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
 
-  # Run each package test target as its own required matrix lane. The list comes from Modules/ so
-  # adding a module does not require maintaining a second inventory in this workflow.
+  # Every package test target from one build on one simulator. Until 2026-11-04 this was a matrix
+  # lane per module: twelve simulators booting at once beside the app lanes, and the load showed
+  # as stalled UI queries and runner-bootstrap crashes in the app lanes (ios-6dd.13). The module
+  # list from Modules/ still gates the job, so a change with no modules skips it.
   module-tests:
     needs: changes
     if: needs.changes.outputs.run == 'true' && needs.changes.outputs.modules != '[]'
-    strategy:
-      fail-fast: false
-      matrix:
-        module: ${{ fromJSON(needs.changes.outputs.modules) }}
     runs-on: xcode-27
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       IOS_TEST_DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=27.0
       IOS_SPM_CACHE_DIR: ${{ github.workspace }}/build/swiftpm-cache
@@ -246,17 +244,17 @@ jobs:
       - name: Prepare simulator
         timeout-minutes: 5
         run: python3 scripts/prepare-simulator.py
-      - name: Test module ${{ matrix.module }}
+      - name: Test every module
         id: module_tests
-        timeout-minutes: 20
+        timeout-minutes: 40
         env:
           IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/module-test-results
-        run: bash scripts/test-module.sh "${{ matrix.module }}"
+        run: bash scripts/test-module.sh all
       - name: Upload module test report
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: module-test-results-${{ matrix.module }}
+          name: module-test-results-all
           path: ${{ runner.temp }}/module-test-results
           retention-days: 14
           if-no-files-found: warn
