@@ -181,6 +181,25 @@ Upstream telemetry is on by default; the integration sets `ASC_TELEMETRY_DISABLE
 
 CI uses fixtures to test permission failures, incomplete credentials, malformed responses, timeouts and secret-canary redaction, and runs native CLI help and version on each platform to check that the executable and flags exist. **A fixture pass is not a real Apple account check.** Run the opt-in workflow for findings on your account before signing; the demo's signing result says nothing about another account.
 
+## Optional programs and wider testing
+
+The membership covers two things the template does not do for you. Each is the owner's decision; an agent can explain them and prepare a plan, but does not enroll, submit or invite on its own.
+
+### App Store Small Business Program
+
+The program cuts Apple's commission on paid apps and In-App Purchases from 30% to 15%. It matters only once the app sells something; a free app with no purchases gains nothing.
+
+- **Who qualifies:** developers new to the App Store, and existing developers whose proceeds were at most 1 million USD in the prior calendar year. Proceeds are sales after Apple's commission and certain taxes and adjustments, and they count across every Associated Developer Account (for example, another membership you own more than half of or control).
+- **Who enrolls:** the Account Holder, after accepting the latest Paid Apps agreement in App Store Connect. The application lists every Associated Developer Account with its name, Team ID, Account Holder email and relationship.
+- **When it applies:** from fifteen days after the end of the fiscal month in which Apple approves enrollment. Sales before then are at the standard rate, so enroll before the first paid release rather than after.
+- **Losing it:** passing 1 million USD in a calendar year moves future sales that year to the standard rate. Falling back under the threshold re-qualifies you for the following year.
+
+Apple's terms are on the [program page](https://developer.apple.com/app-store/small-business-program/); check them at enrollment time rather than relying on this summary. The [human-step ledger](human-steps.md#ledger) tracks it as an Account Holder step.
+
+### External TestFlight testing
+
+Internal testing reaches App Store Connect users on your team. External testing reaches up to 10,000 people per app by email invitation or public link, after Apple's TestFlight App Review. The template uploads internal-only builds, so external testing needs a reviewed export-policy change and a fresh build. [External testing](testflight-delivery.md#external-testing-optional) in the delivery guide lists the steps and approval gates.
+
 ## Continue to TestFlight
 
 The demo's signing evidence is in the [roadmap](../roadmap.md), and the [archived Windows handoff](archive/windows-milestone-6-handoff.md) records the original acceptance steps. To upload your app, obtain explicit TestFlight authorization and follow [the delivery guide](testflight-delivery.md).

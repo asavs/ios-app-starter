@@ -4,7 +4,7 @@ Checked 2026-10-31. Research only; no module, package dependency or app feature 
 
 ## Recommendation
 
-Wait for an app to request a photo grid or paging feed before building a module. iOS 17 already supplies the layout and paging primitives. Image loading has the most reusable work: thumbnail decoding, request sharing, cancellation and bounded caching. If a real app needs that work, start with a small image loader. Extract a grid or pager only after its interactions and accessibility requirements are clear.
+iOS 17 already supplies the layout and paging primitives for a photo grid or paging feed. Image loading has the most reusable work: thumbnail decoding, request sharing, cancellation and bounded caching. Start with a small image loader, then build the grid and pager once their interactions and accessibility requirements are specified.
 
 Keep video playback policy separate from page layout. A lazy stack does not by itself bound retained players, buffers or image tasks. A future feed needs explicit resource ownership, accessible playback controls and an app decision about autoplay. It also needs measurements on the minimum supported OS and a phone; a successful build with the latest SDK cannot establish those behaviors.
 

@@ -9,7 +9,7 @@ This guide takes a signed build to an iPhone through internal TestFlight testing
 | Every pull request | Portable tests and one simulator smoke lane, as required checks. | None. |
 | Every merge to `main` | All configured simulator lanes. Signing and TestFlight preflights run on pull requests or manual dispatch ([CI guide](ci.md#the-pull-request-loop)). | None. |
 | Owner's iPhone, internal TestFlight | When merged changes alter what a user sees or does. Batch them: at most one delivery per hour, dispatched from `main`, the only branch the `apple-credentials` environment accepts. | The delivery workflow uploads to internal TestFlight. |
-| Other testers, external TestFlight | When the owner decides a set of changes is ready for wider testing. | A separate decision and workflow; the internal-only upload here does not enable it. |
+| Other testers, external TestFlight | When the owner decides a set of changes is ready for wider testing. | A separate decision and workflow; the internal-only upload here does not enable it. See [External testing](#external-testing-optional). |
 
 Changes nothing in the app shows, such as scripts, documentation and CI, never trigger a device build.
 
@@ -90,6 +90,19 @@ gh workflow run testflight-groups.yml --ref main --field configuration=starter-a
 Both runs use `apple-credentials`, so they run from `main` only, and behind any required reviewer the repository has added. The plan reports whether the group exists, whether it is internal with all-builds access, how many App Store Connect users hold the chosen role and how many are already members, and what it would do. Apply creates the group with `--internal --access-all-builds`, adds each missing user, and re-reads the group to verify. Nothing is deleted or modified; an existing group of the same name without all-builds access stops the run for manual review. Once the new group is verified, retire any group it replaces by hand in App Store Connect. Reports and logs carry counts and statuses, never tester identities.
 
 The manifest declares `ITSAppUsesNonExemptEncryption = NO`, so Apple does not ask the export-compliance question for each build; the compiled-app and archive checks require the key. Revisit it when the app adds networking or cryptography.
+
+## External testing (optional)
+
+External testing puts a build in front of people outside your App Store Connect team: up to 10,000 testers per app, invited by email or through a public link. It is documented here and not yet automated. Every step changes what other people can install, so each one needs the owner's explicit approval; authorizing internal delivery does not cover it.
+
+1. **Decide to test externally.** The owner picks the build, the audience (named testers or a public link) and how long the test runs. Builds stay installable for 90 days after upload.
+2. **Change the export policy in review.** `config/ExportOptions-TestFlight.plist` sets `testFlightInternalTestingOnly` to `true`, and Apple refuses to add such builds to external groups. An external-capable policy sets it to `false` (or adds a second reviewed policy file for external builds). The release helper rejects unreviewed policy changes, so this lands through a pull request, and then a fresh build is uploaded under it. An internal-only build cannot be converted afterwards.
+3. **Fill in the test information.** In App Store Connect → TestFlight → Test Information, enter the Beta App Description, Feedback Email and contact details ([Apple: provide test information](https://developer.apple.com/help/app-store-connect/test-a-beta-version/provide-test-information/)). Publish the privacy policy URL first; the [ledger](human-steps.md#ledger) tracks it.
+4. **Create an external group.** Apple requires an internal group to exist first; the [internal group workflow](#internal-group-with-automatic-distribution) creates one. Account Holder, Admin or App Manager can manage external groups. The `TestFlight groups` workflow creates internal groups only.
+5. **Add the build and submit it for TestFlight App Review.** Add one build at a time and write What to Test for it. The first build of each version gets a full review; later builds of the same version may not. Only one build per version can be in review, and Apple accepts up to six submissions in 24 hours. Plan for review time before a deadline.
+6. **Invite testers.** Email invitations go to named people. A public link can be filtered by device and OS and capped at 1 to 10,000 testers, but anyone who has it can pass it on. Testers who join by link appear anonymously, with their installs, sessions and crashes still visible. Disable or cap a link when the test ends.
+
+Keep tester identities out of logs, reports and the repository, as the internal workflow does. See [Apple: invite external testers](https://developer.apple.com/help/app-store-connect/test-a-beta-version/invite-external-testers/). The [tester feedback guide](tester-feedback.md) applies to external testers as well.
 
 ## Debug symbols
 

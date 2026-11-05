@@ -4,7 +4,7 @@ Checked 2026-10-31 by Codex. Research only; no Chat module or provider is implem
 
 ## Recommendation
 
-When an app needs chat and implementation is approved, build a small optional SwiftUI module with a chronological transcript, a growing composer, message selection and explicit sending/error states. Keep its iOS 17 minimum. Start with `ScrollView` and `LazyVStack`, stable message identifiers and a separate follow-latest policy. Give the app control over message content, attachment presentation and actions. Use Theme for semantic colors and text styles, without making the transcript depend on Database, an AI SDK or a messaging service. Follow the existing [module rules](../modules.md).
+When implementation is approved, build a small optional SwiftUI module with a chronological transcript, a growing composer, message selection and explicit sending/error states. Keep its iOS 17 minimum. Start with `ScrollView` and `LazyVStack`, stable message identifiers and a separate follow-latest policy. Give the app control over message content, attachment presentation and actions. Use Theme for semantic colors and text styles, without making the transcript depend on Database, an AI SDK or a messaging service. Follow the existing [module rules](../modules.md).
 
 Treat the composer and transcript as separate components. A source supplies displayable messages; an app-owned controller connects that source to a provider. An ordinary conversation, a local model, a server stream and a future bridge can then share the UI. Transport and channel contracts remain future work in [roadmap milestones 11 to 13](../../roadmap.md#milestones).
 
@@ -138,6 +138,6 @@ Keep the provider connection's lifetime with the controller/session. A disappear
 
 ## Evidence required before implementation ships
 
-Implementation remains pending an app need and approval. First compare the SwiftUI transcript with a collection-view prototype using the same fake and a large paginated dataset. Measure repeated prepend, append, streaming, attachment sizing, memory and selection on real hardware. Verify iOS 17 separately from iOS 27; a new SDK or a passing iOS 27 lane does not prove minimum-runtime behaviour.
+Implementation remains pending approval. First compare the SwiftUI transcript with a collection-view prototype using the same fake and a large paginated dataset. Measure repeated prepend, append, streaming, attachment sizing, memory and selection on real hardware. Verify iOS 17 separately from iOS 27; a new SDK or a passing iOS 27 lane does not prove minimum-runtime behaviour.
 
 The future module needs tests for grouping/day boundaries, stable IDs, duplicate echoes, stale revisions, cancellation, reconnection and send failure. Its app UI test should use stable accessibility identifiers such as `chat.transcript`, `chat.message.<id>`, `chat.composer`, `chat.send`, `chat.attach` and `chat.latest`; send a draft, receive a scripted reply, reveal older history without being pulled down, and attach a screenshot. Manual verification must cover VoiceOver focus/order, range selection where promised, Dynamic Type, contrast, Reduce Motion and keyboard variants. Review attachment ownership with the companion research and provider contracts with the later AI/channel designs before turning this sketch into a public API.

@@ -99,7 +99,7 @@ An app created with "Use this template" never receives later template changes, s
 
 - Build something small in app two with the modules. Improve a module because of it. Tag. Bump both apps. Record how long the loop took.
 - Rule: an app may not carry a copy of module code for more than one release.
-- Second module round when a real app asks for it: `Auth` with Sign in with Apple first, since it needs no backend, then `Persistence` on SwiftData with a schema design guide.
+- Second module round: `Auth` with Sign in with Apple first, since it needs no backend, then `Persistence` on SwiftData with a schema design guide.
 
 ### 9. AI and chat
 
@@ -125,7 +125,7 @@ An app created with "Use this template" never receives later template changes, s
 
 ## Standing rules
 
-- Nothing enters the template until at least one real app has needed it.
+- The template covers everything an app can build in idiomatic Swift on Apple's frameworks. A module enters once it has its own tests and the app still builds with it removed.
 - A step a human had to repeat twice becomes a script or runbook entry the same week.
 - A step described as "only you can do this" gets a row in [the human-step ledger](human-steps.md) the same day, with its automation path.
 - A failure that cost more than an hour gets a journal entry with the fix, same day.

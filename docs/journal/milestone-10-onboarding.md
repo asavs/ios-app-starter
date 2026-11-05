@@ -2,6 +2,13 @@
 
 Entries for the fresh-repository onboarding path, consent model, and resumable setup command. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-05 — Template scope: comprehensive, not demand-driven
+
+- **Context:** Documentation only; no toolchain change. Prompted by a review of what the Apple Developer Program membership includes (Small Business Program, external TestFlight, CloudKit, Foundation Models, WeatherKit, Background Assets, Xcode Cloud).
+- **Decision (owner):** The standing rule "nothing enters the template until a real app has needed it" is withdrawn. The template now aims to cover everything an iPhone or iPad app can build in idiomatic Swift on Apple's frameworks. A module still enters only with its own tests, and the app must still build with any subset enabled. Updated in `roadmap.md`, `docs/master-plan.md`, `README.md` and the forward-looking lines of the chat, database, feed-and-grid and duration-picker research notes. Third-party libraries (GRDB, image loaders) stay out of the template; an app adds them itself.
+- **Documented, not automated:** The Small Business Program ([Apple setup](../apple-setup.md#app-store-small-business-program)) and external TestFlight testing ([delivery guide](../testflight-delivery.md#external-testing-optional)), each with a ledger row in `human-steps.md`. External testing needs a reviewed export policy with `testFlightInternalTestingOnly=false` and a fresh build; the `TestFlight groups` workflow still creates internal groups only.
+- **Remaining uncertainty:** Program terms and TestFlight limits are summarized from Apple's pages as read on 2026-11-05; recheck at enrollment or first external submission. Whether the pinned `asc` CLI can create external groups and submit for TestFlight App Review is unverified.
+
 ## 2026-10-25 — A bot's pull request needs the owner twice
 
 - **Context:** First run of the opt-in README icon sync (`readme-icon.yml`), GitHub-hosted runners, gh CLI on macOS. The workflow opened [PR #119](https://github.com/asavs/ios-app-starter/pull/119) with the workflow token and dispatched `ios.yml` and `apple-diagnostics.yml` on its branch so the required checks would report.

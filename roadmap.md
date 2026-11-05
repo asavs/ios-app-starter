@@ -49,7 +49,7 @@ As of 2026-10-24. Evidence for every milestone is in [the setup journal](docs/se
 
 - **Milestones 1–7 are complete.** The app is generated from `project.yml` and built, tested and reported on GitHub-hosted Xcode 27.0, with configuration validated. Apple setup diagnostics, signing and TestFlight delivery were accepted for the demo app, which the owner installed on their iPhone on 2026-10-12. Device failures can be investigated from Windows, and the compatibility matrix verified the iOS 17.0 minimum (see the simulator lanes under Agreed defaults).
 - **Milestone 8 is in place.** Structured failure reports, the run review command, feedback-to-issue drafts, measured caching, one-command TestFlight delivery and `run-on-device` for Macs all exist. The optional ad hoc dev-build channel waits on a hosting decision.
-- **Milestone 9, round one, is released.** Theme, Onboarding and Settings shipped with TemplateVersion as module library `0.2.0` (2026-10-23); `0.3.0` (2026-10-24) made all module text translatable and moved Keychain calls off the main actor. See [docs/modules.md](docs/modules.md). Sign-in and the SwiftData layer are round two, built when a real app asks for them.
+- **Milestone 9, round one, is released.** Theme, Onboarding and Settings shipped with TemplateVersion as module library `0.2.0` (2026-10-23); `0.3.0` (2026-10-24) made all module text translatable and moved Keychain calls off the main actor. See [docs/modules.md](docs/modules.md). Sign-in and the SwiftData layer are round two.
 - **Milestone 10 is in progress.** The [onboarding runbook](docs/agent-onboarding.md), its consent checklist and the resumable `scripts/setup.py` exist. Still to do: the timed run on a fresh second app and one backpropagation round-trip.
 
 ## Feature screen direction
@@ -58,7 +58,7 @@ The owner-approved [feature-tab plan](docs/design/feature-tabs.md) adds useful L
 
 ## Principles
 
-Every module is a scaffold an app can keep, change or delete: the app builds with any subset enabled, and nothing enters the template until a real app needed it. Update onboarding and examples with every milestone. Finish with complete walkthroughs from Windows and from a Mac, and generated non-AI and AI examples that prove optional modules stay optional.
+The template aims to be comprehensive: a module for everything an iPhone or iPad app can build in idiomatic Swift on Apple's frameworks, so an app starts from working, tested pieces rather than from scratch. Every module is a scaffold an app can keep, change or delete, and the app builds with any subset enabled. Update onboarding and examples with every milestone. Finish with complete walkthroughs from Windows and from a Mac, and generated non-AI and AI examples that prove optional modules stay optional.
 
 Keep [the setup experience journal](docs/setup-experience.md) current throughout: failures, fixes, decisions, verification evidence and open limitations, so people and agents can reproduce the setup. `AGENTS.md` makes this part of the workflow.
 
