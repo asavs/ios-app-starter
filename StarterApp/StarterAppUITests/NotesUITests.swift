@@ -72,10 +72,10 @@ final class NotesUITests: StarterUITestCase {
         // Search by body text, then no results.
         let searchField = app.searchFields.firstMatch
         XCTAssertTrue(searchField.waitForExistence(timeout: 5))
-        searchField.tap()
-        searchField.typeText("rounds")
+        try focus(searchField, in: app)
+        app.typeText("rounds")
         XCTAssertTrue(monday.exists, "The body matches")
-        searchField.typeText("zzz")
+        app.typeText("zzz")
         XCTAssertTrue(element(app, Identifiers.Notes.noResults).waitForExistence(timeout: 10))
         attach(name: "notes-no-results")
         let close = app.buttons["Close"].firstMatch
