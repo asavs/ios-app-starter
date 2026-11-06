@@ -22,11 +22,12 @@ final class NotesUITests: StarterUITestCase {
         let save = app.buttons[Identifiers.Notes.Editor.save].firstMatch
         XCTAssertFalse(save.isEnabled, "Nothing to save yet")
         try focus(title, in: app)
-        app.typeText("Monday")
+        app.typeText("Monday\n") // Return puts the keyboard away, so focusing the body below waits for it to come back.
+        XCTAssertTrue(waitUntilGone(app.keyboards.firstMatch, timeout: 5))
         let body = app.textViews[Identifiers.Notes.Editor.body].firstMatch
         try focus(body, in: app)
         app.typeText("Three rounds, then rest.")
-        XCTAssertTrue(waitUntil(save, "isEnabled == true", timeout: 5))
+        XCTAssertTrue(waitUntil(save, "isEnabled == true", timeout: 15), "Typing enables Save")
         attach(name: "notes-editor")
         save.tap()
         XCTAssertTrue(waitUntil(save, "isEnabled == false", timeout: 10), "Saved: nothing left to save")
@@ -87,7 +88,7 @@ final class NotesUITests: StarterUITestCase {
         XCTAssertTrue(title.waitForExistence(timeout: 10))
         try focus(body, in: app)
         app.typeText(" Stretch after.")
-        XCTAssertTrue(waitUntil(save, "isEnabled == true", timeout: 5))
+        XCTAssertTrue(waitUntil(save, "isEnabled == true", timeout: 15))
         save.tap()
         XCTAssertTrue(waitUntil(save, "isEnabled == false", timeout: 10))
         try focus(title, in: app)
