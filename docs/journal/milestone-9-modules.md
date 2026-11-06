@@ -2,6 +2,16 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-04 — The UI suite on an iPad: the top tab bar isn't a tab bar, and one phone-only assumption
+
+- **Tools:** Xcode 27.0, iPad Air 11-inch (M4) on iOS 27.0, local simulator. Task `ios-f0n`, from the full demo suite run on the iPad class at Asa's request (the only physical iPad on the Mac is a 2017 model below the iOS 17 minimum).
+- **Symptom (confirmed):** sixteen of twenty-three UI tests passed; five failed at their first step with "TabShell is enabled in this build but no Home tab". On an iPad the shell renders its tabs as a top bar, and the accessibility tree doesn't expose that bar as a tab bar, so `app.tabBars.buttons` was empty. One more failed because the Timer's Skip and Reset sit side by side at the largest text size on an iPad, where the width allows it, while the test expected the phone's stacking.
+- **Fix (tests only):** `tabButton(in:_:title:)` looks in the tab bar first and falls back to any button with the tab's identifier or title; the stacking assertion applies under 500 points of window width and checks a shared row otherwise. The six tests pass on the iPad; the phone path is unchanged.
+- **Finding (real, filed as `ios-bqu`):** at the largest text size the onboarding flow on an iPad is a centred form sheet and the notifications primer's text is clipped behind the page dots and the Continue button.
+- **Verified:** the six tests on the iPad Air 11-inch simulator; the tab tests on the iPhone 17 simulator after the change.
+- **Remaining:** the app's full-width controls on iPad (`ios-93k`, a design follow-up); a physical iPad on iPadOS 17 or later for a device run.
+
+- **Finding (confirmed, 2026-11-04):** querying a tab button among all the app's buttons (the first iPad version of the helper) timed out a hierarchy snapshot on a loaded hosted runner ("Timed out while evaluating UI query", PR #159's first run). The helper now asks once per test whether the app draws a tab bar and keeps the narrow `tabBars.buttons` query on an iPhone; the broad query is only for the iPad's top bar. Verified under the demo configuration on the iPhone 17 and iPad Air simulators.
 ## 2026-11-04 — Pull requests test the demo configuration only
 
 - **Tools:** GitHub-hosted macOS runner (`xcode-27`). Task `ios-6dd.13`; Asa chose this over more trimming while the queue was hours deep.

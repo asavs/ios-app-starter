@@ -130,9 +130,19 @@ class StarterUITestCase: XCTestCase {
     /// A TabShell tab button: by its `tabs.<id>` identifier, or by its English title, because iOS 26.3
     /// leaves tab bar buttons without the identifier (with both `Tab` and `tabItem`; iOS 27 keeps it).
     @MainActor
+    /// The tab's button: in the tab bar on a phone; on an iPad the tabs render as a top bar that
+    /// isn't a tab bar to the accessibility tree, so the lookup falls back to any button that
+    /// carries the tab's identifier (or its title where the identifier is missing).
     func tabButton(in app: XCUIApplication, _ id: String, title: String) -> XCUIElement {
-        app.tabBars.buttons.matching(tabPredicate(id, title: title)).firstMatch
+        if hasTabBar == nil { hasTabBar = app.tabBars.firstMatch.waitForExistence(timeout: 10) }
+        let predicate = tabPredicate(id, title: title)
+        return hasTabBar == true ? app.tabBars.buttons.matching(predicate).firstMatch
+            : app.buttons.matching(predicate).firstMatch
     }
+
+    /// Whether this app draws a tab bar, asked once per test: on an iPhone the buttons are queried
+    /// inside it (a narrow query a loaded runner answers in time), on an iPad among all buttons.
+    private var hasTabBar: Bool?
 
     func tabPredicate(_ id: String, title: String) -> NSPredicate {
         NSPredicate(format: "identifier == %@ OR (identifier == '' AND label == %@)", Identifiers.Tabs.button(id), title)
