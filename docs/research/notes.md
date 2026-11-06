@@ -1,6 +1,6 @@
 # Notes tab: editor, drafts and Library references
 
-Built as: pending. Research checked 2026-11-05 against the iOS 17 minimum, using `main` at `ff15a6f31e176bf97af73d29571d16240412e5fc`. This is a proposal for [slice 5](../design/feature-tabs.md), not evidence of a working Notes screen or iOS 17 runtime coverage. The ownership and migration decisions remain in [content ownership](content-ownership.md).
+Built as the Notes tab (2026-11-05, `ios-125.5`): `StarterApp/StarterApp/Notes`, see [modules.md](../modules.md#attachments) for what shipped. Research checked 2026-11-05 against the iOS 17 minimum, using `main` at `ff15a6f31e176bf97af73d29571d16240412e5fc`. This is a proposal for [slice 5](../design/feature-tabs.md), not evidence of a working Notes screen or iOS 17 runtime coverage. The ownership and migration decisions remain in [content ownership](content-ownership.md).
 
 ## Existing foundation
 

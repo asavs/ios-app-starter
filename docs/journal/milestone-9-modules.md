@@ -10,6 +10,17 @@ Entries for the module library mechanism, the first-round modules, their lanes a
 - **Verified:** the workflow parses; the Python suite holds. The evidence is this change's own pull-request run (two `test (starter-app-demo, <lane>)` jobs, `module-tests`, `no-modules`) and the push run on main after it (the minimal and pocket-notes configurations too), read with `scripts/review_ci.py`.
 - **Remaining:** a second runner is the lever that none of this touches (ios-j3t).
 
+## 2026-11-05 — The Notes tab: drafts above the editor, and three things a Form's section won't do
+
+- **Tools:** Xcode 27.0, iPhone 17 simulator on iOS 27.0. Task `ios-125.5`, on Codex's research branch (draft PR #162).
+- **Decisions (from the research's open questions):** a blank note can't be saved and a body-only note shows its first line as its title; an unsaved draft lives in memory above the editor (`NoteDrafts.shared`), so tabs, hiding and a rebuilt shell keep it and the list shows it as unsaved, while the process ending loses it, by design; references wait until the note is saved, and Notes offers existing Library items only (no import from Notes); deletion has no undo.
+- **Finding (confirmed):** a draft store that forgot "clean" drafts dropped a new blank note the instant its text field wrote its initial empty value, and the editor vanished (the destination found no draft). A new draft stays while its editor is open, blank or not, and is forgotten on Done or Discard; the list hides blank ones.
+- **Finding (confirmed):** `.sheet`, `.alert` and `.task` on a `Section` inside a `Form` present nothing and never run; they sit on a row's button now. `confirmationDialog` on iOS 27 is a popover without its cancel-role button, so it's attached to the button it belongs to (Done, the row's delete) and a UI test cancels by tapping outside it; the keyboard covers the tab bar and the rows below a field, so the tests press Return first.
+- **Finding (confirmed):** a coordinator save that failed left the failed change pending on the shared context (the research's first flag); every coordinator save now rolls back on failure. `link` assigned `existing.count` as the next order, so an unlink in the middle then a link gave two references one order (the second flag); it takes the next order after the highest, with a test.
+- **Finding (confirmed, tests):** two identifier prefixes that share a stem (`notes.picker.` for rows and `notes.picker.done`) make "first match" hit the wrong element; the rows are `notes.picker.item.<id>`.
+- **Verified:** `NoteTests` (5, including a reopened disk store and a failing store), `ContentCoordinatorTests` (10) and `NotesUITests` pass on the iPhone 17 simulator; screenshots are the test's attachments. VERIFY_MORE
+- **Remaining:** the real keyboard and VoiceOver pass on the phone; iOS 17 runtime coverage comes from the Actions matrix, not from this run; durable (crash-resistant) drafts are a separate design if ever wanted.
+
 ## 2026-11-04 — The Library tab: what iOS 27 does with a search field and a confirmation dialog inside a tab
 
 - **Tools:** Xcode 27.0, iPhone 17 simulator on iOS 27.0. Task `ios-125.4`.
