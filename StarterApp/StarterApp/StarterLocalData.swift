@@ -107,6 +107,10 @@ enum StarterLocalData {
             .defaults(StarterDefaults.store),
             .secrets(in: KeychainStore()),
         ]
+#if canImport(TabShell)
+        // The stored choice just went; the tabs on screen follow without a relaunch.
+        steps.append(LocalDataReset.Step("tabs") { FeatureChoices.shared.reload() })
+#endif
 #if canImport(Onboarding)
         // After the defaults wipe: TipKit keeps its own store, and this marks it for a reset.
         steps.append(LocalDataReset.Step("tips") { ContextualTips.resetOnNextLaunch() })

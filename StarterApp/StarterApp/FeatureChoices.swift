@@ -1,17 +1,19 @@
-import Foundation
 import Observation
+import SwiftUI // Also brings Foundation, and `Array.move(fromOffsets:toOffset:)` for a list's reordering.
 #if canImport(TabShell)
 
-/// The tabs a person chose, in their order: the host's state behind the shell. One per scene root.
+/// The tabs a person chose, in their order: the state behind the shell and Settings' chooser. One for
+/// the app (`shared`): a choice is the app's, while the selected tab is each scene's.
 ///
 /// Stored as the feature identifiers joined with commas under `tabs.chosen`, apart from the selected
 /// tab (`tabs.selected`), so choosing tabs and switching tabs never overwrite each other. A string,
 /// not an array, so a UI test can seed it through the argument domain (`-tabs.chosen settings,welcome`).
 ///
 /// Reading never writes: opening the app, or replaying onboarding, leaves a stored choice as it is.
-/// Only `set`, `reveal` and `open(link:)` store.
+/// Only the methods that change the choice store.
 @MainActor @Observable
 final class FeatureChoices {
+    static let shared = FeatureChoices()
     static let storageKey = "tabs.chosen"
 
     /// The chosen features, normalized: available, unique, Settings included, never empty.
@@ -62,6 +64,11 @@ final class FeatureChoices {
         chosen.contains(.welcome) ? .welcome : chosen[0]
     }
 
+    /// The features this build has that aren't among the chosen tabs, in default order.
+    var hidden: [StarterFeature] {
+        features.filter { $0.isAvailable && !chosen.contains($0.id) }
+    }
+
     /// Replace the choice: a chooser's result, in its order. Normalized and stored.
     func set(_ tabs: [StarterTab]) {
         chosen = Self.normalize(tabs.map(\.rawValue), features: features)
@@ -74,6 +81,35 @@ final class FeatureChoices {
         guard !chosen.contains(tab), features.contains(where: { $0.id == tab && $0.isAvailable }) else { return }
         chosen.append(tab)
         store()
+    }
+
+    /// Take a tab out of the choice. Only navigation changes: the feature's content and any running
+    /// session stay where they are. Nothing happens for a required feature.
+    func hide(_ tab: StarterTab) {
+        guard features.first(where: { $0.id == tab })?.isRequired == false else { return }
+        set(chosen.filter { $0 != tab })
+    }
+
+    /// Reorder as a list's `onMove` reports it.
+    func move(fromOffsets source: IndexSet, toOffset destination: Int) {
+        var reordered = chosen
+        reordered.move(fromOffsets: source, toOffset: destination)
+        set(reordered)
+    }
+
+    /// Move a tab by places, for the Move Up and Move Down accessibility actions. A move past either
+    /// end does nothing.
+    func move(_ tab: StarterTab, by offset: Int) {
+        guard let index = chosen.firstIndex(of: tab), chosen.indices.contains(index + offset) else { return }
+        var reordered = chosen
+        reordered.swapAt(index, index + offset)
+        set(reordered)
+    }
+
+    /// Read the stored choice again, after Erase Local Data removed it: the tabs go back to the
+    /// configuration's defaults at once, and nothing is stored.
+    func reload() {
+        chosen = Self.normalize(Self.stored(in: defaults), features: features)
     }
 
     /// What a validated deep link to a feature should do.

@@ -25,7 +25,7 @@ Each feature of the starter is a module you enable in `project.yml`; keep the on
 | `Theme` | Design tokens and shared UX elements, following the system by default. | Read `@Environment(\.appTheme)`; customize once at the root with `.appTheme(_:)`. |
 | `Onboarding` | A first-launch flow of typed steps (welcome sheet, choice, tour card, permission primer, custom), remembered per version, and TipKit contextual tips that wait for it. Requires `Theme`. | `ContentView().onboardingGate(steps:version:)`; steps are `OnboardingStep` values. |
 | `Settings` | A settings screen with the standard rows every app ends up writing: appearance, About with the version, a Privacy and Data screen (with the privacy policy link App Review requires), Acknowledgements, and Erase Local Data behind a confirmation; plus Keychain-backed secrets. Requires `Theme`. | `SettingsView { } about: { PrivacyNoticeLink(_:); AcknowledgementsLink(_:) }` behind a navigation link; `ResetLocalDataButton(reset:)`; `.storedAppearance()` at the root; `KeychainStore` / `SecureStore`. |
-| `TabShell` | Native tabs with typed, restored selection and host-supplied count badges. Requires `Theme`. | `TabShell(tabs:selection:) { tab in ... }`; own `TabSelection` in scene-root `@State`. Unreleased. |
+| `TabShell` | Native tabs with typed, restored selection and host-supplied count badges. Requires `Theme`. | `TabShell(tabs:selection:) { tab in ... }`; own `TabSelection` in scene-root `@State`. Reordering its tabs resets the destinations' view state, so keep what must survive above the shell. Unreleased. |
 | `SessionTimer` | A session plan of timed phases and a clock that can't drift: start, pause, skip, reset, and a snapshot of where the session is. No UI or other module. | `SessionTimer(plan:)` in a view's `@State`; read `timer.snapshot`. Unreleased. |
 | `TimerRing` | One ring that empties as a phase runs out, with its remaining time and title, read by VoiceOver as one element. Requires `Theme`. | `TimerRing(fractionRemaining:title:remaining:)` fed from a `SessionSnapshot`. Unreleased. |
 | `Cues` | Foreground sounds and haptics for a session (a start tone, a beep per phase, a chime at the end, each with its tap), mixed with music, with a Sounds & Haptics section for Settings. | `CuePlayer().play(.phaseChange)`, `player.haptic(for:)` inside `sensoryFeedback`; `CueSettingsSection()` inline or `CueSettingsLink()` as a row in `SettingsView { }`. Unreleased. |
@@ -148,7 +148,7 @@ NavigationStack {
 }
 ```
 
-In the template, `StarterSettingsView` supplies the Cues sounds section, the example secret and onboarding-reset rows. With TabShell it appears in the Settings tab; without TabShell the welcome screen's gear button (`settings.open`) pushes it. The root applies `.storedAppearance()`.
+In the template, `StarterSettingsView` supplies the Tabs row (with TabShell: `TabChoicesView`, which shows, hides and reorders the features in `StarterFeature.all`), the Cues sounds row, the example secret and onboarding-reset rows. With TabShell it appears in the Settings tab; without TabShell the welcome screen's gear button (`settings.open`) pushes it. The root applies `.storedAppearance()`.
 
 #### Settings from other modules
 

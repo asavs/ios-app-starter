@@ -43,15 +43,15 @@ fi
 # a Mac and never came up on the hosted runner (docs/ci.md), so the switch is for the next attempt.
 workers="${IOS_TEST_WORKERS:-1}"
 
-# IOS_TEST_LANE picks the test classes: `shell` (the unit tests, the shell, theme and deep links, and
-# onboarding) or `features` (the Timer, Attachments and Settings classes); unset or `all` runs everything.
+# IOS_TEST_LANE picks the test classes: `shell` (the unit tests, the shell, theme and deep links, onboarding
+# and the tab chooser) or `features` (the Timer, Attachments and Settings classes); unset or `all` runs everything.
 # CI runs the two lanes as separate jobs, each with its own simulator, since one runner takes over 25
 # minutes for the whole suite (ios-6dd.13). The classes are listed here so the workflow needn't know them.
 lane_settings=()
 case "${IOS_TEST_LANE:-all}" in
   shell)
     lane_settings=(-only-testing:StarterAppTests -only-testing:StarterAppUITests/StarterAppUITests
-      -only-testing:StarterAppUITests/OnboardingUITests) ;;
+      -only-testing:StarterAppUITests/OnboardingUITests -only-testing:StarterAppUITests/TabChoicesUITests) ;;
   features)
     lane_settings=(-only-testing:StarterAppUITests/TimerUITests -only-testing:StarterAppUITests/AttachmentsUITests
       -only-testing:StarterAppUITests/LibraryUITests -only-testing:StarterAppUITests/NotesUITests

@@ -89,6 +89,51 @@ struct FeatureChoicesTests {
         #expect(choices.chosen == [.welcome, .library, .notes, .settings], "An unavailable feature can't be revealed")
     }
 
+    @Test func hidingKeepsOrderAndNeverTheRequiredFeature() {
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let choices = FeatureChoices(defaults: defaults, features: full)
+        #expect(choices.hidden.isEmpty)
+        choices.hide(.library)
+        choices.hide(.welcome)
+        #expect(choices.chosen == [.notes, .timer, .settings])
+        #expect(choices.hidden.map(\.id) == [.welcome, .library], "Hidden features in default order")
+        #expect(defaults.string(forKey: FeatureChoices.storageKey) == "notes,timer,settings")
+        choices.hide(.settings)
+        #expect(choices.chosen.contains(.settings), "Settings stays")
+        choices.hide(.notes)
+        choices.hide(.timer)
+        #expect(choices.chosen == [.settings], "Everything else can go")
+        choices.reveal(.library)
+        #expect(choices.chosen == [.settings, .library], "Shown again at the end")
+        #expect(FeatureChoices(defaults: defaults, features: withoutTimer).hidden.map(\.id) == [.welcome, .notes],
+                "A feature this build left out isn't offered")
+    }
+
+    @Test func movingReordersAndStores() {
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let choices = FeatureChoices(defaults: defaults, features: full)
+        choices.move(fromOffsets: [4], toOffset: 0)
+        #expect(choices.chosen == [.settings, .welcome, .library, .notes, .timer], "As a drag reports it")
+        #expect(defaults.string(forKey: FeatureChoices.storageKey) == "settings,welcome,library,notes,timer")
+        choices.move(.library, by: -1)
+        #expect(choices.chosen == [.settings, .library, .welcome, .notes, .timer])
+        choices.move(.library, by: 1)
+        #expect(choices.chosen == [.settings, .welcome, .library, .notes, .timer])
+        choices.move(.settings, by: -1)
+        choices.move(.timer, by: 1)
+        #expect(choices.chosen == [.settings, .welcome, .library, .notes, .timer], "Past either end nothing moves")
+    }
+
+    @Test func reloadingAfterAnEraseGoesBackToTheDefaultsAndStoresNothing() {
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let choices = FeatureChoices(defaults: defaults, features: full)
+        choices.hide(.timer)
+        defaults.removeObject(forKey: FeatureChoices.storageKey)
+        choices.reload()
+        #expect(choices.chosen == [.welcome, .library, .notes, .timer, .settings])
+        #expect(defaults.string(forKey: FeatureChoices.storageKey) == nil)
+    }
+
     @Test func theArgumentDomainSeedsAChoice() throws {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         // The same reading a UI test's `-tabs.chosen settings,welcome` gets through the argument domain.

@@ -2,19 +2,21 @@ import SwiftUI
 #if canImport(TabShell)
 import TabShell
 
-/// Each scene owns its choice of tabs and its selection; each destination owns its navigation stack.
+/// The choice of tabs is the app's; each scene owns its selection and each destination its navigation stack.
 ///
 /// The shell gets every available feature's descriptor once; which tabs show, and in what order,
 /// follows `FeatureChoices` through the selection's tab list.
 struct StarterTabsView: View {
-    @State private var choices: FeatureChoices
+    @State private var choices = FeatureChoices.shared
     @State private var selection: TabSelection<StarterTab>
     /// A deep link named a feature this build doesn't include: the alert that says so.
     @State private var unavailable: StarterFeature?
+    /// Above the shell, which rebuilds its destinations when tabs are reordered: the chooser doing
+    /// the reordering stays open.
+    @State private var settingsPath: [SettingsRoute] = []
 
     init() {
-        let choices = FeatureChoices()
-        _choices = State(initialValue: choices)
+        let choices = FeatureChoices.shared
         _selection = State(initialValue: TabSelection(tabs: choices.chosen, defaultTab: choices.defaultTab,
                                                       defaults: StarterDefaults.store))
     }
@@ -72,8 +74,13 @@ struct StarterTabsView: View {
 #endif
         case .settings:
 #if canImport(Settings)
-            NavigationStack {
+            NavigationStack(path: $settingsPath) {
                 StarterSettingsView()
+                    .navigationDestination(for: SettingsRoute.self) { route in
+                        switch route {
+                        case .tabs: TabChoicesView()
+                        }
+                    }
             }
 #else
             FeatureUnavailableView(feature: StarterFeature.feature(.settings))

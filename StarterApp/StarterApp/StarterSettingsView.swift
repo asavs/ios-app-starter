@@ -42,9 +42,17 @@ struct StarterSettingsView: View {
 
     var body: some View {
         SettingsView {
-#if canImport(Cues)
+#if canImport(TabShell) || canImport(Cues)
             Section {
+#if canImport(TabShell)
+                NavigationLink(value: SettingsRoute.tabs) {
+                    Label("Tabs", systemImage: "rectangle.bottomthird.inset.filled")
+                }
+                .accessibilityIdentifier(Identifiers.TabChoices.open)
+#endif
+#if canImport(Cues)
                 CueSettingsLink(defaults: StarterDefaults.store)
+#endif
             }
 #endif
             Section {

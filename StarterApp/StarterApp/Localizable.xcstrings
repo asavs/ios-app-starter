@@ -1,6 +1,17 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%@ hidden": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ hidden"
+          }
+        }
+      }
+    },
     "%@ isn't in this build": {
       "extractionState": "manual",
       "localizations": {
@@ -8,6 +19,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ isn't in this build"
+          }
+        }
+      }
+    },
+    "%@ moved to position %lld of %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ moved to position %lld of %lld"
+          }
+        }
+      }
+    },
+    "%@ shown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ shown"
           }
         }
       }
@@ -118,6 +151,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Address"
+          }
+        }
+      }
+    },
+    "Always shown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Always shown"
           }
         }
       }
@@ -331,6 +375,17 @@
         }
       }
     },
+    "Drag to change the order. Settings always stays, so you can come back here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag to change the order. Settings always stays, so you can come back here."
+          }
+        }
+      }
+    },
     "Edit": {
       "extractionState": "manual",
       "localizations": {
@@ -404,6 +459,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hello, world!"
+          }
+        }
+      }
+    },
+    "Hidden": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hidden"
+          }
+        }
+      }
+    },
+    "Hidden tabs keep their content, and anything running keeps going.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hidden tabs keep their content, and anything running keeps going."
+          }
+        }
+      }
+    },
+    "Hide %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide %@"
           }
         }
       }
@@ -525,6 +613,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Modules %@"
+          }
+        }
+      }
+    },
+    "Move Down": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Down"
+          }
+        }
+      }
+    },
+    "Move Up": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Up"
           }
         }
       }
@@ -925,6 +1035,17 @@
         }
       }
     },
+    "Show %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show %@"
+          }
+        }
+      }
+    },
     "Show the welcome tour on next launch": {
       "extractionState": "manual",
       "localizations": {
@@ -943,6 +1064,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Show tips again on next launch"
+          }
+        }
+      }
+    },
+    "Shown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shown"
           }
         }
       }
@@ -1020,6 +1152,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tabata"
+          }
+        }
+      }
+    },
+    "Tabs": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tabs"
           }
         }
       }
