@@ -10,6 +10,7 @@ import Foundation
 enum StarterTab: String, CaseIterable {
     case welcome
     case library
+    case notes
     case timer
     case settings
 }

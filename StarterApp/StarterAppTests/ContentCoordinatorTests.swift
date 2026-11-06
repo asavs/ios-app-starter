@@ -42,6 +42,24 @@ struct ContentCoordinatorTests {
         #expect(try pending().isEmpty, "The cleanup intent is cleared")
     }
 
+    @Test func linkingAfterAnUnlinkKeepsTheOrdersUniqueAndTheSequenceStable() throws {
+        let note = Note(title: "Plan", body: "")
+        container.mainContext.insert(note)
+        try container.mainContext.save()
+        let first = try coordinator.collect(photo("First"), title: "First")
+        let second = try coordinator.collect(photo("Second"), title: "Second")
+        let third = try coordinator.collect(photo("Third"), title: "Third")
+        let fourth = try coordinator.collect(photo("Fourth"), title: "Fourth")
+        for item in [first, second, third] { try coordinator.link(note, to: item) }
+        try coordinator.unlink(note, from: second)
+        try coordinator.link(note, to: fourth)
+        let listed = try coordinator.items(for: note)
+        #expect(listed.map { $0.item?.title } == ["First", "Third", "Fourth"], "The remaining order, then the new one last")
+        #expect(Set(listed.map(\.reference.order)).count == 3, "No two references share an order")
+        try coordinator.unlink(note, itemID: fourth.id)
+        #expect(try coordinator.items(for: note).count == 2, "Unlinking by id works for an item that may be gone")
+    }
+
     @Test func aNoteNeverOwnsAnItemAndDeletingTheItemKeepsTheNotesText() async throws {
         let attachment = photo()
         let item = try coordinator.collect(attachment, title: "Plan page")

@@ -46,11 +46,11 @@ final class LibraryUITests: StarterUITestCase {
         // Search narrows to the link, then to nothing.
         let searchField = app.searchFields.firstMatch
         XCTAssertTrue(searchField.waitForExistence(timeout: 5), "The Library is searchable")
-        searchField.tap()
-        searchField.typeText("plan")
+        try focus(searchField, in: app) // A single tap didn't take focus on a loaded hosted runner.
+        app.typeText("plan")
         XCTAssertTrue(waitUntil(photo, "exists == false", timeout: 10), "The photo doesn't match")
         XCTAssertTrue(link.exists, "The link matches by title and address")
-        searchField.typeText("zzz")
+        app.typeText("zzz")
         let noResults = element(app, Identifiers.Library.noResults)
         XCTAssertTrue(noResults.waitForExistence(timeout: 10), "No match shows the system's no-results state")
         attach(name: "library-no-results")

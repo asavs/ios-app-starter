@@ -33,6 +33,8 @@ struct StarterFeature: Identifiable, Hashable {
                        systemImage: "house", isAvailable: true, isDefault: true, isRequired: false),
         StarterFeature(id: .library, title: "Library", summary: "Collect photos, files and links, and find them again.",
                        systemImage: "books.vertical", isAvailable: hasLibrary, isDefault: true, isRequired: false),
+        StarterFeature(id: .notes, title: "Notes", summary: "Write and keep notes, with items from your Library.",
+                       systemImage: "note.text", isAvailable: hasNotes, isDefault: true, isRequired: false),
         StarterFeature(id: .timer, title: "Timer", summary: "Run interval sessions, save plans and follow them from the Lock Screen.",
                        systemImage: "timer", isAvailable: hasTimer, isDefault: true, isRequired: false),
         StarterFeature(id: .settings, title: "Settings", summary: "Appearance, sounds, privacy and your local data.",
@@ -53,6 +55,14 @@ struct StarterFeature: Identifiable, Hashable {
 
     private static var hasLibrary: Bool {
 #if canImport(Database) && canImport(Attachments)
+        true
+#else
+        false
+#endif
+    }
+
+    private static var hasNotes: Bool {
+#if canImport(Database)
         true
 #else
         false
