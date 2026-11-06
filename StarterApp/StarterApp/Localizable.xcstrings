@@ -56,6 +56,17 @@
         }
       }
     },
+    "Add": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add"
+          }
+        }
+      }
+    },
     "Add a photo, a file or a link that goes with this preset.": {
       "extractionState": "manual",
       "localizations": {
@@ -63,6 +74,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Add a photo, a file or a link that goes with this preset."
+          }
+        }
+      }
+    },
+    "Add from Library": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add from Library"
+          }
+        }
+      }
+    },
+    "Add writes the first one. Notes stay on this device.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add writes the first one. Notes stay on this device."
           }
         }
       }
@@ -155,6 +188,17 @@
         }
       }
     },
+    "Collect photos, files and links on the Library tab first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collect photos, files and links on the Library tab first."
+          }
+        }
+      }
+    },
     "Collect photos, files and links, and find them again.": {
       "extractionState": "manual",
       "localizations": {
@@ -177,6 +221,17 @@
         }
       }
     },
+    "Couldn't Change the Library Items": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't Change the Library Items"
+          }
+        }
+      }
+    },
     "Couldn't Delete": {
       "extractionState": "manual",
       "localizations": {
@@ -184,6 +239,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Couldn't Delete"
+          }
+        }
+      }
+    },
+    "Couldn't Save": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't Save"
           }
         }
       }
@@ -221,6 +287,17 @@
         }
       }
     },
+    "Delete this note?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this note?"
+          }
+        }
+      }
+    },
     "Discard": {
       "extractionState": "manual",
       "localizations": {
@@ -228,6 +305,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Discard"
+          }
+        }
+      }
+    },
+    "Discard Changes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard Changes"
           }
         }
       }
@@ -342,6 +430,39 @@
         }
       }
     },
+    "Item no longer in the Library": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Item no longer in the Library"
+          }
+        }
+      }
+    },
+    "Items from your Library stay in the Library.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Items from your Library stay in the Library."
+          }
+        }
+      }
+    },
+    "Keep Editing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep Editing"
+          }
+        }
+      }
+    },
     "Kind": {
       "extractionState": "manual",
       "localizations": {
@@ -360,6 +481,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Library"
+          }
+        }
+      }
+    },
+    "Library Items": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Library Items"
           }
         }
       }
@@ -397,6 +529,17 @@
         }
       }
     },
+    "New Note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Note"
+          }
+        }
+      }
+    },
     "No attachments yet": {
       "extractionState": "manual",
       "localizations": {
@@ -408,6 +551,17 @@
         }
       }
     },
+    "No notes yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No notes yet"
+          }
+        }
+      }
+    },
     "No presets yet": {
       "extractionState": "manual",
       "localizations": {
@@ -415,6 +569,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "No presets yet"
+          }
+        }
+      }
+    },
+    "Note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note"
+          }
+        }
+      }
+    },
+    "Notes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes"
+          }
+        }
+      }
+    },
+    "Nothing in your Library yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing in your Library yet"
           }
         }
       }
@@ -540,6 +727,17 @@
         }
       }
     },
+    "Remove": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        }
+      }
+    },
     "Replace this screen in ContentView.swift.": {
       "extractionState": "manual",
       "localizations": {
@@ -639,6 +837,17 @@
         }
       }
     },
+    "Save": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        }
+      }
+    },
     "Save Current": {
       "extractionState": "manual",
       "localizations": {
@@ -668,6 +877,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Save the current plan to reuse it later."
+          }
+        }
+      }
+    },
+    "Save the note to add items from your Library.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save the note to add items from your Library."
           }
         }
       }
@@ -815,6 +1035,17 @@
         }
       }
     },
+    "The Library isn't ready yet. Try again in a moment.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Library isn't ready yet. Try again in a moment."
+          }
+        }
+      }
+    },
     "The Library wasn't ready to save this item.": {
       "extractionState": "manual",
       "localizations": {
@@ -881,6 +1112,17 @@
         }
       }
     },
+    "This note isn't saved yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This note isn't saved yet."
+          }
+        }
+      }
+    },
     "Timer": {
       "extractionState": "manual",
       "localizations": {
@@ -925,6 +1167,17 @@
         }
       }
     },
+    "Titles and text": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titles and text"
+          }
+        }
+      }
+    },
     "Try Again": {
       "extractionState": "manual",
       "localizations": {
@@ -932,6 +1185,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Try Again"
+          }
+        }
+      }
+    },
+    "Unsaved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unsaved"
+          }
+        }
+      }
+    },
+    "Unsaved changes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unsaved changes"
+          }
+        }
+      }
+    },
+    "Untitled": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Untitled"
           }
         }
       }
@@ -987,6 +1273,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Work"
+          }
+        }
+      }
+    },
+    "Write and keep notes, with items from your Library.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write and keep notes, with items from your Library."
+          }
+        }
+      }
+    },
+    "You have unsaved changes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You have unsaved changes"
           }
         }
       }

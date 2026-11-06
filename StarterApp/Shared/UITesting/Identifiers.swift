@@ -11,11 +11,46 @@ enum Identifiers {
     enum Tabs {
         static let welcome = "welcome"
         static let library = "library"
+        static let notes = "notes"
         static let timer = "timer"
         static let settings = "settings"
 
         /// The tab bar button for a tab.
         static func button(_ tab: String) -> String { "tabs.\(tab)" }
+    }
+
+    /// The Notes tab (`NotesView`, `NoteEditorView` and the Library item picker).
+    enum Notes {
+        static let add = "notes.add"
+        static let empty = "notes.empty"
+        static let noResults = "notes.noResults"
+        /// The confirmation dialog's Delete button.
+        static let deleteConfirm = "notes.delete.confirm"
+        /// Each row, saved or an unsaved new draft: `notes.row.<note id>`.
+        static let rowPrefix = "notes.row."
+        static func row(_ id: String) -> String { "\(rowPrefix)\(id)" }
+
+        enum Editor {
+            static let title = "notes.editor.title"
+            static let body = "notes.editor.body"
+            static let save = "notes.editor.save"
+            static let done = "notes.editor.done"
+            /// The unsaved-changes dialog's Discard button.
+            static let discard = "notes.editor.discard"
+            /// The failed-save alert's Try Again button.
+            static let retry = "notes.editor.retry"
+            static let addReference = "notes.editor.addReference"
+            /// Each Library item the note refers to: `notes.reference.<item id>`.
+            static let referencePrefix = "notes.reference."
+            static func reference(_ itemID: String) -> String { "\(referencePrefix)\(itemID)" }
+        }
+
+        enum Picker {
+            /// Each Library item offered: `notes.picker.item.<item id>`.
+            static let itemPrefix = "notes.picker.item."
+            static func item(_ id: String) -> String { "\(itemPrefix)\(id)" }
+            static let done = "notes.picker.done"
+        }
     }
 
     /// The Library tab (`LibraryView` and `LibraryItemView`); the grid, its cells and the Add menu
