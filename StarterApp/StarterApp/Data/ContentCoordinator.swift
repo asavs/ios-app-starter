@@ -56,7 +56,7 @@ final class ContentCoordinator {
     func collect(_ attachment: Attachment, title: String) throws -> LibraryItem {
         let item = LibraryItem(title: title, attachment: attachment)
         context.insert(item)
-        try context.save()
+        try saveOrRollback()
         endImport(attachment.id)
         return item
     }
@@ -78,7 +78,7 @@ final class ContentCoordinator {
         let remaining = try owners(of: attachment.id, ignoring: [item.persistentModelID])
         context.delete(item)
         if remaining == 0 { context.insert(PendingAttachmentDeletion(attachment: attachment)) }
-        try context.save()
+        try saveOrRollback()
         if remaining == 0 { scheduleCleanup() }
     }
 
@@ -91,18 +91,25 @@ final class ContentCoordinator {
         let noteID = note.id, itemID = item.id
         let existing = try context.fetch(FetchDescriptor<NoteLibraryReference>(predicate: #Predicate { $0.noteID == noteID }))
         guard !existing.contains(where: { $0.itemID == itemID }) else { return false }
-        context.insert(NoteLibraryReference(noteID: noteID, itemID: itemID, order: existing.count))
-        try context.save()
+        // After the next existing order, not the count: an unlink in the middle must not make two references share one.
+        let order = (existing.map(\.order).max() ?? -1) + 1
+        context.insert(NoteLibraryReference(noteID: noteID, itemID: itemID, order: order))
+        try saveOrRollback()
         return true
     }
 
     /// Remove a note's link to an item. The item and its file stay.
     func unlink(_ note: Note, from item: LibraryItem) throws {
-        let noteID = note.id, itemID = item.id
+        try unlink(note, itemID: item.id)
+    }
+
+    /// The same by the item's id, for a reference whose item is no longer in the Library.
+    func unlink(_ note: Note, itemID: UUID) throws {
+        let noteID = note.id
         for reference in try context.fetch(FetchDescriptor<NoteLibraryReference>(predicate: #Predicate { $0.noteID == noteID && $0.itemID == itemID })) {
             context.delete(reference)
         }
-        try context.save()
+        try saveOrRollback()
     }
 
     /// The items a note refers to, in the note's order; a missing target is reported as nil in place
@@ -122,7 +129,7 @@ final class ContentCoordinator {
             context.delete(reference)
         }
         context.delete(note)
-        try context.save()
+        try saveOrRollback()
     }
 
     // MARK: Presets
@@ -132,7 +139,7 @@ final class ContentCoordinator {
         preset.attachments.removeAll { $0.id == attachment.id }
         let remaining = try owners(of: attachment.id)
         if remaining == 0 { context.insert(PendingAttachmentDeletion(attachment: attachment)) }
-        try context.save()
+        try saveOrRollback()
         if remaining == 0 { scheduleCleanup() }
     }
 
@@ -146,8 +153,21 @@ final class ContentCoordinator {
             released = true
         }
         context.delete(preset)
-        try context.save()
+        try saveOrRollback()
         if released { scheduleCleanup() }
+    }
+
+    // MARK: Saving
+
+    /// Save, or roll the context back so a failed change can't ride along with a later unrelated
+    /// save; the caller reports the error and the records are as they were.
+    private func saveOrRollback() throws {
+        do {
+            try context.save()
+        } catch {
+            context.rollback()
+            throw error
+        }
     }
 
     // MARK: Cleanup

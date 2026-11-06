@@ -9,6 +9,8 @@ import Foundation
 /// builder adds a case here, a descriptor in `StarterFeature.all` and a screen in `StarterTabsView`.
 enum StarterTab: String, CaseIterable {
     case welcome
+    case library
+    case notes
     case timer
     case settings
 }

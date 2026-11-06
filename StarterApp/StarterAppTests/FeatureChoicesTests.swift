@@ -35,8 +35,8 @@ struct FeatureChoicesTests {
     }
 
     @Test func nothingStoredMeansTheDefaults() {
-        #expect(FeatureChoices.normalize(nil, features: full) == [.welcome, .timer, .settings])
-        #expect(FeatureChoices.normalize(nil, features: withoutTimer) == [.welcome, .settings], "Defaults are the available ones")
+        #expect(FeatureChoices.normalize(nil, features: full) == [.welcome, .library, .notes, .timer, .settings])
+        #expect(FeatureChoices.normalize(nil, features: withoutTimer) == [.welcome, .library, .notes, .settings], "Defaults are the available ones")
     }
 
     @Test func aStoredChoiceIsNormalized() {
@@ -45,7 +45,7 @@ struct FeatureChoicesTests {
                 "Unknown and repeated names go; Settings is appended")
         #expect(FeatureChoices.normalize(["timer", "welcome"], features: withoutTimer) == [.welcome, .settings],
                 "A feature this build left out is skipped, not failed")
-        #expect(FeatureChoices.normalize(["nowhere", "elsewhere"], features: full) == [.welcome, .timer, .settings],
+        #expect(FeatureChoices.normalize(["nowhere", "elsewhere"], features: full) == [.welcome, .library, .notes, .timer, .settings],
                 "Nothing valid left means the defaults, not an empty shell")
         #expect(FeatureChoices.normalize(["welcome"], features: full) == [.welcome, .settings],
                 "A stored choice gains no feature by itself, only the required one")
@@ -54,7 +54,7 @@ struct FeatureChoicesTests {
     @Test func readingNeverWritesAndSettingStores() throws {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let fresh = FeatureChoices(defaults: defaults, features: full)
-        #expect(fresh.chosen == [.welcome, .timer, .settings])
+        #expect(fresh.chosen == [.welcome, .library, .notes, .timer, .settings])
         #expect(defaults.string(forKey: FeatureChoices.storageKey) == nil, "Opening the app stores no choice")
 
         fresh.set([.settings, .welcome])
@@ -83,10 +83,10 @@ struct FeatureChoicesTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let choices = FeatureChoices(defaults: defaults, features: withoutTimer)
         #expect(choices.open(link: "timer") == .unavailable(.timer))
-        #expect(choices.chosen == [.welcome, .settings], "Nothing is revealed")
+        #expect(choices.chosen == [.welcome, .library, .notes, .settings], "Nothing is revealed")
         #expect(defaults.string(forKey: FeatureChoices.storageKey) == nil)
         choices.reveal(.timer)
-        #expect(choices.chosen == [.welcome, .settings], "An unavailable feature can't be revealed")
+        #expect(choices.chosen == [.welcome, .library, .notes, .settings], "An unavailable feature can't be revealed")
     }
 
     @Test func theArgumentDomainSeedsAChoice() throws {

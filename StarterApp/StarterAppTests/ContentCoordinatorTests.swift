@@ -42,6 +42,24 @@ struct ContentCoordinatorTests {
         #expect(try pending().isEmpty, "The cleanup intent is cleared")
     }
 
+    @Test func linkingAfterAnUnlinkKeepsTheOrdersUniqueAndTheSequenceStable() throws {
+        let note = Note(title: "Plan", body: "")
+        container.mainContext.insert(note)
+        try container.mainContext.save()
+        let first = try coordinator.collect(photo("First"), title: "First")
+        let second = try coordinator.collect(photo("Second"), title: "Second")
+        let third = try coordinator.collect(photo("Third"), title: "Third")
+        let fourth = try coordinator.collect(photo("Fourth"), title: "Fourth")
+        for item in [first, second, third] { try coordinator.link(note, to: item) }
+        try coordinator.unlink(note, from: second)
+        try coordinator.link(note, to: fourth)
+        let listed = try coordinator.items(for: note)
+        #expect(listed.map { $0.item?.title } == ["First", "Third", "Fourth"], "The remaining order, then the new one last")
+        #expect(Set(listed.map(\.reference.order)).count == 3, "No two references share an order")
+        try coordinator.unlink(note, itemID: fourth.id)
+        #expect(try coordinator.items(for: note).count == 2, "Unlinking by id works for an item that may be gone")
+    }
+
     @Test func aNoteNeverOwnsAnItemAndDeletingTheItemKeepsTheNotesText() async throws {
         let attachment = photo()
         let item = try coordinator.collect(attachment, title: "Plan page")
@@ -162,25 +180,5 @@ struct ContentCoordinatorTests {
         let listed = try coordinator.items(for: note)
         #expect(listed.count == 1 && listed[0].item == nil)
     }
-}
-
-/// Records removals; `failures` makes the next removals throw.
-private final class RecordingFileStore: AttachmentStoring, @unchecked Sendable {
-    private(set) var removed: [Attachment.ID] = []
-    var failures = 0
-
-    struct Failure: Error {}
-
-    func add(copying source: URL, displayName: String?, contentType: UTType?) async throws -> Attachment { fatalError("unused") }
-    func add(imageData: Data, contentType: UTType, displayName: String) async throws -> Attachment { fatalError("unused") }
-    func add(link: URL) async throws -> Attachment { fatalError("unused") }
-    func fileURL(for attachment: Attachment) -> URL? { nil }
-    func thumbnail(for attachment: Attachment, pixelSize: Int) async -> CGImage? { nil }
-    func linkMetadataArchive(for attachment: Attachment) async -> Data? { nil }
-    func remove(_ attachment: Attachment) async throws {
-        if failures > 0 { failures -= 1; throw Failure() }
-        removed.append(attachment.id)
-    }
-    func sweep(keeping ids: Set<Attachment.ID>) async throws -> Int { 0 }
 }
 #endif
