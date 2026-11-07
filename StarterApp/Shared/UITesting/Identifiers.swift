@@ -19,6 +19,15 @@ enum Identifiers {
         static func button(_ tab: String) -> String { "tabs.\(tab)" }
     }
 
+    /// Settings' chooser of tabs (`TabChoicesView`); `tab` is a `StarterTab` raw value.
+    enum TabChoices {
+        /// The row in Settings that opens the chooser.
+        static let open = "settings.tabs"
+
+        static func hide(_ tab: String) -> String { "tabChoices.hide.\(tab)" }
+        static func show(_ tab: String) -> String { "tabChoices.show.\(tab)" }
+    }
+
     /// The Notes tab (`NotesView`, `NoteEditorView` and the Library item picker).
     enum Notes {
         static let add = "notes.add"

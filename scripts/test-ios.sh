@@ -44,8 +44,9 @@ fi
 workers="${IOS_TEST_WORKERS:-1}"
 
 # IOS_TEST_LANE picks the test classes: `shell` (the unit tests, the shell, theme and deep links, and
-# onboarding) or `features` (the Timer, Attachments and Settings classes); unset or `all` runs everything.
-# CI runs the two lanes as separate jobs, each with its own simulator, since one runner takes over 25
+# onboarding), `features` (the Timer, Attachments and Settings classes) or `tabs` (the tab chooser, Library
+# and Notes); unset or `all` runs everything.
+# CI runs the lanes as separate jobs, each with its own simulator, since one runner takes over 25
 # minutes for the whole suite (ios-6dd.13). The classes are listed here so the workflow needn't know them.
 lane_settings=()
 case "${IOS_TEST_LANE:-all}" in
@@ -54,10 +55,12 @@ case "${IOS_TEST_LANE:-all}" in
       -only-testing:StarterAppUITests/OnboardingUITests) ;;
   features)
     lane_settings=(-only-testing:StarterAppUITests/TimerUITests -only-testing:StarterAppUITests/AttachmentsUITests
-      -only-testing:StarterAppUITests/LibraryUITests -only-testing:StarterAppUITests/NotesUITests
       -only-testing:StarterAppUITests/SettingsUITests) ;;
+  tabs)
+    lane_settings=(-only-testing:StarterAppUITests/TabChoicesUITests -only-testing:StarterAppUITests/LibraryUITests
+      -only-testing:StarterAppUITests/NotesUITests) ;;
   all) ;;
-  *) echo "test-ios: unknown IOS_TEST_LANE '$IOS_TEST_LANE' (shell, features or all)" >&2; exit 2 ;;
+  *) echo "test-ios: unknown IOS_TEST_LANE '$IOS_TEST_LANE' (shell, features, tabs or all)" >&2; exit 2 ;;
 esac
 printf 'Test lane: %s\n' "${IOS_TEST_LANE:-all}"
 parallel_settings=(-parallel-testing-enabled NO)

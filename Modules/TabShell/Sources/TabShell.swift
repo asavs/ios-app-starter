@@ -9,12 +9,15 @@ import Theme
 /// The selection decides which tabs show and in what order (`TabSelection.tabs`); `tabs` describes
 /// every destination the host can show, in any order, and may list more than the selection uses. A
 /// host whose person chooses their tabs passes all of its descriptors once and changes only the
-/// selection's list.
+/// selection's list. Reordering the list resets the destinations' view state, such as a navigation
+/// stack the destination owns; keep what must survive above the shell.
 public struct TabShell<ID: Hashable & RawRepresentable, Content: View>: View where ID.RawValue == String {
     @Environment(\.appTheme) private var theme
     @Bindable private var selection: TabSelection<ID>
     private let items: [ID: TabItem<ID>]
     private let content: (ID) -> Content
+    /// Counts reorders. See `body`.
+    @State private var reorders = 0
 
     public init(tabs: [TabItem<ID>], selection: TabSelection<ID>,
                 @ViewBuilder content: @escaping (ID) -> Content) {
@@ -63,6 +66,14 @@ public struct TabShell<ID: Hashable & RawRepresentable, Content: View>: View whe
                     }
                 }
             }
+        }
+        // After tabs swap places, iOS 27.0 draws a moved tab with another tab's symbol, with `Tab` and
+        // `tabItem` alike, and no later change of the label corrects it. A new tab view draws them
+        // right, so a reorder builds one. The destinations' view state goes with it, which is why
+        // this happens only for a reorder: tabs coming and going keep theirs.
+        .id(reorders)
+        .onChange(of: selection.tabs) { old, new in
+            if TabOrder.isReorder(from: old, to: new) { reorders += 1 }
         }
         .tint(theme.colors.accent)
         // Native bars own their material, safe areas, selected traits, and motion preferences.
