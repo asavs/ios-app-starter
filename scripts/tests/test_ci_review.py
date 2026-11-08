@@ -27,9 +27,11 @@ class CIReviewTests(unittest.TestCase):
             )
             self.assertEqual(
                 review_ci.parse_test_summary(path),
-                {"runtime": "name=iPhone 17,OS=27.0", "counts": (1, 1, 0, 0),
+                {"runtime": "name=iPhone 17,OS=27.0", "counts": (1, 1, 0, 0), "retried": 0,
                  "passed": True, "failed": False},
             )
+            path.write_text(path.read_text() + "\n### Passed on retry (2)\n\n- `A/testOne()`\n", encoding="utf-8")
+            self.assertEqual(review_ci.parse_test_summary(path)["retried"], 2)
 
     def test_artifact_extracts_public_app_and_symbol_fields_only(self):
         with tempfile.TemporaryDirectory() as directory:

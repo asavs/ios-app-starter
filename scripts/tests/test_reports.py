@@ -80,6 +80,37 @@ class ReportTests(unittest.TestCase):
         {"exportedFileName": "A1.png", "suggestedHumanReadableName": "welcome-screen", "isAssociatedWithFailure": False},
         {"exportedFileName": "B2.mp4", "suggestedHumanReadableName": "Screen Recording.mp4", "isAssociatedWithFailure": False}]}]
 
+    @staticmethod
+    def retry_tests(final, first_message, second_message=None):
+        """tests.json as Xcode 27 writes it with -retry-tests-on-failure (shape seen on 2026-11-08)."""
+        retry = dict(nodeType="Repetition", name="Retry 1", result="Failed" if second_message else "Passed",
+                     children=[dict(nodeType="Failure Message", name=second_message)] if second_message else [])
+        case = dict(nodeType="Test Case", name="testFlaky()", nodeIdentifier="StarterAppUITests/testFlaky()", result=final,
+                    children=[dict(nodeType="Repetition", name="First Run", result="Failed",
+                                   children=[dict(nodeType="Failure Message", name=first_message)]), retry])
+        return dict(testNodes=[dict(nodeType="Test Plan", name="StarterApp", result=final, children=[
+            dict(nodeType="UI test bundle", name="StarterAppUITests", result=final, children=[
+                dict(nodeType="Test Suite", name="StarterAppUITests", result=final, children=[case])])])])
+
+    def test_a_test_that_passed_on_retry_passes_the_run_and_is_listed(self):
+        code, summary = self.report(dict(result="Passed", totalTestCount=1, passedTests=1, failedTests=0, skippedTests=0),
+                                    0, tests=self.retry_tests("Passed", "OnboardingUITests.swift:63: failed - The welcome sheet should be the first step"))
+        self.assertEqual(code, 0)
+        self.assertIn("## iOS tests: passed", summary)
+        self.assertIn("### Passed on retry (1)", summary)
+        self.assertIn("`StarterAppUITests/testFlaky()` (`OnboardingUITests.swift:63`): failed - The welcome sheet", summary)
+        self.assertEqual(self.last_failures["failures"], [])
+        retried = self.last_failures["retried"][0]
+        self.assertEqual((retried["file"], retried["line"], retried["attempts"]), ("OnboardingUITests.swift", 63, 2))
+
+    def test_a_test_that_failed_every_attempt_keeps_its_messages(self):
+        code, summary = self.report(dict(result="Failed", totalTestCount=1, passedTests=0, failedTests=1, skippedTests=0),
+                                    65, tests=self.retry_tests("Failed", "A.swift:1: failed - first", "A.swift:1: failed - again"))
+        self.assertEqual(code, 1)
+        self.assertNotIn("Passed on retry", summary)
+        self.assertEqual([f["message"] for f in self.last_failures["failures"]], ["failed - first", "failed - again"])
+        self.assertEqual(self.last_failures["retried"], [])
+
     def test_per_test_results_give_file_and_line(self):
         code, summary = self.report(dict(result="Failed", totalTestCount=1, passedTests=0, failedTests=1, skippedTests=0,
                                          testFailures=[dict(testName="testWelcomeScreen()", failureText="failed - Deliberate failure probe")]),

@@ -85,6 +85,9 @@ def load_json_file(path):
     return value if isinstance(value, (dict, list)) else None
 
 
+RETRIED_RE = re.compile(r"### Passed on retry \((\d+)\)")
+
+
 def parse_test_summary(path):
     try:
         content = path.read_text(encoding="utf-8", errors="replace")
@@ -102,7 +105,8 @@ def parse_test_summary(path):
             values = tuple(int(value) for value in match.groups())
             if sum(values[1:]) >= 0 and values[0] == sum(values[1:]):
                 counts = values
-    return {"runtime": runtime, "counts": counts,
+    retried = next((int(match.group(1)) for match in map(RETRIED_RE.fullmatch, content.splitlines()) if match), 0)
+    return {"runtime": runtime, "counts": counts, "retried": retried,
             "passed": "## iOS tests: passed" in content,
             "failed": "## iOS tests: failed" in content}
 
@@ -345,7 +349,9 @@ def artifact_lines(artifacts, pending):
                 total, passed, failed, skipped = counts
                 lines.append(
                     f"- Tests: **{passed}/{total} passed**, {failed} failed, "
-                    f"{skipped} skipped; runtime `{test['runtime'] or 'not recorded'}`; "
+                    f"{skipped} skipped"
+                    + (f", **{test['retried']} passed only on retry**" if test.get("retried") else "")
+                    + f"; runtime `{test['runtime'] or 'not recorded'}`; "
                     f"report {'passed' if test['passed'] else 'failed/unknown'}"
                 )
             else:

@@ -90,6 +90,18 @@ if [[ "$workers" =~ ^[0-9]+$ ]] && (( workers > 1 )); then
 fi
 printf 'Test workers: %s\n' "$workers"
 
+# IOS_TEST_ATTEMPTS above 1 runs a failed test again, up to that many attempts in all; a test passes if
+# any attempt does, and the report lists every test that needed a second one ("Passed on retry"), so
+# a flaky test stays visible without failing the run. CI sets 2: on loaded hosted runners single UI
+# queries have taken 8 to 30 s and failed tests that pass on a quieter runner (2026-11-07). Local runs
+# default to one attempt, where a failure is worth seeing at once.
+attempts="${IOS_TEST_ATTEMPTS:-1}"
+retry_settings=()
+if [[ "$attempts" =~ ^[0-9]+$ ]] && (( attempts > 1 )); then
+  retry_settings=(-retry-tests-on-failure -test-iterations "$attempts")
+fi
+printf 'Test attempts: %s\n' "$attempts"
+
 # The app is signed ad hoc (no certificate or team needed) with an application-identifier
 # entitlement: the simulator Keychain returns errSecMissingEntitlement (-34018) to an unsigned
 # app, and the Settings UI test stores a secret for real. Release signing is untouched.
@@ -115,6 +127,7 @@ test_settings=(
   -default-test-execution-time-allowance 300
   -maximum-test-execution-time-allowance 300
   -collect-test-diagnostics "${IOS_TEST_DIAGNOSTICS:-never}"
+  ${retry_settings[@]+"${retry_settings[@]}"}
 )
 case "$action" in
   test) command=("${source_settings[@]}" "${test_settings[@]}" "${build_settings[@]}" test) ;;
