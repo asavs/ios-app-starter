@@ -77,13 +77,18 @@ jobs:
         # minimal template's would and more, and the no-modules lane still builds the template without
         # any. The minimal and pocket-notes configurations run on every push to main and on dispatch.
         # One configuration's lanes per pull request instead of every configuration's (2026-11-04, ios-6dd.13).
-        configuration: ${{ fromJSON(github.event_name == 'pull_request' && '["starter-app-demo"]' || (github.event_name == 'workflow_dispatch' && inputs.configuration != 'all') && format('["{0}"]', inputs.configuration) || '["starter","pocket-notes","starter-app-demo"]') }}
+        # A push to main tests the two the pull request didn't: nine lanes at once ran each test two to
+        # three times slower than the pull request's three and timed out three merges in a row (2026-11-07).
+        # A manual run with `all` still tests all three.
+        configuration: ${{ fromJSON(github.event_name == 'pull_request' && '["starter-app-demo"]' || github.event_name == 'push' && '["starter","pocket-notes"]' || inputs.configuration != 'all' && format('["{0}"]', inputs.configuration) || '["starter","pocket-notes","starter-app-demo"]') }}
         # Three lanes per configuration, each on its own simulator: the whole UI suite on one runner takes
         # over 25 minutes (ios-6dd.13), and a build alone takes about 11 of the step's 25 (2026-11-06).
         # `scripts/test-ios.sh` maps the lane to test classes.
         lane: [shell, features, tabs]
     runs-on: xcode-27
-    timeout-minutes: 30
+    # Pull requests keep the tight limits of a required check; main and manual runs aren't required and
+    # share runners with everything else, so they get room to finish rather than fail on the clock.
+    timeout-minutes: ${{ github.event_name == 'pull_request' && 30 || 50 }}
     env:
       IOS_TEST_DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=27.0
       IOS_SPM_CACHE_DIR: ${{ github.workspace }}/build/swiftpm-cache
@@ -176,7 +181,7 @@ jobs:
         # over 25 on slow runners once it grew (2026-11-03). Two simulator clones in one job
         # (IOS_TEST_WORKERS: 2) were measured on 2026-11-01: the build finished and no test ran for 18
         # minutes until the step timed out, so the clones never came up. ios-6dd.13 tracks the rest.
-        timeout-minutes: 25
+        timeout-minutes: ${{ github.event_name == 'pull_request' && 25 || 40 }}
         env:
           IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
           IOS_TEST_ARTIFACT_NAME: ios-test-results-${{ matrix.configuration }}-${{ matrix.lane }}

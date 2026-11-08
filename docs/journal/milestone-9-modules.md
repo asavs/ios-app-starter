@@ -2,6 +2,24 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-07 — Main went red on load, not on a bug: two configurations per push, and room on the clock
+
+- **Tools:** GitHub-hosted macOS runners (`xcode-27`), Xcode 27.0, iPhone 17 / iOS 27.0 simulator. Follows `ios-6dd.13`.
+- **Symptom (confirmed):** the push runs for #162, #159 and #163 (42264229902, 42290237044, 42320457957) all failed, each in different lanes, and no assertion failed in any of them: lanes hit the test step's 25-minute limit. A push started nine simulator lanes (three configurations × three lanes) against a pull request's three, and the same tests ran two to two and a half times slower: Library 113 s on #163's pull-request run and 255 s on main, Notes 137 s and 276 s, Attachments 96 s and 240 s. The demo's three lanes also queued about fifteen minutes behind the other six.
+- **Symptom (confirmed):** in 42320457957, `TabChoicesUITests.testChooseReorderHideAndKeepTabs` failed at its first broad query (`app.buttons["settings.tabs"]`, `TabChoicesUITests.swift:14`) with "Timed out while evaluating UI query": three snapshot attempts about 30 s apart. Like the 2026-11-04 entries, it looks like load: the same path passed in three other tests of that lane, and the whole test passed in 66 s on the pull request. The feature itself was checked on Asa's iPhone from TestFlight build 1.0 (3.56.3): reorder, hide, show and relaunch all worked.
+- **Fix:** a push to main tests `starter` and `pocket-notes` only, since the pull request already ran every demo lane; a manual run with `configuration=all` still tests all three. Main and manual runs get a 40-minute test step and a 50-minute job; pull requests keep 25 and 30, since `ios-gate` is required there.
+- **Cost:** the demo's merge commit isn't tested on main, only the pull request's head; a conflict-free merge that breaks the demo would show on the next pull request instead. `deliver_testflight.py`'s "smoke evidence" line reports the push run, which no longer includes the demo.
+- **Verified:** the workflow parses and the Python suite holds locally. Hosted evidence is this pull request's run (unchanged: three demo lanes, 25 minutes) and the push run after it merges (six lanes, read with `scripts/review_ci.py`).
+- **Remaining:** a second runner (`ios-j3t`) is still the lever for the cause. Broad `app.buttons[...]` queries are the ones that time out under load; narrowing them is the next step if the pull-request lanes start showing it.
+
+## 2026-11-07 — TestFlight delivery stopped at the bundle ID check: an Apple agreement was waiting
+
+- **Tools:** TestFlight delivery workflow, pinned `asc` 5.14.0 through `scripts/apple-doctor.py --account`.
+- **Symptom (confirmed):** run 42440055039 stopped before signing with "Apple identity checks are incomplete; signing was not started." The app record read completed, while `bundle_id`, `distribution_certificates` and `provisioning_profiles` were `not_verified`; all were `present` in the 2026-10-22 delivery. A rerun gave the same result.
+- **Cause (likely, not confirmed from Apple's response):** an updated Apple Developer agreement waited for the Account Holder. The doctor doesn't forward raw output, so Apple's message wasn't seen; the pattern fits Apple blocking the Certificates, Identifiers & Profiles API while App Store Connect reads still work.
+- **Fix:** the Account Holder accepted the agreement on developer.apple.com; the next rerun completed all account checks, signed and uploaded build 1.0 (3.56.3), accepted by Apple.
+- **Remaining:** the diagnostics can't tell an outstanding agreement from other unverified reads. If `app_record` is present but `bundle_id` isn't, check for an agreement first (row in `docs/human-steps.md`).
+
 ## 2026-11-06 — Choosing tabs in Settings: iOS 27.0 draws a moved tab with another tab's symbol
 
 - **Tools:** Xcode 27.1 with the iPhone 17 simulator on iOS 27.0. Task `ios-125.6`.
