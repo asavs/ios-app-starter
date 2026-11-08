@@ -1,0 +1,32 @@
+name: Workflow lint
+
+# A workflow file GitHub can't load fails without running any job, and the pull request then shows no
+# checks for it at all, so a broken iOS workflow can't report its own mistake. This lint runs in a file
+# of its own, on Linux, whenever a workflow or the lint changes (2026-11-07).
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - '.github/actionlint.yaml'
+      - 'scripts/lint-workflows.py'
+      - 'scripts/tool_download.py'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+      - '.github/actionlint.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Lint workflows with the pinned actionlint
+        run: python3 scripts/lint-workflows.py
