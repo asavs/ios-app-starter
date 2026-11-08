@@ -37,7 +37,7 @@ jobs:
         shell: bash
         run: |
           # Explicitly clear credential fields: this probe must never contact Apple.
-          ASC_KEY_ID= ASC_ISSUER_ID= ASC_PRIVATE_KEY= ASC_PRIVATE_KEY_PATH= ASC_PRIVATE_KEY_B64= python3 scripts/apple-doctor.py --account --output-dir build/missing-credentials-probe
+          ASC_KEY_ID='' ASC_ISSUER_ID='' ASC_PRIVATE_KEY='' ASC_PRIVATE_KEY_PATH='' ASC_PRIVATE_KEY_B64='' python3 scripts/apple-doctor.py --account --output-dir build/missing-credentials-probe
       - name: Cache verified public CLI downloads
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -100,7 +100,9 @@ jobs:
           test "$(xcrun --sdk iphoneos --show-sdk-version)" = '27.0'
           bash scripts/generate-project.sh
           python3 scripts/check-configuration.py --output build/configuration.json
+          # shellcheck disable=SC2016 # The backticks are Markdown for the job summary.
           printf '## Selected app configuration\n\nManifest: `%s`\n\nCommit: `%s`\n\n' "${IOS_PROJECT_SPEC#"$PWD/"}" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          # shellcheck disable=SC2016 # Python source; its backticks are Markdown.
           python3 -c 'import json; print("Bundle identifier: `" + json.load(open("build/configuration.json"))[0]["bundleIdentifier"] + "`\n")' >> "$GITHUB_STEP_SUMMARY"
           python3 scripts/apple-doctor.py --configuration build/configuration.json
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
