@@ -2,6 +2,15 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-07 — Build each configuration once; the lanes test that build
+
+- **Tools:** GitHub-hosted macOS runners (`xcode-27`), Xcode 27.0; locally Xcode 27.1 with the iPhone 17 simulator on iOS 27.0.
+- **Symptom (confirmed):** every lane built the same app before testing it. From the logs, the build took 4.5 to 12 minutes per lane (#163's pull-request run: 10.2, 6.6 and 4.5 minutes for its three lanes; the main run after it: 4.5 to 12.1), so a configuration paid for three builds, and three compiles at once added to the load that slowed the tests (entry below). Per lane the Python steps took 30 s to 2.5 min, and the slow ones need Xcode: the resolved-settings check (16 to 33 s), the module check (4 to 8 s), the configuration probes (88 s, seventeen generated projects) and the icon render (9 s). The pure-Python ones took seconds, and the script tests and the pinned-skill check also run in the required `portable` checks on Windows, Linux and macOS.
+- **Change:** a `build` job per configuration runs the Xcode-backed checks once, builds for testing (`IOS_TEST_ACTION=build` in `scripts/test-ios.sh`), checks the built app's identity and uploads the products with their `.xctestrun` as `ios-build-<configuration>` (one day). Each lane boots its simulator, downloads that build and runs its classes with `test-without-building` (`IOS_TEST_ACTION=run`, `IOS_XCTESTRUN`), with the enabled modules passed as `IOS_ENABLED_MODULES` since a lane has no generated project. The lanes copy the build's `configuration.json`, `modules.json`, `built-app.json` and icon renders into their own artifacts, so `ios-test-results-starter-shell` keeps what the social preview and the Apple doctor read. The script tests and the skill check left the Xcode jobs. The configuration list is one output of the `changes` job, so the build and the lanes can't disagree, and `ios-gate` also requires the build.
+- **Cost:** a lane starts only after its configuration's build, so a pull request's wall time is the build plus the slowest lane, about what a lane took before, plus the artifact transfer; the saving is two builds of runner time per configuration and fewer compiles running at once.
+- **Verified locally:** the starter configuration built for testing in 175 s with 20 MB of products; the products, copied to another directory as the download does, ran the `shell` lane without building. Hosted evidence is this pull request's run.
+- **Remaining:** Xcode's compilation cache, kept between runs, could shorten the build job itself; not tried.
+
 ## 2026-11-07 — Main went red on load, not on a bug: two configurations per push, and room on the clock
 
 - **Tools:** GitHub-hosted macOS runners (`xcode-27`), Xcode 27.0, iPhone 17 / iOS 27.0 simulator. Follows `ios-6dd.13`.

@@ -37,6 +37,12 @@ jobs:
       run: ${{ steps.decide.outputs.run }}
       reason: ${{ steps.decide.outputs.reason }}
       modules: ${{ steps.decide.outputs.modules }}
+      # Pull requests test the demo only: it enables every module, so its lanes run every test the
+      # minimal template's would and more, and the no-modules lane still builds the template without
+      # any (2026-11-04, ios-6dd.13). A push to main tests the two the pull request didn't: nine lanes at
+      # once ran each test two to three times slower than the pull request's three and timed out three
+      # merges in a row (2026-11-07). A manual run tests the one it names, or all three.
+      configurations: ${{ github.event_name == 'pull_request' && '["starter-app-demo"]' || github.event_name == 'push' && '["starter","pocket-notes"]' || inputs.configuration != 'all' && format('["{0}"]', inputs.configuration) || '["starter","pocket-notes","starter-app-demo"]' }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -67,31 +73,21 @@ jobs:
             echo "run=true" >> "$GITHUB_OUTPUT"; echo "reason=code, manifest, script or workflow files changed" >> "$GITHUB_OUTPUT"
           fi
 
-  test:
+  # Build each configuration once for testing; its lanes then test that build on their own simulators.
+  # Every lane used to build the same app, which took 5 to 12 minutes of each (2026-11-07).
+  build:
     needs: changes
     if: needs.changes.outputs.run == 'true'
     strategy:
       fail-fast: false
       matrix:
-        # Pull requests test the demo only: it enables every module, so its lanes run every test the
-        # minimal template's would and more, and the no-modules lane still builds the template without
-        # any. The minimal and pocket-notes configurations run on every push to main and on dispatch.
-        # One configuration's lanes per pull request instead of every configuration's (2026-11-04, ios-6dd.13).
-        # A push to main tests the two the pull request didn't: nine lanes at once ran each test two to
-        # three times slower than the pull request's three and timed out three merges in a row (2026-11-07).
-        # A manual run with `all` still tests all three.
-        configuration: ${{ fromJSON(github.event_name == 'pull_request' && '["starter-app-demo"]' || github.event_name == 'push' && '["starter","pocket-notes"]' || inputs.configuration != 'all' && format('["{0}"]', inputs.configuration) || '["starter","pocket-notes","starter-app-demo"]') }}
-        # Three lanes per configuration, each on its own simulator: the whole UI suite on one runner takes
-        # over 25 minutes (ios-6dd.13), and a build alone takes about 11 of the step's 25 (2026-11-06).
-        # `scripts/test-ios.sh` maps the lane to test classes.
-        lane: [shell, features, tabs]
+        configuration: ${{ fromJSON(needs.changes.outputs.configurations) }}
     runs-on: xcode-27
-    # Pull requests keep the tight limits of a required check; main and manual runs aren't required and
-    # share runners with everything else, so they get room to finish rather than fail on the clock.
-    timeout-minutes: ${{ github.event_name == 'pull_request' && 30 || 50 }}
+    timeout-minutes: 35
     env:
       IOS_TEST_DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=27.0
       IOS_SPM_CACHE_DIR: ${{ github.workspace }}/build/swiftpm-cache
+      IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
 
     steps:
       - name: Check out repository
@@ -144,20 +140,14 @@ jobs:
         run: python3 scripts/check-ui-identifiers.py
 
       - name: Check app icon document and render previews
-        if: matrix.lane == 'shell' && (matrix.configuration == 'starter' || matrix.configuration == 'starter-app-demo')
+        if: matrix.configuration == 'starter' || matrix.configuration == 'starter-app-demo'
         env:
           IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
         run: python3 scripts/check-app-icon.py --output "$IOS_TEST_OUTPUT_DIR/icon"
 
       - name: Verify invalid configurations fail clearly
-        if: matrix.lane == 'shell' && (matrix.configuration == 'starter' || matrix.configuration == 'starter-app-demo')
+        if: matrix.configuration == 'starter' || matrix.configuration == 'starter-app-demo'
         run: python3 scripts/tests/check-configurations.py
-
-      - name: Verify report handling
-        run: python3 -m unittest discover -s scripts/tests -v
-
-      - name: Verify pinned agent skills without network access
-        run: python3 scripts/sync-skills.py
 
       - name: Inject deliberate assertion failure in runner checkout
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.verify_failure_reporting }}
@@ -171,29 +161,121 @@ jobs:
           path.write_text(source.replace(needle, needle + '\n        XCTFail("Deliberate failure probe: verify report delivery")'))
           PY
 
+      - name: Build for testing
+        id: ios_build
+        timeout-minutes: 25
+        env:
+          IOS_TEST_ACTION: build
+          IOS_TEST_ARTIFACT_NAME: ios-test-results-${{ matrix.configuration }}-build
+        run: bash scripts/test-ios.sh
+
+      - name: Verify built app identity and minimum OS
+        if: ${{ !cancelled() && steps.ios_build.outcome != 'skipped' }}
+        run: python3 scripts/check-built-app.py "$IOS_TEST_OUTPUT_DIR/configuration.json" "$IOS_TEST_OUTPUT_DIR"
+
+      # The products and the reports the lanes pass on, with the modules the build enables; the lanes
+      # put them back where a single job would have left them, so their artifacts keep the same files.
+      - name: Collect the build for the lanes
+        run: |
+          set -euo pipefail
+          bundle="$RUNNER_TEMP/ios-build"
+          mkdir -p "$bundle/reports"
+          products="$(ls -d "$IOS_TEST_OUTPUT_DIR"/run.*/DerivedData/Build/Products)"
+          mv "$products" "$bundle/products"
+          ls "$bundle/products"/*.xctestrun
+          python3 -c 'import json,sys; print(",".join(json.load(open(sys.argv[1]))["enabled"]))' "$IOS_TEST_OUTPUT_DIR/modules.json" > "$bundle/enabled-modules.txt"
+          cd "$IOS_TEST_OUTPUT_DIR"
+          for item in configuration.json modules.json built-app.json icon; do
+            if [ -e "$item" ]; then cp -R "$item" "$bundle/reports/"; fi
+          done
+
+      - name: Upload the build for the lanes
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ios-build-${{ matrix.configuration }}
+          path: ${{ runner.temp }}/ios-build
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Upload build reports
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ios-test-results-${{ matrix.configuration }}-build
+          path: |
+            ${{ runner.temp }}/ios-test-results/configuration.json
+            ${{ runner.temp }}/ios-test-results/modules.json
+            ${{ runner.temp }}/ios-test-results/run.*/summary.md
+            ${{ runner.temp }}/ios-test-results/run.*/failures.json
+            ${{ runner.temp }}/ios-test-results/run.*/exit-status.txt
+            ${{ runner.temp }}/ios-test-results/run.*/*.log
+            ${{ runner.temp }}/ios-test-results/run.*/Tests.xcresult
+          retention-days: 14
+          if-no-files-found: warn
+
+  test:
+    needs: [changes, build]
+    if: needs.changes.outputs.run == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: ${{ fromJSON(needs.changes.outputs.configurations) }}
+        # Three lanes per configuration, each on its own simulator: the whole UI suite on one runner takes
+        # over 25 minutes (ios-6dd.13). `scripts/test-ios.sh` maps the lane to test classes.
+        lane: [shell, features, tabs]
+    runs-on: xcode-27
+    # Pull requests keep the tight limits of a required check; main and manual runs aren't required and
+    # share runners with everything else, so they get room to finish rather than fail on the clock.
+    timeout-minutes: ${{ github.event_name == 'pull_request' && 30 || 50 }}
+    env:
+      IOS_TEST_DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=27.0
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Select Xcode
+        env:
+          DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
+        run: |
+          xcodebuild -version
+          test "$(xcodebuild -version | head -n 1)" = 'Xcode 27.0'
+          test "$(xcrun --sdk iphoneos --show-sdk-version)" = '27.0'
+          echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
+
       - name: Prepare simulator
         timeout-minutes: 5
         run: python3 scripts/prepare-simulator.py
 
-      - name: Build and test iOS app
+      - name: Download the configuration's build
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: ios-build-${{ matrix.configuration }}
+          path: ${{ runner.temp }}/ios-build
+
+      - name: Restore the build's reports
+        run: |
+          mkdir -p "$RUNNER_TEMP/ios-test-results"
+          cp -R "$RUNNER_TEMP/ios-build/reports/." "$RUNNER_TEMP/ios-test-results/"
+
+      - name: Test the build
         id: ios_tests
-        # One lane's classes, serially: the whole suite took 14.6 minutes when green (2026-11-01) and
-        # over 25 on slow runners once it grew (2026-11-03). Two simulator clones in one job
-        # (IOS_TEST_WORKERS: 2) were measured on 2026-11-01: the build finished and no test ran for 18
-        # minutes until the step timed out, so the clones never came up. ios-6dd.13 tracks the rest.
+        # One lane's classes, serially, against the build job's products. Two simulator clones in one
+        # job (IOS_TEST_WORKERS: 2) were measured on 2026-11-01: no test ran for 18 minutes until the
+        # step timed out, so the clones never came up. ios-6dd.13 tracks the rest.
         timeout-minutes: ${{ github.event_name == 'pull_request' && 25 || 40 }}
         env:
           IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
           IOS_TEST_ARTIFACT_NAME: ios-test-results-${{ matrix.configuration }}-${{ matrix.lane }}
           IOS_TEST_LANE: ${{ matrix.lane }}
-        run: bash scripts/test-ios.sh
-
-      - name: Verify built app identity and minimum OS
-        if: ${{ !cancelled() && steps.ios_tests.outcome != 'skipped' }}
-        env:
-          IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
-          IOS_TEST_ARTIFACT_NAME: ios-test-results-${{ matrix.configuration }}-${{ matrix.lane }}
-        run: python3 scripts/check-built-app.py "$IOS_TEST_OUTPUT_DIR/configuration.json" "$IOS_TEST_OUTPUT_DIR"
+          IOS_TEST_ACTION: run
+        run: |
+          IOS_XCTESTRUN="$(ls "$RUNNER_TEMP"/ios-build/products/*.xctestrun)"
+          IOS_ENABLED_MODULES="$(cat "$RUNNER_TEMP/ios-build/enabled-modules.txt")"
+          export IOS_XCTESTRUN IOS_ENABLED_MODULES
+          bash scripts/test-ios.sh
 
       - name: Upload test reports
         if: always()
@@ -218,10 +300,6 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
 
-  # Every package test target from one build on one simulator. Until 2026-11-04 this was a matrix
-  # lane per module: twelve simulators booting at once beside the app lanes, and the load showed
-  # as stalled UI queries and runner-bootstrap crashes in the app lanes (ios-6dd.13). The module
-  # list from Modules/ still gates the job, so a change with no modules skips it.
   module-tests:
     needs: changes
     if: needs.changes.outputs.run == 'true' && needs.changes.outputs.modules != '[]'
@@ -300,7 +378,7 @@ jobs:
   # The single required check for pull requests. Passes when the simulator lane passed, or when the
   # change was documentation-only. Fails for drafts and for any failed, cancelled or missing lane.
   ios-gate:
-    needs: [changes, test, module-tests, no-modules]
+    needs: [changes, build, test, module-tests, no-modules]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
@@ -309,16 +387,17 @@ jobs:
         env:
           RUN: ${{ needs.changes.outputs.run }}
           REASON: ${{ needs.changes.outputs.reason }}
+          BUILD_RESULT: ${{ needs.build.result }}
           TEST_RESULT: ${{ needs.test.result }}
           MODULE_RESULT: ${{ needs.module-tests.result }}
           NO_MODULES_RESULT: ${{ needs.no-modules.result }}
         run: |
-          echo "Simulator gate requested: $RUN ($REASON); app tests: $TEST_RESULT; module tests: $MODULE_RESULT; no-modules build: $NO_MODULES_RESULT"
-          if [ "$RUN" = "true" ] && [ "$TEST_RESULT" = "success" ] && [ "$MODULE_RESULT" = "success" ] && [ "$NO_MODULES_RESULT" = "success" ]; then
+          echo "Simulator gate requested: $RUN ($REASON); app build: $BUILD_RESULT; app tests: $TEST_RESULT; module tests: $MODULE_RESULT; no-modules build: $NO_MODULES_RESULT"
+          if [ "$RUN" = "true" ] && [ "$BUILD_RESULT" = "success" ] && [ "$TEST_RESULT" = "success" ] && [ "$MODULE_RESULT" = "success" ] && [ "$NO_MODULES_RESULT" = "success" ]; then
             echo "## iOS gate: passed" >> "$GITHUB_STEP_SUMMARY"; echo "App smoke tests, per-module tests and the no-modules build passed." >> "$GITHUB_STEP_SUMMARY"; exit 0
           fi
-          if [ "$RUN" = "false" ] && [ "$TEST_RESULT" = "skipped" ] && [ "$MODULE_RESULT" = "skipped" ] && [ "$NO_MODULES_RESULT" = "skipped" ] && [ "${REASON#documentation-only}" != "$REASON" ]; then
+          if [ "$RUN" = "false" ] && [ "$BUILD_RESULT" = "skipped" ] && [ "$TEST_RESULT" = "skipped" ] && [ "$MODULE_RESULT" = "skipped" ] && [ "$NO_MODULES_RESULT" = "skipped" ] && [ "${REASON#documentation-only}" != "$REASON" ]; then
             echo "## iOS gate: passed (documentation-only)" >> "$GITHUB_STEP_SUMMARY"; echo "$REASON" >> "$GITHUB_STEP_SUMMARY"; exit 0
           fi
-          echo "## iOS gate: not passed" >> "$GITHUB_STEP_SUMMARY"; echo "$REASON; test job result: $TEST_RESULT" >> "$GITHUB_STEP_SUMMARY"
+          echo "## iOS gate: not passed" >> "$GITHUB_STEP_SUMMARY"; echo "$REASON; build job result: $BUILD_RESULT; test job result: $TEST_RESULT" >> "$GITHUB_STEP_SUMMARY"
           exit 1
