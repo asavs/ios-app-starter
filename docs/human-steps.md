@@ -30,7 +30,7 @@ The owner chooses which to grant. `python scripts/setup.py` records the six yes/
 | Step | Today | Path | Status / next action |
 | --- | --- | --- | --- |
 | Apple Developer Program enrollment and payment | Human | Human | Ask once, before anything Apple. Link to Apple's enrollment page; verify membership afterwards with `apple-doctor`. |
-| Accept Apple agreements (Paid Apps, program license) | Human | Human | Acceptance stays with the Account Holder. The runbook detects the "agreement outstanding" API error and names the agreement. |
+| Accept Apple agreements (Paid Apps, program license) | Human | Human | Acceptance stays with the Account Holder. The runbook detects the "agreement outstanding" API error and names the agreement. In TestFlight delivery an outstanding agreement shows as `app_record` present but `bundle_id` `not_verified`, and signing doesn't start (2026-11-07). |
 | Create App Store Connect API key and download the one-time `.p8` | Human in browser | Browser agent (`apple-browser`), then `bootstrap-apple-credentials.py` | Key creation is a portal form. The agent can pass the downloaded file to the bootstrap script without reading it. Present the role choice first (issue #1). |
 | Transfer `.p8` into the GitHub environment | Scripted | API / CLI (`github-settings`) | Done: `bootstrap-apple-credentials.py` sends it over stdin and verifies metadata only. |
 | Create the `apple-credentials` environment with a `main`-only policy | Scripted | API / CLI (`github-settings`) | Done: `configure-github-repo.py` applies exactly one `main` branch policy and no required reviewer by default. To require a reviewer, pass `--require-reviewer` or add one in repository Settings → Environments → `apple-credentials`. |
