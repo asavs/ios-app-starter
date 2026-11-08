@@ -36,6 +36,8 @@ class DiagnosticsTests(unittest.TestCase):
             ({"environment": ENV}, "missing_tool", 0),
             ({"environment": ENV, "reader": FakeReader([("authentication_failed", None)] * 3)}, "authentication_failed", 0),
             ({"environment": ENV, "reader": FakeReader([("inaccessible", None)] * 3)}, "inaccessible", 0),
+            ({"environment": ENV, "reader": FakeReader([("verified", [{"id": "A"}]), ("agreement_required", None), ("inaccessible", None)])},
+             "agreement_required", 1),
             ({"environment": ENV, "reader": FakeReader([("verified", []), ("verified", []), ("verified", [])])}, "incomplete", 3),
             ({"environment": ENV, "reader": FakeReader([("verified", []), ("verified", [{"id": "B123"}]), ("verified", []), ("verified", [])])}, "completed", 4),
         ]
@@ -95,6 +97,8 @@ class DiagnosticsTests(unittest.TestCase):
             self.assertEqual(reader.env["TEMP"], str(Path(directory).resolve()))
             self.assertEqual(reader.env["TMPDIR"], reader.env["TEMP"])
             for code, output, error, expected in [(1, "", "Forbidden " + CANARY, "inaccessible"),
+                                                (1, "", "Forbidden: " + CANARY + "\n\nYour team has an unaccepted or expired agreement, which blocks App Store Connect API access account-wide.", "agreement_required"),
+                                                (1, "", "A required agreement is missing or has expired. " + CANARY, "agreement_required"),
                                                 (1, "", "HTTP 404 " + CANARY, "not_verified"),
                                                 (0, CANARY, "", "not_verified"),
                                                 (0, '{"data": {}}', "", "not_verified"),

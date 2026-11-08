@@ -17,6 +17,7 @@ ACCOUNT_MESSAGES = {
     "missing_configuration": "Account reads were requested but skipped: no Xcode configuration export was supplied.",
     "missing_tool": "Account reads were requested but skipped: no CLI binary was supplied.",
     "completed": "All account checks completed. Record presence does not establish signing readiness.",
+    "agreement_required": "Apple reports an unaccepted or expired agreement, which blocks API access for the whole team; the Account Holder must accept it at https://appstoreconnect.apple.com/agreements or developer.apple.com/account, then rerun.",
     "authentication_failed": "Account checks encountered authentication failures; review the key before relying on results.",
     "inaccessible": "Account checks encountered denied access; inaccessible records are not proven missing.",
     "incomplete": "Some account checks remain unverified; review the individual findings before proceeding.",
@@ -75,6 +76,10 @@ class Reader:
             # asc's human errors don't reliably include HTTP status. Be conservative;
             # raw errors can contain account data or credentials and are never emitted.
             error = result.stderr.lower()
+            # asc appends this guidance to Apple's REQUIRED_AGREEMENTS_MISSING_OR_EXPIRED and PLA_NOT_VALID
+            # errors, whose own wording has no "forbidden"; checked first, since no key permission fixes it.
+            if any(s in error for s in ("unaccepted or expired agreement", "required agreement")):
+                return "agreement_required", None
             if any(s in error for s in ("forbidden", "not authorized", "access denied")):
                 return "inaccessible", None
             if any(s in error for s in ("unauthorized", "authentication credentials", "not authenticated")):
@@ -104,6 +109,8 @@ def account_checks(reader, bundle):
                 candidate = data[0].get("id", "")
                 if isinstance(candidate, str) and re.fullmatch(r"[A-Za-z0-9-]+", candidate):
                     bundle_resource = candidate
+        elif status == "agreement_required":
+            evidence = "Apple refused the read because an agreement is unaccepted or expired; whether records exist is unknown."
         else:
             evidence = "Read did not establish existence; permissions, credentials, agreements, network or tool response may need review."
         findings.append(finding(check, status, evidence,
@@ -155,6 +162,7 @@ def diagnose(records=None, account=False, binary=None, environment=None, reader=
         statuses = [item["status"] for item in checks]
         successful = sum(status in ("present", "missing") for status in statuses)
         account_status = ("completed" if successful == len(checks) else
+                          "agreement_required" if "agreement_required" in statuses else
                           "authentication_failed" if "authentication_failed" in statuses else
                           "inaccessible" if "inaccessible" in statuses else "incomplete")
     else:
