@@ -21,6 +21,7 @@ An iOS starter app. Onboarding, theme and UX elements, settings with secure stor
 - Work through the roadmap in order; finish required checks before starting the next milestone. Keep changes and commits reviewable.
 - Modules are products of the root `Package.swift`, one `Modules/<Name>/` folder each with its own tests; the template depends on them by path, generated apps by tag. Enable a module with a product line in `project.yml`; template sources reference modules only under `#if canImport`. Read `docs/modules.md` before adding or releasing one.
 - `project.yml` is the source of truth for the Xcode project. Change it, run `bash scripts/generate-project.sh` on a Mac or the GitHub runner, and commit the regenerated project with it.
+- Before pushing a workflow change, run `python scripts/lint-workflows.py` (pinned actionlint). A YAML parser accepts what GitHub refuses to load, such as `runner.temp` in a job's `env`, and a workflow GitHub can't load runs no job and shows no checks.
 - CI explicitly selects Xcode 27.0 on the `xcode-27` runner. The runner image changes, so upgrade deliberately and verify the actual version, bundled SDK, and simulator availability.
 - Inspect the actual test results, not just a green job. Placeholder unit tests do not establish feature coverage.
 - `platform-and-sdk-notes.md` preserves an earlier user-provided text verbatim. Do not rewrite it; take current decisions from the roadmap.
