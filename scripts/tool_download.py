@@ -24,10 +24,13 @@ def verified_download(url, digest, filename, cache_dir):
         print(f"Cached checksum mismatch; fetching pinned download again: {filename}", file=sys.stderr)
     target.parent.mkdir(parents=True, exist_ok=True)
     # Only verified bytes are published; independent invocations may safely race.
+    # GitHub's release downloads have answered HTTP 504 for minutes at a time (2026-11-08): curl's
+    # default 1, 2, 4 s backoff spent four attempts inside one outage, so retries are 10 s apart.
+    # Both options are old enough for the curl.exe Windows ships.
     with tempfile.TemporaryDirectory(prefix="download-", dir=target.parent) as temporary:
         downloaded = Path(temporary) / filename
         subprocess.run(["curl.exe" if platform.system() == "Windows" else "curl", "--fail", "--silent",
-                        "--show-error", "--location", "--retry", "3", "--max-time", "120",
+                        "--show-error", "--location", "--retry", "5", "--retry-delay", "10", "--max-time", "120",
                         "--output", str(downloaded), url], check=True)
         if hashlib.sha256(downloaded.read_bytes()).hexdigest() != digest:
             raise ValueError("Tool download checksum mismatch; downloaded bytes were not published")
