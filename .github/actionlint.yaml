@@ -1,0 +1,6 @@
+# Configuration for scripts/lint-workflows.py (actionlint).
+self-hosted-runner:
+  # The repository's runner label for the Xcode 27 image (docs/ci.md); GitHub hosts it, but the
+  # label is the account's own, so actionlint can't know it.
+  labels:
+    - xcode-27
