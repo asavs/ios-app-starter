@@ -1,57 +1,87 @@
 import XCTest
 
 /// The Notes tab: write and save a note, keep an unsaved draft across a tab switch, search, edit,
-/// relaunch, refer to a Library item (with Attachments), and delete with the confirmation.
+/// relaunch, refer to a Library item (with Attachments), and delete with the confirmation. One test
+/// did all of it until it passed XCTest's five-minute allowance on a loaded runner, where a timed-out
+/// test gets no second attempt (2026-11-08); each test now writes the note it needs.
 final class NotesUITests: StarterUITestCase {
+    private let scenario = UITestLaunch(tab: Identifiers.Tabs.notes, store: "notes",
+                                        extra: ["-attachments.fakeCamera", "YES", "-attachments.fakeLink", "Training Plan"])
+
+    /// The Notes tab's elements the tests share.
     @MainActor
-    func testNotesWriteSearchEditLinkAndDelete() throws {
+    private struct Screen {
+        let app: XCUIApplication
+        var empty: XCUIElement { app.descendants(matching: .any).matching(identifier: Identifiers.Notes.empty).firstMatch }
+        var add: XCUIElement { app.buttons[Identifiers.Notes.add].firstMatch }
+        var title: XCUIElement { app.textFields[Identifiers.Notes.Editor.title].firstMatch }
+        var body: XCUIElement { app.textViews[Identifiers.Notes.Editor.body].firstMatch }
+        var save: XCUIElement { app.buttons[Identifiers.Notes.Editor.save].firstMatch }
+        var done: XCUIElement { app.buttons[Identifiers.Notes.Editor.done].firstMatch }
+        var rows: XCUIElementQuery {
+            app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", Identifiers.Notes.rowPrefix))
+        }
+        func row(containing text: String) -> XCUIElement {
+            rows.matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
+        }
+    }
+
+    /// Launches on an empty Notes tab with a store of its own; skips without the modules it needs.
+    @MainActor
+    private func launchEmpty() throws -> Screen {
         let app = XCUIApplication()
-        let scenario = UITestLaunch(tab: Identifiers.Tabs.notes, store: "notes",
-                                    extra: ["-attachments.fakeCamera", "YES", "-attachments.fakeLink", "Training Plan"])
         app.launch(scenario)
+        let screen = Screen(app: app)
         let notesTab = tabButton(in: app, Identifiers.Tabs.notes, title: "Notes")
         try requireModuleUI("TabShell", appeared: notesTab.waitForExistence(timeout: 10), "no Notes tab")
-        let empty = element(app, Identifiers.Notes.empty)
-        try requireModuleUI("Database", appeared: empty.waitForExistence(timeout: 10), "no empty Notes state")
-        attach(name: "notes-empty")
+        try requireModuleUI("Database", appeared: screen.empty.waitForExistence(timeout: 10), "no empty Notes state")
+        return screen
+    }
 
-        // Write a note and save it; Save keeps the editor open, Done leaves.
-        app.buttons[Identifiers.Notes.add].firstMatch.tap()
-        let title = app.textFields[Identifiers.Notes.Editor.title].firstMatch
-        XCTAssertTrue(title.waitForExistence(timeout: 10), "Add opens an empty editor")
-        let save = app.buttons[Identifiers.Notes.Editor.save].firstMatch
-        XCTAssertFalse(save.isEnabled, "Nothing to save yet")
-        try focus(title, in: app)
-        app.typeText("Monday\n") // Return puts the keyboard away, so focusing the body below waits for it to come back.
+    /// Writes and saves a note, then leaves the editor: Save keeps it open, Done leaves.
+    @MainActor
+    private func write(_ screen: Screen, title text: String, body bodyText: String) throws {
+        let app = screen.app
+        screen.add.tap()
+        XCTAssertTrue(screen.title.waitForExistence(timeout: 10), "Add opens an empty editor")
+        XCTAssertFalse(screen.save.isEnabled, "Nothing to save yet")
+        try focus(screen.title, in: app)
+        app.typeText(text + "\n") // Return puts the keyboard away, so focusing the body below waits for it to come back.
         XCTAssertTrue(waitUntilGone(app.keyboards.firstMatch, timeout: 5))
-        let body = app.textViews[Identifiers.Notes.Editor.body].firstMatch
-        try focus(body, in: app)
-        app.typeText("Three rounds, then rest.")
-        XCTAssertTrue(waitUntil(save, "isEnabled == true", timeout: 15), "Typing enables Save")
-        attach(name: "notes-editor")
-        save.tap()
-        XCTAssertTrue(waitUntil(save, "isEnabled == false", timeout: 10), "Saved: nothing left to save")
-        app.buttons[Identifiers.Notes.Editor.done].firstMatch.tap()
-        let rows = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", Identifiers.Notes.rowPrefix))
-        let monday = rows.matching(NSPredicate(format: "label CONTAINS 'Monday'")).firstMatch
-        XCTAssertTrue(monday.waitForExistence(timeout: 10), "The saved note is listed")
-        XCTAssertTrue(waitUntilGone(empty, timeout: 5))
+        try focus(screen.body, in: app)
+        app.typeText(bodyText)
+        XCTAssertTrue(waitUntil(screen.save, "isEnabled == true", timeout: 15), "Typing enables Save")
+        screen.save.tap()
+        XCTAssertTrue(waitUntil(screen.save, "isEnabled == false", timeout: 10), "Saved: nothing left to save")
+        screen.done.tap()
+        XCTAssertTrue(screen.row(containing: text).waitForExistence(timeout: 10), "The saved note is listed")
+        XCTAssertTrue(waitUntilGone(screen.empty))
+    }
 
-        // A second note typed but not saved survives switching tabs, and is listed as unsaved.
-        app.buttons[Identifiers.Notes.add].firstMatch.tap()
-        XCTAssertTrue(title.waitForExistence(timeout: 10))
-        try focus(title, in: app)
+    /// Writing and saving a note, and a second one typed but not saved: it survives switching tabs,
+    /// leaving it asks, Keep Editing stays and Discard drops it.
+    @MainActor
+    func testWriteSaveAndKeepAnUnsavedDraft() throws {
+        let screen = try launchEmpty()
+        let app = screen.app
+        attach(name: "notes-empty")
+        try write(screen, title: "Monday", body: "Three rounds, then rest.")
+        attach(name: "notes-saved")
+
+        screen.add.tap()
+        XCTAssertTrue(screen.title.waitForExistence(timeout: 10))
+        try focus(screen.title, in: app)
         app.typeText("Shopping\n") // Return puts the keyboard away; it covers the tab bar otherwise.
         XCTAssertTrue(waitUntilGone(app.keyboards.firstMatch, timeout: 5))
         let home = tabButton(in: app, Identifiers.Tabs.welcome, title: "Home")
+        let notesTab = tabButton(in: app, Identifiers.Tabs.notes, title: "Notes")
         home.tap()
         XCTAssertTrue(waitUntil(home, "isSelected == true"))
         notesTab.tap()
         XCTAssertTrue(waitUntil(notesTab, "isSelected == true"))
-        XCTAssertTrue(title.waitForExistence(timeout: 10), "The editor is where it was")
-        XCTAssertEqual(title.value as? String, "Shopping", "With the draft")
-        let done = app.buttons[Identifiers.Notes.Editor.done].firstMatch
-        done.tap()
+        XCTAssertTrue(screen.title.waitForExistence(timeout: 10), "The editor is where it was")
+        XCTAssertEqual(screen.title.value as? String, "Shopping", "With the draft")
+        screen.done.tap()
         let discard = app.buttons[Identifiers.Notes.Editor.discard].firstMatch
         XCTAssertTrue(discard.waitForExistence(timeout: 5), "Leaving with unsaved changes asks")
         attach(name: "notes-unsaved-changes")
@@ -63,14 +93,23 @@ final class NotesUITests: StarterUITestCase {
             app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8)).tap()
         }
         XCTAssertTrue(waitUntilGone(discard, timeout: 5))
-        XCTAssertTrue(title.exists, "Keep Editing stays")
-        done.tap()
+        XCTAssertTrue(screen.title.exists, "Keep Editing stays")
+        screen.done.tap()
         XCTAssertTrue(discard.waitForExistence(timeout: 5))
         discard.tap()
-        XCTAssertTrue(monday.waitForExistence(timeout: 10), "Discard leaves the list as it was")
-        XCTAssertFalse(rows.matching(NSPredicate(format: "label CONTAINS 'Shopping'")).firstMatch.exists, "The discarded draft is gone")
+        XCTAssertTrue(screen.row(containing: "Monday").waitForExistence(timeout: 10), "Discard leaves the list as it was")
+        XCTAssertFalse(screen.row(containing: "Shopping").exists, "The discarded draft is gone")
+    }
 
-        // Search by body text, then no results.
+    /// Search by body text and to no results; edit a saved note, refer to a Library item (with
+    /// Attachments), and find all of it after a relaunch into the same store.
+    @MainActor
+    func testSearchEditAndKeepAfterRelaunch() throws {
+        let screen = try launchEmpty()
+        let app = screen.app
+        try write(screen, title: "Monday", body: "Three rounds, then rest.")
+        let monday = screen.row(containing: "Monday")
+
         let searchField = app.searchFields.firstMatch
         XCTAssertTrue(searchField.waitForExistence(timeout: 5))
         try focus(searchField, in: app)
@@ -85,37 +124,43 @@ final class NotesUITests: StarterUITestCase {
 
         // Edit the note; a Library item can be attached once the note is saved.
         monday.tap()
-        XCTAssertTrue(title.waitForExistence(timeout: 10))
-        try focus(body, in: app)
+        XCTAssertTrue(screen.title.waitForExistence(timeout: 10))
+        try focus(screen.body, in: app)
         app.typeText(" Stretch after.")
-        XCTAssertTrue(waitUntil(save, "isEnabled == true", timeout: 15))
-        save.tap()
-        XCTAssertTrue(waitUntil(save, "isEnabled == false", timeout: 10))
-        try focus(title, in: app)
+        XCTAssertTrue(waitUntil(screen.save, "isEnabled == true", timeout: 15))
+        screen.save.tap()
+        XCTAssertTrue(waitUntil(screen.save, "isEnabled == false", timeout: 10))
+        try focus(screen.title, in: app)
         app.typeText("\n") // Return in the title puts the keyboard away; it covers the rows below.
         XCTAssertTrue(waitUntilGone(app.keyboards.firstMatch, timeout: 5))
         let addReference = app.buttons[Identifiers.Notes.Editor.addReference].firstMatch
         if Self.enabledModules?.contains("Attachments") ?? addReference.exists {
             try linkALibraryItem(app, addReference: addReference)
         }
-        done.tap()
+        screen.done.tap()
 
-        // Everything survives a relaunch into the same store.
         app.terminate()
         app.launch(scenario.relaunch)
         XCTAssertTrue(monday.waitForExistence(timeout: 10), "The note survives a relaunch")
         monday.tap()
-        XCTAssertTrue(body.waitForExistence(timeout: 10))
-        let text = body.value as? String ?? ""
+        XCTAssertTrue(screen.body.waitForExistence(timeout: 10))
+        let text = screen.body.value as? String ?? ""
         XCTAssertTrue(text.contains("Three rounds, then rest.") && text.contains("Stretch after."), "With its edited text, got: \(text)")
         if addReference.exists {
             let references = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", Identifiers.Notes.Editor.referencePrefix))
             XCTAssertTrue(references.firstMatch.waitForExistence(timeout: 10), "And its Library item")
         }
-        done.tap()
+        screen.done.tap()
+    }
 
-        // Delete with the confirmation: Cancel keeps it, Delete removes it.
-        XCTAssertTrue(monday.waitForExistence(timeout: 10))
+    /// Deleting asks first: Cancel keeps the note, Delete removes it and the empty state comes back.
+    @MainActor
+    func testDeleteAsksFirst() throws {
+        let screen = try launchEmpty()
+        let app = screen.app
+        try write(screen, title: "Monday", body: "Three rounds, then rest.")
+        let monday = screen.row(containing: "Monday")
+
         monday.swipeLeft()
         let delete = app.buttons["Delete"].firstMatch
         XCTAssertTrue(delete.waitForExistence(timeout: 5), "A swipe offers Delete")
@@ -136,7 +181,7 @@ final class NotesUITests: StarterUITestCase {
         delete.tap()
         XCTAssertTrue(confirm.waitForExistence(timeout: 5))
         confirm.tap()
-        XCTAssertTrue(empty.waitForExistence(timeout: 10), "The note is gone and the empty state is back")
+        XCTAssertTrue(screen.empty.waitForExistence(timeout: 10), "The note is gone and the empty state is back")
         attach(name: "notes-emptied")
     }
 

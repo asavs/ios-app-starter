@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-08 — The Notes UI test in three, after it passed XCTest's five-minute allowance
+
+- **Tools:** Xcode 27.0 on `xcode-27`; locally Xcode 27.1, iPhone 17 simulator on iOS 27.0.
+- **Symptom (confirmed):** on #174's run `testNotesWriteSearchEditLinkAndDelete` failed with "Test exceeded execution time allowance of 5 minutes", and with retries on (#173) it got no second attempt: the log shows "Iteration 1 of 2" and no second iteration, so a test cut off by the allowance is not retried. It was the suite's longest test, 137 s on a quiet runner and 276 s on a loaded one.
+- **Fix:** three tests, each launching into its own empty store and writing the note it needs: `testWriteSaveAndKeepAnUnsavedDraft`, `testSearchEditAndKeepAfterRelaunch` (search, edit, Library reference, relaunch) and `testDeleteAsksFirst`. Same assertions; the lane takes about a minute more for the extra launches and notes.
+- **Verified:** locally 53 s, 92 s and 50 s; at the 2.5x slowdown seen on loaded runners the longest stays near 230 s.
+- **Remaining:** other tests near the allowance on a loaded runner (Library at 255 s, Attachments at 240 s on 2026-11-07) are the next candidates.
+
 ## 2026-11-08 — A failed UI test gets a second attempt in CI, and the report lists every retry
 
 - **Tools:** Xcode 27.0 on `xcode-27`; locally Xcode 27.1, iPhone 17 simulator on iOS 27.0.
