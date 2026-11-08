@@ -25,16 +25,26 @@ final class TabChoicesUITests: StarterUITestCase {
         app.buttons[Identifiers.TabChoices.show(tab)].firstMatch
     }
 
-    /// Drags Settings' handle over the first row. A fast drag lands before the list has picked the row
-    /// up, so it goes slowly and holds over the top. The handle's label is the system's, with the row's text.
+    /// Drags Settings' handle over the first row, Home's, and waits for Settings to lead the tab bar. A
+    /// fast drag lands before the list has picked the row up, so it goes slowly and holds over the top.
+    /// The handle's label is the system's, with the row's text. A loaded runner has dropped the whole
+    /// drag (Settings stayed last), so it is repeated once if the tab bar kept its order.
     @MainActor
     private func dragSettingsToTheTop(_ app: XCUIApplication, above firstRowButton: XCUIElement) {
         let handle = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Reorder' AND label CONTAINS 'Settings'")).firstMatch
         XCTAssertTrue(handle.waitForExistence(timeout: 5), "Shown rows have a drag handle")
-        let top = firstRowButton.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0))
-            .withOffset(CGVector(dx: handle.frame.midX - firstRowButton.frame.midX, dy: -5))
-        handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-            .press(forDuration: 0.5, thenDragTo: top, withVelocity: .slow, thenHoldForDuration: 0.5)
+        let settings = tabButton(in: app, Identifiers.Tabs.settings, title: "Settings")
+        let home = tabButton(in: app, Identifiers.Tabs.welcome, title: "Home")
+        // Tabs come and go while the shell rebuilds; a missing one answers neither order.
+        let settingsLeads = { settings.exists && home.exists && settings.frame.minX < home.frame.minX }
+        let homeLeads = { settings.exists && home.exists && home.frame.minX < settings.frame.minX }
+        let drag = {
+            let top = firstRowButton.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0))
+                .withOffset(CGVector(dx: handle.frame.midX - firstRowButton.frame.midX, dy: -5))
+            handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+                .press(forDuration: 0.5, thenDragTo: top, withVelocity: .slow, thenHoldForDuration: 0.5)
+        }
+        XCTAssertTrue(perform(drag, until: settingsLeads, retryingIf: homeLeads), "The drag reorders the tab bar")
     }
 
     /// The main path: Settings can't be hidden, a drag reorders, hiding takes the tab away and showing

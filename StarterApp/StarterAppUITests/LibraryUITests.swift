@@ -26,7 +26,8 @@ final class LibraryUITests: StarterUITestCase {
         let cells = NSPredicate(format: "identifier BEGINSWITH %@", ModuleIdentifiers.Attachments.itemPrefix)
         let items = app.descendants(matching: .any).matching(cells)
         XCTAssertTrue(waitUntil(items.firstMatch, "exists == true", timeout: 10), "The fake camera adds a photo")
-        XCTAssertTrue(waitUntilGone(empty, timeout: 5), "The empty state goes with the first item")
+        // The default wait: on a loaded runner one snapshot has taken 4 s, so 5 s allowed a single check.
+        XCTAssertTrue(waitUntilGone(empty), "The empty state goes with the first item")
         add.tap()
         app.buttons[ModuleIdentifiers.Attachments.addLink].firstMatch.tap()
         let linkField = app.textFields[ModuleIdentifiers.Attachments.linkField].firstMatch
