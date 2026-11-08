@@ -51,13 +51,38 @@ class StarterUITestCase: XCTestCase {
     /// `isHittable` then fails the test ("Activation point invalid") instead of answering; on the hosted
     /// runner that happened to the primer's footnote. Such an element counts as not hittable yet.
     func waitUntilHittable(_ element: XCUIElement, expected: Bool = true, timeout: TimeInterval = 15) -> Bool {
-        let settled = NSPredicate { _, _ in
-            guard element.exists else { return !expected }
-            let frame = element.frame
-            guard frame.minX.isFinite, frame.minY.isFinite, !frame.isEmpty else { return !expected }
-            return element.isHittable == expected
-        }
-        return XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: settled, object: nil)], timeout: timeout) == .completed
+        waitUntil(timeout: timeout) { self.isHittable(element) == expected }
+    }
+
+    /// Whether the element is on screen and can take a tap now, without waiting. An element that is
+    /// missing or still has an infinite frame counts as not hittable (see `waitUntilHittable`).
+    func isHittable(_ element: XCUIElement) -> Bool {
+        guard element.exists else { return false }
+        let frame = element.frame
+        guard frame.minX.isFinite, frame.minY.isFinite, !frame.isEmpty else { return false }
+        return element.isHittable
+    }
+
+    /// Waits for a condition the predicate-format helpers can't express, such as two frames' order.
+    func waitUntil(timeout: TimeInterval = 15, _ condition: @escaping () -> Bool) -> Bool {
+        let met = NSPredicate { _, _ in condition() }
+        return XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: met, object: nil)], timeout: timeout) == .completed
+    }
+
+    /// Performs an action and waits for its result, repeating the action once if nothing happened.
+    /// On a loaded hosted runner a tap or a drag is sometimes synthesized and then lost: a switch kept
+    /// its value for ten seconds after its tap, an onboarding step stayed after Continue, and a dragged
+    /// tab kept its place (2026-11-07). `unchanged` must say the app is still where the action started,
+    /// so a slow action that did land is never performed twice.
+    @MainActor
+    func perform(_ action: () -> Void, until arrived: @escaping () -> Bool,
+                 retryingIf unchanged: () -> Bool, timeout: TimeInterval = 10) -> Bool {
+        action()
+        if waitUntil(timeout: timeout, arrived) { return true }
+        guard unchanged() else { return waitUntil(timeout: timeout, arrived) }
+        XCTContext.runActivity(named: "Nothing changed after the first attempt; repeating it") { _ in }
+        action()
+        return waitUntil(timeout: timeout, arrived)
     }
 
     /// Waits until the element's frame stops changing: a push, a sheet or a swipe has finished.
@@ -83,8 +108,10 @@ class StarterUITestCase: XCTestCase {
         XCTAssertTrue(scroll(app, to: toggle), "\(toggle) should be on screen")
         if toggle.frame.maxY > app.windows.firstMatch.frame.maxY - 120 { app.swipeUp() }
         XCTAssertTrue(waitUntilSettled(toggle), "\(toggle) should stop moving")
-        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
-        XCTAssertTrue(waitUntil(toggle, "value != '\(before)'", timeout: 10), "\(toggle) should flip")
+        let value = { toggle.exists ? toggle.value as? String ?? "" : before }
+        XCTAssertTrue(perform({ toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap() },
+                              until: { value() != before }, retryingIf: { value() == before }),
+                      "\(toggle) should flip")
     }
 
     /// Any element with this accessibility identifier; containers and combined rows vary in type.

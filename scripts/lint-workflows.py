@@ -12,6 +12,7 @@ import argparse
 import io
 from pathlib import Path
 import platform
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -82,5 +83,10 @@ if __name__ == "__main__":
         parser.exit(1, f"actionlint installation failed: {error}\n")
     if args.install_only:
         sys.exit(0)
+    if not shutil.which("shellcheck"):
+        # actionlint checks `run:` scripts only through shellcheck, which ubuntu-latest has; without it a
+        # clean result here says nothing about them (2026-11-07: clean on a Mac, seven findings in CI).
+        print("shellcheck not found: run scripts are not checked here; the Workflow lint job checks them.",
+              file=sys.stderr)
     # Run from the repository root so actionlint finds .github/workflows and reports repository paths.
     sys.exit(subprocess.run([str(binary), *extra], cwd=ROOT).returncode)

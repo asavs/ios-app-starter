@@ -78,9 +78,8 @@ final class OnboardingUITests: StarterUITestCase {
         tool.tap()
         XCTAssertTrue(waitUntil(tool, "isSelected == false"), "Tapping a picked answer again clears it")
         XCTAssertTrue(waitUntilHittable(skip), "Skip should still be offered on a choice step")
-        next.tap()
-
-        XCTAssertTrue(waitUntilHittable(element(app, ModuleIdentifiers.Onboarding.page("tour"))),
+        let tourCard = element(app, ModuleIdentifiers.Onboarding.page("tour"))
+        XCTAssertTrue(perform({ next.tap() }, until: { self.isHittable(tourCard) }, retryingIf: { self.isHittable(tool) }),
                       "The tour card should follow the choice step")
         XCTAssertTrue(waitUntilHittable(tool, expected: false), "The choice step should have moved off")
         attach(name: "onboarding-tour")
