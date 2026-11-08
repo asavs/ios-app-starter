@@ -163,11 +163,12 @@ The wrapper isolates the CLI configuration, skips stored Keychain and config pro
 | `present` | A completed read found accessible records. This does not prove they are usable. |
 | `missing` | A completed, paginated read returned no accessible matching records. Check the team and permissions before creating anything. |
 | `inaccessible` | The CLI reported recognizable denied-access language. Whether records exist is unknown. |
+| `agreement_required` | Apple refused the read because an agreement is unaccepted or expired. It blocks the whole team's API access, including signing and TestFlight delivery, until the Account Holder accepts it in App Store Connect or on developer.apple.com; access can take a few minutes to return. Whether records exist is unknown. |
 | `authentication_failed` | The CLI reported recognizable authentication failure language. |
 | `not_configured` | Complete explicit environment credentials were not supplied. |
 | `not_verified` | The check was skipped or could not establish a result. |
 
-The wrapper reads app records filtered by the configured bundle ID, matching registered bundle IDs, the team-wide distribution-certificate inventory, and profiles linked to an accessible bundle ID. A certificate it finds may be expired or have no private key available locally; a profile may be expired, invalid or wrong for distribution. Signed-archive validation checks these separately. Diagnostics do not verify membership, agreement acceptance, capability approval, signed archives or device delivery.
+The wrapper reads app records filtered by the configured bundle ID, matching registered bundle IDs, the team-wide distribution-certificate inventory, and profiles linked to an accessible bundle ID. A certificate it finds may be expired or have no private key available locally; a profile may be expired, invalid or wrong for distribution. Signed-archive validation checks these separately. Diagnostics recognise a refusal for an outstanding agreement but do not verify membership, agreement acceptance, capability approval, signed archives or device delivery.
 
 The CLI's errors are human-readable and do not always include an HTTP status or code, so the wrapper classifies only recognizable denied-access and authentication messages and leaves other errors unverified. Never treat a 403 or 404 as an empty successful list.
 

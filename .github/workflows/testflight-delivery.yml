@@ -208,6 +208,8 @@ jobs:
           import json, sys
           report = json.load(open(sys.argv[1], encoding='utf-8'))
           findings = {item['check']: item['status'] for item in report['findings']}
+          if report['accountSummary']['status'] == 'agreement_required':
+              raise SystemExit('An Apple agreement is unaccepted or expired; the Account Holder must accept it before signing can start.')
           if report['accountSummary']['status'] != 'completed' or findings.get('app_record') != 'present' or findings.get('bundle_id') != 'present':
               raise SystemExit('Apple identity checks are incomplete; signing was not started.')
           PY
