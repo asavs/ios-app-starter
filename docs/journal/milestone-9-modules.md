@@ -2,6 +2,17 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-08 — A failed UI test gets a second attempt in CI, and the report lists every retry
+
+- **Tools:** Xcode 27.0 on `xcode-27`; locally Xcode 27.1, iPhone 17 simulator on iOS 27.0.
+- **Symptom (confirmed):** after build-once and the action retries (#166, #168), main's push run and #165 still failed on load alone: `testOnboardingSteps` (line 63) and `testSwipingOnboardingAwaySkipsIt` (line 207) found no welcome sheet within 30 s of launch, one existence check having taken about 30 s, and `testSettingsScreen`'s reset button had its new label but not its disabled state within 15 s, after a tap that took 12 s to synthesize.
+- **Decision:** CI lanes set `IOS_TEST_ATTEMPTS=2`; `scripts/test-ios.sh` then passes `-retry-tests-on-failure -test-iterations 2`, so only a test that fails twice fails the run. Local runs keep one attempt. So a retry can't hide a flaky test, `report-tests.py` lists each test that passed on its second attempt under **Passed on retry**, with the first attempt's failure and location (`retried` in `failures.json`), and `review_ci.py` counts them.
+- **Finding (confirmed, local probe):** with retries on, the summary counts each test once by its final result, and `get test-results tests` puts the attempts under `Repetition` nodes ("First Run", "Retry 1"); a test that failed every attempt keeps its failure messages there rather than directly under the test case, which the report had read as "no failure message recorded". The xcresult messages carry no file and line, so retried tests take theirs from the log as failures already did.
+- **Verified:** a temporary probe (not committed) in the `shell` lane: a test failing every attempt failed the run (exit 65, `tests_failed`), and one failing only its first attempt passed and was listed with its file and line. 223 Python tests pass.
+- **Observed once, not reproduced:** a run of only the fail-once probe finished its tests and then xcodebuild sat for nine minutes without writing the result bundle until stopped; the same probe inside the full `shell` lane finished normally in about 400 s. If a lane hangs after its last test, this is the first suspect.
+- **Also:** the Workflow lint job's actionlint download failed with HTTP 504 four times (#165); the archive is now cached like the other pinned tools.
+- **Remaining:** the retries cost time only when a test fails; a test that keeps appearing under Passed on retry needs a real fix (the launch-time sheet stall first).
+
 ## 2026-11-08 — AlarmKit phase handoff remains unverified
 
 - **Tools:** Xcode 27.1 (27A9275); Apple AlarmKit documentation and WWDC25 session 230; Pomly source at `76be404`.

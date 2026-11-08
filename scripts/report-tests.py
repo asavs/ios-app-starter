@@ -44,6 +44,60 @@ def summary_counts(data):
     return data
 
 
+def failure_messages(node):
+    """A test case's failure messages: its own, or with retries on, those of its repetitions in order."""
+    children = [child for child in node.get("children", []) or [] if isinstance(child, dict)]
+    direct = [child.get("name", "") for child in children if child.get("nodeType") == "Failure Message"]
+    if direct:
+        return direct
+    messages = []
+    for repetition in (child for child in children if child.get("nodeType") == "Repetition"):
+        for child in repetition.get("children", []) or []:
+            text = child.get("name", "") if isinstance(child, dict) and child.get("nodeType") == "Failure Message" else None
+            if text is not None and text not in messages:
+                messages.append(text)
+    return messages
+
+
+def located(text):
+    match = FAILURE_MESSAGE_RE.match(text.strip())
+    return {"file": match.group("file") if match else None,
+            "line": int(match.group("line")) if match else None,
+            "message": (match.group("message") if match else text).strip()}
+
+
+def retried_tests(tests):
+    """Test cases that passed only after a failed attempt (`-retry-tests-on-failure`), with that failure.
+    The run passes, so these would otherwise go unseen; they are the flaky tests to fix."""
+    retried = []
+    if not isinstance(tests, dict):
+        return retried
+
+    def walk(node, suite, target):
+        if not isinstance(node, dict):
+            return
+        kind, name = node.get("nodeType", ""), node.get("name", "")
+        if kind in ("Unit test bundle", "UI test bundle"):
+            target = name
+        elif kind == "Test Suite":
+            suite = name
+        elif kind == "Test Case":
+            repetitions = [child for child in node.get("children", []) or []
+                           if isinstance(child, dict) and child.get("nodeType") == "Repetition"]
+            if node.get("result") == "Passed" and any(r.get("result") == "Failed" for r in repetitions):
+                messages = failure_messages(node)
+                retried.append({"test": node.get("nodeIdentifier") or name, "testName": name, "suite": suite,
+                                "target": target, "attempts": len(repetitions),
+                                **located(messages[0] if messages else "(no failure message recorded)")})
+            return
+        for child in node.get("children", []) or []:
+            walk(child, suite, target)
+
+    for node in tests.get("testNodes", []) or []:
+        walk(node, None, None)
+    return retried
+
+
 def test_failures(tests):
     """Flatten `get test-results tests` into failed test cases with file/line/message."""
     failures = []
@@ -59,16 +113,9 @@ def test_failures(tests):
         elif kind == "Test Suite":
             suite = name
         elif kind == "Test Case" and node.get("result") == "Failed":
-            messages = [child.get("name", "") for child in node.get("children", [])
-                        if isinstance(child, dict) and child.get("nodeType") == "Failure Message"]
-            for text in messages or ["(no failure message recorded)"]:
-                match = FAILURE_MESSAGE_RE.match(text.strip())
-                failures.append({
-                    "test": node.get("nodeIdentifier") or name, "testName": name, "suite": suite, "target": target,
-                    "file": match.group("file") if match else None,
-                    "line": int(match.group("line")) if match else None,
-                    "message": (match.group("message") if match else text).strip(),
-                })
+            for text in failure_messages(node) or ["(no failure message recorded)"]:
+                failures.append({"test": node.get("nodeIdentifier") or name, "testName": name, "suite": suite,
+                                 "target": target, **located(text)})
             return
         for child in node.get("children", []) or []:
             walk(child, suite, target)
@@ -173,7 +220,9 @@ def main():
     status = int(sys.argv[2])
     destination = sys.argv[3]
     result = summary_counts(load_json(report_dir / "results.json"))
-    failures = test_failures(load_json(report_dir / "tests.json"))
+    tests = load_json(report_dir / "tests.json")
+    failures = test_failures(tests)
+    retried = retried_tests(tests)
     if not failures and result is not None:
         raw = result.get("testFailures", [])
         for failure in ([raw] if isinstance(raw, dict) else raw) if isinstance(raw, (list, dict)) else []:
@@ -188,6 +237,7 @@ def main():
         log = ""
     log = re.sub(r"\x1b\[[0-9;]*m", "", log)
     fill_test_locations(failures, log)
+    fill_test_locations(retried, log)
     errors = build_errors(log)
     media = attachments(load_json(report_dir / "attachments" / "manifest.json"), report_dir / "attachments")
     stage = classify(status, result, failures, errors)
@@ -210,6 +260,14 @@ def main():
         for error in errors[:20]:
             where = f"`{error['file']}:{error['line']}`" if error["file"] else "(no file)"
             lines.append(f"- {where}: {error['message']}")
+        lines.append("")
+    if retried:
+        lines.extend([f"### Passed on retry ({len(retried)})", "",
+                      "These failed an attempt and passed the next, so they did not fail the run. "
+                      "Each is a flaky test to fix; the first attempt's failure:", ""])
+        for test in retried:
+            location = f"{test['file']}:{test['line']}" if test["file"] else "location not recorded"
+            lines.append(f"- `{test['test']}` (`{location}`): {test['message']}")
         lines.append("")
     images = [item for item in media if item["isImage"]]
     if images:
@@ -246,7 +304,7 @@ def main():
     (report_dir / "failures.json").write_text(json.dumps({
         "stage": stage, "exitStatus": status, "destination": destination,
         "counts": {key: result[key] for key in ("totalTestCount", "passedTests", "failedTests", "skippedTests")} if result else None,
-        "failures": failures, "buildErrors": errors, "attachments": media,
+        "failures": failures, "retried": retried, "buildErrors": errors, "attachments": media,
     }, indent=2) + "\n")
     print(summary)
     if os.environ.get("GITHUB_STEP_SUMMARY"):

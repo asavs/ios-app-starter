@@ -275,6 +275,8 @@ jobs:
           IOS_TEST_ARTIFACT_NAME: ios-test-results-${{ matrix.configuration }}-${{ matrix.lane }}
           IOS_TEST_LANE: ${{ matrix.lane }}
           IOS_TEST_ACTION: run
+          # A failed test gets a second attempt; the report lists every test that needed one (2026-11-08).
+          IOS_TEST_ATTEMPTS: '2'
         run: |
           IOS_XCTESTRUN="$(ls "$RUNNER_TEMP"/ios-build/products/*.xctestrun)"
           IOS_ENABLED_MODULES="$(cat "$RUNNER_TEMP/ios-build/enabled-modules.txt")"
