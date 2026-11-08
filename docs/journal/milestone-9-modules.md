@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-08 — AlarmKit phase handoff remains unverified
+
+- **Tools:** Xcode 27.1 (27A9275); Apple AlarmKit documentation and WWDC25 session 230; Pomly source at `76be404`.
+- **Finding (confirmed by source inspection):** the earlier Live Activities research cited Pomly as an example of scheduling an unattended chain. Its engine schedules the current timer and starts an automatic next phase only when its process observes or refreshes completion. Apple describes individual schedules and countdowns, but the reviewed sources do not promise phase-to-phase presentation handoff.
+- **Correction:** [the research](../research/live-activities.md#alarmkit-for-interval-phases-2026-11-08) now separates fixed boundary alerts from a sequential countdown, recommends retaining the ActivityKit baseline, and specifies pause, denial, overlap and alert tests.
+- **Verification:** reviewed the cited Apple sources and pinned Pomly engine; no prototype or simulator or phone run was performed.
+- **Remaining:** test a multi-phase prototype on an iOS 26+ simulator and phone before promising uninterrupted island transitions. Record alert visibility, timing, suspension and pause/reschedule behavior.
+
 ## 2026-11-07 — UI tests repeat an action the app never saw
 
 - **Tools:** GitHub-hosted macOS runners (`xcode-27`), Xcode 27.0; locally Xcode 27.1, iPhone 17 simulator on iOS 27.0. #168.
