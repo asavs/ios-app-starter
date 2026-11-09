@@ -2,6 +2,15 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-09 — Nine macOS jobs per pull request against a cap of five: two now run only when their inputs change
+
+- **Tools:** GitHub-hosted `xcode-27` runners; public repository on a personal Free account.
+- **Finding (confirmed, GitHub's limits page):** standard runners are free for this public repository, and the constraint is concurrency: at most five macOS jobs at once on Free, Pro and Team (50 on Enterprise), shared with larger runners. A pull request started nine: `build`, three `test` lanes, `module-tests`, `no-modules`, the signing and TestFlight preflights and `portable (macos-latest)`, so it queued behind itself, and a second pull request or a push to `main` queued behind it. That queue was the 3 to 19 minutes the lanes waited on #166.
+- **Change:** on pull requests `module-tests` (about ten minutes) runs only when `Modules/`, `Package.swift`, `Package.resolved`, a script it uses or `ios.yml` changed, and `ios-gate` counts that skip as passing; it still runs on every push to `main`. Signed archive validation's preflight runs on pull requests only when signing inputs change, since the TestFlight preflight archives the same demo for release on every pull request. A typical app or CI pull request now starts seven macOS jobs, at most four at a time.
+- **Cost:** a change that broke a module's own tests without touching `Modules/` or the package (none is known to be possible) would show on `main` rather than on the pull request.
+- **Options considered (2026-11-09 prices):** larger runners at $0.102/min for the M2 Pro (billed on public repositories too, Team or Enterprise organizations only, same five-job cap below Enterprise); third-party macOS runners at about $0.08/min or from about $100/month, none confirmed to carry Xcode 27.0; Enterprise for 50 concurrent macOS jobs; a self-hosted runner on the owner's Mac (the announced $0.002/min self-hosted fee was postponed). A support request to raise the cap was drafted for the owner.
+- **Remaining:** the self-hosted runner needs Xcode 27.0 alongside 27.1, or the workflows' exact Xcode check relaxed for it; the heavy jobs can be trimmed further; Xcode Cloud's included compute hours are an alternative to evaluate.
+
 ## 2026-11-09 — The onboarding launch stall is the CI simulator's, not the app's: measured on an iPhone 14 Pro
 
 - **Tools:** Xcode 27.1 on the Mac; Asa's iPhone 14 Pro on iOS 26.3 over Wi-Fi; demo configuration, Debug.
