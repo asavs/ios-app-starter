@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pure helpers behind scripts/run-on-device.sh: device choice, manifest, team, bundle id.
+"""Pure helpers behind scripts/run-on-device.sh: device choice, manifest, team, bundle id, signing keychain.
 
 Everything here reads files the shell script already produced (a devicectl
 JSON export, an xcodebuild -showBuildSettings export, a built .app) so the
@@ -161,6 +161,39 @@ def bundle_identifier(app_path):
     return str(identifier)
 
 
+def signing_keychain(rows, team, login_keychain):
+    """Which keychain automatic signing should be limited to, or None to leave the search list alone.
+
+    rows are (keychain, identity name, team) for the valid "Apple Development" identities in each
+    keychain of the user search list. With the team's identities in one keychain there is nothing to
+    choose. With them in several, Xcode may sign with any of them, and one whose key isn't usable
+    here fails as errSecInternalComponent (2026-11-09: an API-created identity in another project's
+    keychain). The login keychain is then preferred; without one there, the owner chooses.
+    """
+    keychains = {}
+    for keychain, name, identity_team in rows:
+        if identity_team == team:
+            keychains.setdefault(keychain, []).append(name)
+    if len(keychains) < 2:
+        return None, None
+    found = "; ".join(f"{path}: {', '.join(names)}" for path, names in keychains.items())
+    if login_keychain in keychains:
+        return login_keychain, f"development identities for team {team} are in {len(keychains)} keychains ({found})"
+    raise SelectionError(
+        f"Development identities for team {team} are in {len(keychains)} keychains and Xcode may pick any "
+        f"of them: {found}. Set IOS_SIGNING_KEYCHAIN to the keychain whose identity this Mac can use.")
+
+
+def read_identity_rows(path):
+    """The tab-separated inventory run-on-device.sh writes: keychain, identity name, team."""
+    rows = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        parts = line.split("\t")
+        if len(parts) == 3 and all(parts):
+            rows.append(tuple(parts))
+    return rows
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -175,6 +208,11 @@ def main(argv=None):
     team.add_argument("--build-settings-json", type=Path)
     bundle = commands.add_parser("bundle-id", help="print CFBundleIdentifier of a built .app")
     bundle.add_argument("app", type=Path)
+    keychain = commands.add_parser("signing-keychain",
+                                   help="print the keychain to sign from and why (tab separated), or nothing")
+    keychain.add_argument("identities", type=Path)
+    keychain.add_argument("--team", required=True)
+    keychain.add_argument("--login-keychain", required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == "select":
@@ -191,6 +229,10 @@ def main(argv=None):
                 print(f"{value}\t{source}")
         elif args.command == "bundle-id":
             print(bundle_identifier(args.app))
+        elif args.command == "signing-keychain":
+            path, reason = signing_keychain(read_identity_rows(args.identities), args.team, args.login_keychain)
+            if path:
+                print(f"{path}\t{reason}")
     except (SelectionError, OSError, json.JSONDecodeError, plistlib.InvalidFileException) as error:
         print(f"run-on-device: {error}", file=sys.stderr)
         return 1
