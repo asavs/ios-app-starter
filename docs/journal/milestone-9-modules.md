@@ -2,6 +2,17 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-09 — The onboarding launch stall is the CI simulator's, not the app's: measured on an iPhone 14 Pro
+
+- **Tools:** Xcode 27.1 on the Mac; Asa's iPhone 14 Pro on iOS 26.3 over Wi-Fi; demo configuration, Debug.
+- **Question:** `testOnboardingSteps` and `testSwipingOnboardingAwaySkipsIt` keep needing a second attempt in CI (#173's list) because the welcome sheet isn't ready within 30 s of launch, a single query sometimes taking 30 s. Is the app slow to launch, or the loaded simulator?
+- **Measured (confirmed):** the same two tests on the phone, run with `xcodebuild test -only-testing:` against `-destination id=<UDID>`: both pass. From launch, the app was idle in under 2 s and the welcome sheet's first row was hittable at 5.2 s, 3.5 s after idle. The first test's 21 s before the automation session is XCTest connecting to the phone for the first time, not the app (1.6 s in the second test).
+- **Conclusion:** the stall is the hosted simulator under load; the retries keep it from failing runs, and more runner capacity (`ios-j3t`) is the cause-level fix. A launch profile isn't worth chasing on these numbers.
+- **Finding (confirmed):** Instruments (`xctrace record --template 'App Launch'`) did not attach over Wi-Fi ("Timed out waiting for device to boot") while `devicectl` and `xcodebuild` reached the phone; a launch trace needs a cable.
+- **Finding (confirmed):** `run-on-device.sh` failed with `errSecInternalComponent` both from the agent's shell and from the owner's own Terminal: automatic signing picked a development identity ("Created via API") from a second keychain in the search list whose key isn't usable here. `IOS_SIGNING_KEYCHAIN=<login keychain>` fixed it, as the script's header describes. A locked keychain is not the only cause of that error; check `security find-identity -v -p codesigning` per keychain first.
+- **Also:** installing the Debug demo replaces a TestFlight install of the demo (same bundle identifier); reinstall from TestFlight afterwards.
+- **Pitfall (agent):** restoring a saved keychain search list from an unquoted variable under zsh passes it as one argument and registers a single bogus entry; restore with each path as its own argument.
+
 ## 2026-11-08 — The Notes UI test in three, after it passed XCTest's five-minute allowance
 
 - **Tools:** Xcode 27.0 on `xcode-27`; locally Xcode 27.1, iPhone 17 simulator on iOS 27.0.
