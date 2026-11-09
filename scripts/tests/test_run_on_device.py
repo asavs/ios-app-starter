@@ -149,6 +149,44 @@ class BundleIdentifierTests(unittest.TestCase):
                 bundle_identifier(app)
 
 
+class SigningKeychainTests(unittest.TestCase):
+    LOGIN = "/Users/me/Library/Keychains/login.keychain-db"
+    OTHER = "/Users/me/Library/Keychains/other-project.keychain-db"
+
+    def test_one_keychain_or_another_team_changes_nothing(self):
+        mine = (self.LOGIN, "Apple Development: Me (AAAAAAAAAA)", "TEAM000001")
+        theirs = (self.OTHER, "Apple Development: Created via API (BBBBBBBBBB)", "TEAM000002")
+        self.assertEqual(device_selection.signing_keychain([], "TEAM000001", self.LOGIN), (None, None))
+        self.assertEqual(device_selection.signing_keychain([mine, theirs], "TEAM000001", self.LOGIN), (None, None))
+
+    def test_the_teams_identities_in_two_keychains_choose_the_login_keychain(self):
+        rows = [(self.LOGIN, "Apple Development: Me (AAAAAAAAAA)", "TEAM000001"),
+                (self.OTHER, "Apple Development: Created via API (BBBBBBBBBB)", "TEAM000001")]
+        path, reason = device_selection.signing_keychain(rows, "TEAM000001", self.LOGIN)
+        self.assertEqual(path, self.LOGIN)
+        self.assertIn("2 keychains", reason)
+        self.assertIn("Created via API", reason)
+
+    def test_without_one_in_the_login_keychain_the_owner_chooses(self):
+        rows = [(self.OTHER, "Apple Development: A (AAAAAAAAAA)", "TEAM000001"),
+                ("/Users/me/third.keychain-db", "Apple Development: B (BBBBBBBBBB)", "TEAM000001")]
+        with self.assertRaises(SelectionError) as raised:
+            device_selection.signing_keychain(rows, "TEAM000001", self.LOGIN)
+        self.assertIn("IOS_SIGNING_KEYCHAIN", str(raised.exception))
+
+    def test_command_reads_the_scripts_inventory_and_skips_malformed_lines(self):
+        with tempfile.TemporaryDirectory() as directory:
+            inventory = Path(directory) / "identities.tsv"
+            inventory.write_text(f"{self.LOGIN}\tApple Development: Me (A)\tTEAM000001\n"
+                                 f"{self.OTHER}\tApple Development: API (B)\tTEAM000001\n"
+                                 "broken line\n", encoding="utf-8")
+            result = subprocess.run([sys.executable, str(ROOT / "scripts/device_selection.py"), "signing-keychain",
+                                     str(inventory), "--team", "TEAM000001", "--login-keychain", self.LOGIN],
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(result.stdout.startswith(self.LOGIN + "\t"))
+
+
 # Windows resolves `bash` to the WSL launcher stub, which exits 1 without output when no
 # distribution is installed; the script itself is macOS-only (devicectl), so skip there.
 @unittest.skipUnless(shutil.which("bash") and sys.platform != "win32", "a POSIX bash is required")
