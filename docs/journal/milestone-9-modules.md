@@ -2,6 +2,16 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-09 — A self-hosted runner on the owner's Mac takes main's iOS jobs, opt-in
+
+- **Tools:** GitHub Actions runner 2.338.2 (osx-arm64, SHA-256 `25a065af…a388`, matching the release notes and GitHub's asset digest); Xcode 27.1 on the owner's Mac; task `ios-7q7`.
+- **Decisions (owner):** pushes to `main` and manual runs only, pull requests stay on GitHub's runners; the Mac's own Xcode 27 (27.1 here) rather than installing 27.0 beside it; the Mac is usually on, so no fallback when it isn't.
+- **Change:** the `changes` job picks the runner for `build`, `test`, `module-tests` and `no-modules`: with the repository variable `SELF_HOSTED_MAC=true` and any event but a pull request, `[self-hosted, starter-mac]`, otherwise `xcode-27`. Without the variable nothing changes, so a repository made from the template still needs no Mac. On the Mac those jobs use the Xcode it has selected (any 27.x, printed in the log) and a simulator of their own, "CI iPhone 17" on iOS 27.0, so the owner's "iPhone 17" stays free for local work.
+- **Finding (confirmed):** the first version routed by event alone, which would have left every template repository's `main` jobs waiting for a runner that doesn't exist; caught before pushing, hence the variable.
+- **Process:** the agent downloaded, verified and registered the runner (registration token passed straight to `config.sh`, never printed); installing it as a launchd service was refused by the auto-mode classifier and is the owner's step (`./svc.sh install && ./svc.sh start`).
+- **Security:** fork workflows need the owner's approval to run, and a fork's workflow file could name the label itself, so a fork's run that changes `.github/workflows/` should not be approved. Personal accounts have no runner groups to restrict it further.
+- **Remaining:** one runner runs one job at a time, so main's ten jobs run in a row on the Mac; verify a full dispatch there before relying on it.
+
 ## 2026-11-09 — The onboarding launch stall is the CI simulator's, not the app's: measured on an iPhone 14 Pro
 
 - **Tools:** Xcode 27.1 on the Mac; Asa's iPhone 14 Pro on iOS 26.3 over Wi-Fi; demo configuration, Debug.
