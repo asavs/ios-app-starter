@@ -43,10 +43,11 @@ jobs:
       # GitHub's runners as before, so a repository made from the template needs no Mac. Fork pull
       # requests never reach the Mac: this is chosen by event, and fork workflows need the owner's
       # approval to run at all. The Mac's own simulator keeps the owner's "iPhone 17" free.
-      # A single label: a dynamic array here made GitHub fail the run with an internal server error
-      # before any job started (2026-11-09); only the owner's runner carries starter-mac.
-      mac_runner: ${{ (github.event_name != 'pull_request' && vars.SELF_HOSTED_MAC == 'true') && 'starter-mac' || 'xcode-27' }}
-      simulator: ${{ (github.event_name != 'pull_request' && vars.SELF_HOSTED_MAC == 'true') && 'platform=iOS Simulator,name=CI iPhone 17,OS=27.0' || 'platform=iOS Simulator,name=iPhone 17,OS=27.0' }}
+      # Decided in a step: `vars` in these job outputs made GitHub fail every workflow_dispatch run with
+      # an internal server error before any job started, while pull requests (whose expression never
+      # reached `vars`) loaded (2026-11-09). Only the owner's runner carries the starter-mac label.
+      mac_runner: ${{ steps.runner.outputs.mac_runner }}
+      simulator: ${{ steps.runner.outputs.simulator }}
       # Pull requests test the demo only: it enables every module, so its lanes run every test the
       # minimal template's would and more, and the no-modules lane still builds the template without
       # any (2026-11-04, ios-6dd.13). A push to main tests the two the pull request didn't: nine lanes at
@@ -58,6 +59,19 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+      - name: Choose the macOS runner
+        id: runner
+        env:
+          EVENT: ${{ github.event_name }}
+          SELF_HOSTED_MAC: ${{ vars.SELF_HOSTED_MAC }}
+        run: |
+          if [ "$EVENT" != pull_request ] && [ "$SELF_HOSTED_MAC" = true ]; then
+            echo "mac_runner=starter-mac" >> "$GITHUB_OUTPUT"
+            echo "simulator=platform=iOS Simulator,name=CI iPhone 17,OS=27.0" >> "$GITHUB_OUTPUT"
+          else
+            echo "mac_runner=xcode-27" >> "$GITHUB_OUTPUT"
+            echo "simulator=platform=iOS Simulator,name=iPhone 17,OS=27.0" >> "$GITHUB_OUTPUT"
+          fi
       - name: Classify the change
         id: decide
         env:
