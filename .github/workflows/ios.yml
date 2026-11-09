@@ -42,12 +42,28 @@ jobs:
       # any (2026-11-04, ios-6dd.13). A push to main tests the two the pull request didn't: nine lanes at
       # once ran each test two to three times slower than the pull request's three and timed out three
       # merges in a row (2026-11-07). A manual run tests the one it names, or all three.
-      configurations: ${{ github.event_name == 'pull_request' && '["starter-app-demo"]' || github.event_name == 'push' && '["starter","pocket-notes"]' || inputs.configuration != 'all' && format('["{0}"]', inputs.configuration) || '["starter","pocket-notes","starter-app-demo"]' }}
+      configurations: ${{ steps.lanes.outputs.configurations }}
+      # The test job's (configuration, lane) pairs: every lane for each configuration except
+      # pocket-notes, whose content is the starter's and whose own risk is its identity.
+      lanes: ${{ steps.lanes.outputs.lanes }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
           fetch-depth: 0
+      - name: List the test lanes
+        id: lanes
+        env:
+          CONFIGURATIONS: ${{ github.event_name == 'pull_request' && '["starter-app-demo"]' || github.event_name == 'push' && '["starter","pocket-notes"]' || inputs.configuration != 'all' && format('["{0}"]', inputs.configuration) || '["starter","pocket-notes","starter-app-demo"]' }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          lanes = [{"configuration": c, "lane": lane}
+                   for c in json.loads(os.environ["CONFIGURATIONS"])
+                   for lane in (["identity"] if c == "pocket-notes" else ["shell", "features", "tabs"])]
+          print("configurations=" + json.dumps(json.loads(os.environ["CONFIGURATIONS"])))
+          print("lanes=" + json.dumps(lanes))
+          PY
       - name: Classify the change
         id: decide
         env:
@@ -223,10 +239,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        configuration: ${{ fromJSON(needs.changes.outputs.configurations) }}
         # Three lanes per configuration, each on its own simulator: the whole UI suite on one runner takes
-        # over 25 minutes (ios-6dd.13). `scripts/test-ios.sh` maps the lane to test classes.
-        lane: [shell, features, tabs]
+        # over 25 minutes (ios-6dd.13). pocket-notes, the template made into someone's app with the
+        # starter's content, runs only its identity lane (2026-11-09). `scripts/test-ios.sh` maps the
+        # lane to test classes; the changes job lists the pairs.
+        include: ${{ fromJSON(needs.changes.outputs.lanes) }}
     runs-on: xcode-27
     # Pull requests keep the tight limits of a required check; main and manual runs aren't required and
     # share runners with everything else, so they get room to finish rather than fail on the clock.

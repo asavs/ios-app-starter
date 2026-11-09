@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-09 — pocket-notes tests the de-templating, not the content: one identity lane
+
+- **Tools:** Xcode 27.1 locally, iPhone 17 simulator on iOS 27.0; hosted `xcode-27`.
+- **Finding (confirmed):** a push to `main` ran the full UI suite twice, for `starter` and for `pocket-notes` (89 minutes of lane time on run 42608695431: six lanes of 12 to 19 minutes). pocket-notes was added in milestone 3 (`03d7931`) as the template made into someone's app through XcodeGen's include and override: its own display name, bundle identifiers and URL scheme. Its content is the starter's.
+- **Decision (owner):** lean into that purpose and assume the content is identical. pocket-notes runs one `identity` lane: `DeepLinkTests` (the scheme registered and round-tripped), `testDeepLinkSelectsTab` (a launch that opens a tab through its own scheme) and `testSettingsScreen` (a Keychain secret under its own identity); its build job keeps checking the configuration, the built app's name and identifiers. The `changes` job lists the (configuration, lane) pairs, so a push now runs four lanes, a pull request three and a manual run of all three configurations seven.
+- **Verified:** the identity lane locally in the starter configuration, 6 tests passed in about two minutes; the lane lists for each event. Hosted evidence is a dispatch of `pocket-notes` on this branch.
+- **Cost:** a content regression that shows only under pocket-notes' identity, outside these tests, would be missed; none is known.
+
 ## 2026-11-09 — The onboarding launch stall is the CI simulator's, not the app's: measured on an iPhone 14 Pro
 
 - **Tools:** Xcode 27.1 on the Mac; Asa's iPhone 14 Pro on iOS 26.3 over Wi-Fi; demo configuration, Debug.

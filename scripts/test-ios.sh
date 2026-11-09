@@ -80,8 +80,16 @@ case "${IOS_TEST_LANE:-all}" in
   tabs)
     lane_settings=(-only-testing:StarterAppUITests/TabChoicesUITests -only-testing:StarterAppUITests/LibraryUITests
       -only-testing:StarterAppUITests/NotesUITests) ;;
+  identity)
+    # Only what depends on the app's own name, bundle identifiers and URL scheme, for a configuration
+    # whose content is the starter's (pocket-notes, the template made into someone's app): the scheme
+    # registered and round-tripped, a launch that opens a tab by its link, and a secret kept in the
+    # Keychain under the app's identity. The build job checks the built app's name and identifiers.
+    lane_settings=(-only-testing:StarterAppTests/DeepLinkTests
+      -only-testing:StarterAppUITests/StarterAppUITests/testDeepLinkSelectsTab
+      -only-testing:StarterAppUITests/SettingsUITests/testSettingsScreen) ;;
   all) ;;
-  *) echo "test-ios: unknown IOS_TEST_LANE '$IOS_TEST_LANE' (shell, features, tabs or all)" >&2; exit 2 ;;
+  *) echo "test-ios: unknown IOS_TEST_LANE '$IOS_TEST_LANE' (shell, features, tabs, identity or all)" >&2; exit 2 ;;
 esac
 printf 'Test lane: %s\n' "${IOS_TEST_LANE:-all}"
 parallel_settings=(-parallel-testing-enabled NO)
