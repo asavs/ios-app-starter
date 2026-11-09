@@ -43,7 +43,9 @@ jobs:
       # GitHub's runners as before, so a repository made from the template needs no Mac. Fork pull
       # requests never reach the Mac: this is chosen by event, and fork workflows need the owner's
       # approval to run at all. The Mac's own simulator keeps the owner's "iPhone 17" free.
-      mac_runner: ${{ (github.event_name != 'pull_request' && vars.SELF_HOSTED_MAC == 'true') && '["self-hosted","starter-mac"]' || '"xcode-27"' }}
+      # A single label: a dynamic array here made GitHub fail the run with an internal server error
+      # before any job started (2026-11-09); only the owner's runner carries starter-mac.
+      mac_runner: ${{ (github.event_name != 'pull_request' && vars.SELF_HOSTED_MAC == 'true') && 'starter-mac' || 'xcode-27' }}
       simulator: ${{ (github.event_name != 'pull_request' && vars.SELF_HOSTED_MAC == 'true') && 'platform=iOS Simulator,name=CI iPhone 17,OS=27.0' || 'platform=iOS Simulator,name=iPhone 17,OS=27.0' }}
       # Pull requests test the demo only: it enables every module, so its lanes run every test the
       # minimal template's would and more, and the no-modules lane still builds the template without
@@ -90,7 +92,7 @@ jobs:
       fail-fast: false
       matrix:
         configuration: ${{ fromJSON(needs.changes.outputs.configurations) }}
-    runs-on: ${{ fromJSON(needs.changes.outputs.mac_runner) }}
+    runs-on: ${{ needs.changes.outputs.mac_runner }}
     timeout-minutes: 35
     env:
       IOS_TEST_DESTINATION: ${{ needs.changes.outputs.simulator }}
@@ -242,7 +244,7 @@ jobs:
         # Three lanes per configuration, each on its own simulator: the whole UI suite on one runner takes
         # over 25 minutes (ios-6dd.13). `scripts/test-ios.sh` maps the lane to test classes.
         lane: [shell, features, tabs]
-    runs-on: ${{ fromJSON(needs.changes.outputs.mac_runner) }}
+    runs-on: ${{ needs.changes.outputs.mac_runner }}
     # Pull requests keep the tight limits of a required check; main and manual runs aren't required and
     # share runners with everything else, so they get room to finish rather than fail on the clock.
     timeout-minutes: ${{ github.event_name == 'pull_request' && 30 || 50 }}
@@ -331,7 +333,7 @@ jobs:
   module-tests:
     needs: changes
     if: needs.changes.outputs.run == 'true' && needs.changes.outputs.modules != '[]'
-    runs-on: ${{ fromJSON(needs.changes.outputs.mac_runner) }}
+    runs-on: ${{ needs.changes.outputs.mac_runner }}
     timeout-minutes: 45
     env:
       IOS_TEST_DESTINATION: ${{ needs.changes.outputs.simulator }}
@@ -384,7 +386,7 @@ jobs:
   no-modules:
     needs: changes
     if: needs.changes.outputs.run == 'true'
-    runs-on: ${{ fromJSON(needs.changes.outputs.mac_runner) }}
+    runs-on: ${{ needs.changes.outputs.mac_runner }}
     timeout-minutes: 15
     steps:
       - name: Check out repository
