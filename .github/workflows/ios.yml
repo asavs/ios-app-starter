@@ -37,6 +37,11 @@ jobs:
       run: ${{ steps.decide.outputs.run }}
       reason: ${{ steps.decide.outputs.reason }}
       modules: ${{ steps.decide.outputs.modules }}
+      # Whether the per-module tests need to run: always on main and manual runs; on a pull request
+      # only when a module, the package or the module-test scripts changed. App and CI changes can't
+      # break a module's own tests, and the job held a macOS runner for ten minutes of the five that
+      # GitHub runs at once for this account (2026-11-09).
+      module_tests: ${{ steps.decide.outputs.module_tests }}
       # Pull requests test the demo only: it enables every module, so its lanes run every test the
       # minimal template's would and more, and the no-modules lane still builds the template without
       # any (2026-11-04, ios-6dd.13). A push to main tests the two the pull request didn't: nine lanes at
@@ -75,6 +80,7 @@ jobs:
           modules="$(python3 -c 'import json,pathlib; p=pathlib.Path("Modules"); print(json.dumps(sorted(d.name for d in p.iterdir() if d.is_dir()) if p.is_dir() else []))')"
           echo "modules=$modules" >> "$GITHUB_OUTPUT"
           if [ "$EVENT" != "pull_request" ]; then
+            echo "module_tests=true" >> "$GITHUB_OUTPUT"
             echo "run=true" >> "$GITHUB_OUTPUT"; echo "reason=$EVENT event always runs" >> "$GITHUB_OUTPUT"; exit 0
           fi
           if [ "$DRAFT" = "true" ]; then
@@ -82,6 +88,11 @@ jobs:
           fi
           changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
           printf 'Changed files:\n%s\n' "$changed"
+          if printf '%s\n' "$changed" | grep -q -E '^(Modules/|Package\.swift$|Package\.resolved$|scripts/(test-module\.sh|test-ios\.sh|report-tests\.py|prepare-simulator\.py)$|\.github/workflows/ios\.yml$)'; then
+            echo "module_tests=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "module_tests=false" >> "$GITHUB_OUTPUT"
+          fi
           code="$(printf '%s\n' "$changed" | grep -v -E '^(docs/|[^/]+\.md$|LICENSE$)' || true)"
           if [ -z "$code" ]; then
             echo "run=false" >> "$GITHUB_OUTPUT"; echo "reason=documentation-only change; simulator gate not needed" >> "$GITHUB_OUTPUT"
@@ -325,7 +336,7 @@ jobs:
 
   module-tests:
     needs: changes
-    if: needs.changes.outputs.run == 'true' && needs.changes.outputs.modules != '[]'
+    if: needs.changes.outputs.run == 'true' && needs.changes.outputs.modules != '[]' && needs.changes.outputs.module_tests == 'true'
     runs-on: xcode-27
     timeout-minutes: 45
     env:
@@ -413,8 +424,11 @@ jobs:
           BUILD_RESULT: ${{ needs.build.result }}
           TEST_RESULT: ${{ needs.test.result }}
           MODULE_RESULT: ${{ needs.module-tests.result }}
+          MODULE_TESTS: ${{ needs.changes.outputs.module_tests }}
           NO_MODULES_RESULT: ${{ needs.no-modules.result }}
         run: |
+          # A pull request that changed no module skips the module tests; that counts as passing.
+          if [ "$MODULE_TESTS" != "true" ] && [ "$MODULE_RESULT" = "skipped" ]; then MODULE_RESULT=success; fi
           echo "Simulator gate requested: $RUN ($REASON); app build: $BUILD_RESULT; app tests: $TEST_RESULT; module tests: $MODULE_RESULT; no-modules build: $NO_MODULES_RESULT"
           if [ "$RUN" = "true" ] && [ "$BUILD_RESULT" = "success" ] && [ "$TEST_RESULT" = "success" ] && [ "$MODULE_RESULT" = "success" ] && [ "$NO_MODULES_RESULT" = "success" ]; then
             echo "## iOS gate: passed" >> "$GITHUB_STEP_SUMMARY"; echo "App smoke tests, per-module tests and the no-modules build passed." >> "$GITHUB_STEP_SUMMARY"; exit 0
