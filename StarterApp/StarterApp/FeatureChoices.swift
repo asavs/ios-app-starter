@@ -83,6 +83,18 @@ final class FeatureChoices {
         store()
     }
 
+    /// Add an available feature where the default order puts it, ahead of the first chosen tab that
+    /// comes after it there. Onboarding's step uses this, so turning a tab off and on again leaves the
+    /// order as it was. Stored; nothing happens for a feature already chosen or not in this build.
+    func include(_ tab: StarterTab) {
+        guard !chosen.contains(tab), features.contains(where: { $0.id == tab && $0.isAvailable }) else { return }
+        let order = features.map(\.id)
+        let rank = order.firstIndex(of: tab) ?? order.count
+        let index = chosen.firstIndex { (order.firstIndex(of: $0) ?? order.count) > rank } ?? chosen.count
+        chosen.insert(tab, at: index)
+        store()
+    }
+
     /// Take a tab out of the choice. Only navigation changes: the feature's content and any running
     /// session stay where they are. Nothing happens for a required feature.
     func hide(_ tab: StarterTab) {

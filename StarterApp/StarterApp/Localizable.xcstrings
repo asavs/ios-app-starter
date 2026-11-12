@@ -221,6 +221,17 @@
         }
       }
     },
+    "Choose your tabs": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose your tabs"
+          }
+        }
+      }
+    },
     "Collect photos, files and links here to find them again. Add imports the first one.": {
       "extractionState": "manual",
       "localizations": {
@@ -1328,6 +1339,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Try Again"
+          }
+        }
+      }
+    },
+    "Turn off what you won't use. You can change this, and the order, in Settings.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off what you won't use. You can change this, and the order, in Settings."
           }
         }
       }

@@ -109,6 +109,25 @@ struct FeatureChoicesTests {
                 "A feature this build left out isn't offered")
     }
 
+    @Test func includingPutsAFeatureBackWhereTheDefaultOrderHasIt() {
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let choices = FeatureChoices(defaults: defaults, features: full)
+        choices.hide(.library)
+        choices.include(.library)
+        #expect(choices.chosen == [.welcome, .library, .notes, .timer, .settings], "Off and on again leaves the order as it was")
+        #expect(defaults.string(forKey: FeatureChoices.storageKey) == "welcome,library,notes,timer,settings")
+        choices.set([.settings, .timer])
+        choices.include(.notes)
+        #expect(choices.chosen == [.notes, .settings, .timer], "Ahead of the first chosen tab that follows it by default")
+        choices.include(.welcome)
+        #expect(choices.chosen == [.welcome, .notes, .settings, .timer])
+        choices.include(.welcome)
+        #expect(choices.chosen == [.welcome, .notes, .settings, .timer], "Already chosen: nothing changes")
+        let withoutTimerChoices = FeatureChoices(defaults: defaults, features: withoutTimer)
+        withoutTimerChoices.include(.timer)
+        #expect(!withoutTimerChoices.chosen.contains(.timer), "A feature this build left out can't be included")
+    }
+
     @Test func movingReordersAndStores() {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let choices = FeatureChoices(defaults: defaults, features: full)
