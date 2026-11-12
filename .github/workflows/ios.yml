@@ -80,8 +80,8 @@ jobs:
           modules="$(python3 -c 'import json,pathlib; p=pathlib.Path("Modules"); print(json.dumps(sorted(d.name for d in p.iterdir() if d.is_dir()) if p.is_dir() else []))')"
           echo "modules=$modules" >> "$GITHUB_OUTPUT"
           if [ "$EVENT" != "pull_request" ]; then
-            echo "module_tests=true" >> "$GITHUB_OUTPUT"
-            echo "run=true" >> "$GITHUB_OUTPUT"; echo "reason=$EVENT event always runs" >> "$GITHUB_OUTPUT"; exit 0
+            { echo "module_tests=true"; echo "run=true"; echo "reason=$EVENT event always runs"; } >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           if [ "$DRAFT" = "true" ]; then
             echo "run=false" >> "$GITHUB_OUTPUT"; echo "reason=draft pull request; mark it ready for review to run the simulator gate" >> "$GITHUB_OUTPUT"; exit 0
