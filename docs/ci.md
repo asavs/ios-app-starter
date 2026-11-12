@@ -162,6 +162,16 @@ python scripts/configure-github-repo.py --repo <owner>/<repository> --apply
 
 The dry run shows current and intended values. `--apply` turns on auto-merge and head-branch deletion, secret scanning with push protection, restricts actions to GitHub-owned and verified creators, lets workflows open pull requests (the default token stays read-only), requires approval for every fork contributor's workflows, adds a ruleset requiring a pull request with passing `ios-gate` and `portable (...)` checks on the default branch, and limits `apple-credentials` to `main` with no required reviewer. To add a reviewer, use `--require-reviewer` (then `--apply`) or **Settings → Environments → `apple-credentials` → Required reviewers**. The ruleset blocks direct pushes to `main` for everyone, including the owner.
 
+## Optional: a self-hosted runner on your own Mac
+
+GitHub runs at most five macOS jobs at once for a Free, Pro or Team account, and a push to `main` starts about ten. An owner with a Mac can register it as a self-hosted runner labelled `starter-mac` and set the repository variable `SELF_HOSTED_MAC` to `true` (`gh variable set SELF_HOSTED_MAC --body true`); the iOS workflow then sends pushes to `main` and manual runs there, and pull requests stay on GitHub's runners. Without the variable everything runs on GitHub's runners, so a repository made from the template needs no Mac. Unset it (`gh variable delete SELF_HOSTED_MAC`) whenever the Mac will be off for a while: jobs routed to an offline runner wait for it.
+
+- **What runs there:** `build`, the `test` lanes, `module-tests` and `no-modules` for pushes and dispatches. Pull requests never do: the routing is by event, and fork workflows need the owner's approval before they run at all. Before approving a fork's run, check it doesn't change `.github/workflows/`, since a fork's workflow file could name the label itself.
+- **Xcode:** whatever Xcode 27 the Mac has selected (`xcode-select -p`), not necessarily 27.0; the job log prints it. GitHub's runners still require exactly 27.0.
+- **Simulator:** its own "CI iPhone 17" on iOS 27.0 (`xcrun simctl create "CI iPhone 17" "iPhone 17" com.apple.CoreSimulator.SimRuntime.iOS-27-0`), so the owner's "iPhone 17" stays free for local work.
+- **One job at a time:** one runner runs one job, so main's run takes longer on the Mac (about ten jobs in a row) while GitHub's slots stay with pull requests.
+- **Setup:** download the [runner](https://github.com/actions/runner/releases) for macOS arm64, check its SHA-256 against the release notes, then `./config.sh --url https://github.com/<owner>/<repo> --token <registration token> --labels starter-mac` (a token comes from `gh api -X POST repos/<owner>/<repo>/actions/runners/registration-token`) and `./svc.sh install && ./svc.sh start` so it starts at login.
+
 ## Faster manual iteration
 
 A manual **iOS** run takes `configuration=starter`, `pocket-notes` or `starter-app-demo` for one app, or `all` (the default). Pull requests test `starter-app-demo`; pushes to `main` test `starter` and `pocket-notes`. From PowerShell:
