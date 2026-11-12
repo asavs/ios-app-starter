@@ -79,9 +79,17 @@ final class OnboardingUITests: StarterUITestCase {
         XCTAssertTrue(waitUntil(tool, "isSelected == false"), "Tapping a picked answer again clears it")
         XCTAssertTrue(waitUntilHittable(skip), "Skip should still be offered on a choice step")
         let tourCard = element(app, ModuleIdentifiers.Onboarding.page("tour"))
-        XCTAssertTrue(perform({ next.tap() }, until: { self.isHittable(tourCard) }, retryingIf: { self.isHittable(tool) }),
-                      "The tour card should follow the choice step")
+        // With tabs, Choose your tabs comes between the choice step and the tour card (OnboardingTabsUITests).
+        let tabsStep = app.buttons[Identifiers.TabChoices.onboarding(Identifiers.Tabs.settings)]
+        XCTAssertTrue(perform({ next.tap() }, until: { self.isHittable(tourCard) || self.isHittable(tabsStep) },
+                              retryingIf: { self.isHittable(tool) }),
+                      "The tab step or the tour card should follow the choice step")
         XCTAssertTrue(waitUntilHittable(tool, expected: false), "The choice step should have moved off")
+        if isHittable(tabsStep) {
+            attach(name: "onboarding-tabs")
+            XCTAssertTrue(perform({ next.tap() }, until: { self.isHittable(tourCard) }, retryingIf: { self.isHittable(tabsStep) }),
+                          "The tour card should follow the tab step")
+        }
         attach(name: "onboarding-tour")
         next.tap()
 
@@ -138,6 +146,16 @@ final class OnboardingUITests: StarterUITestCase {
         XCTAssertTrue(scroll(app, to: app.buttons[ModuleIdentifiers.Onboarding.choice("build", "product")]),
                       "The choice step should follow and scroll to its last answer")
         next.tap()
+
+        // With tabs, Choose your tabs follows; its rows stack their text and scroll to Settings, the last.
+        let tabsStep = element(app, ModuleIdentifiers.Onboarding.step(Identifiers.TabChoices.onboardingStep))
+        if waitUntilOnScreen(app, tabsStep, timeout: 5) {
+            attach(name: "large-tabs")
+            XCTAssertTrue(scroll(app, to: app.buttons[Identifiers.TabChoices.onboarding(Identifiers.Tabs.settings)]),
+                          "The tab step should scroll to its last row")
+            attach(name: "large-tabs-end")
+            next.tap()
+        }
 
         XCTAssertTrue(waitUntilOnScreen(app, element(app, ModuleIdentifiers.Onboarding.page("tour"))), "The tour card should follow")
         attach(name: "large-tour")

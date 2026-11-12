@@ -65,8 +65,8 @@ fi
 workers="${IOS_TEST_WORKERS:-1}"
 
 # IOS_TEST_LANE picks the test classes: `shell` (the unit tests, the shell, theme and deep links, and
-# onboarding), `features` (the Timer, Attachments and Settings classes) or `tabs` (the tab chooser, Library
-# and Notes); unset or `all` runs everything.
+# onboarding), `features` (the Timer, Attachments and Settings classes) or `tabs` (the tab choosers in Settings and
+# onboarding, Library and Notes); unset or `all` runs everything.
 # CI runs the lanes as separate jobs, each with its own simulator, since one runner takes over 25
 # minutes for the whole suite (ios-6dd.13). The classes are listed here so the workflow needn't know them.
 lane_settings=()
@@ -78,8 +78,8 @@ case "${IOS_TEST_LANE:-all}" in
     lane_settings=(-only-testing:StarterAppUITests/TimerUITests -only-testing:StarterAppUITests/AttachmentsUITests
       -only-testing:StarterAppUITests/SettingsUITests) ;;
   tabs)
-    lane_settings=(-only-testing:StarterAppUITests/TabChoicesUITests -only-testing:StarterAppUITests/LibraryUITests
-      -only-testing:StarterAppUITests/NotesUITests) ;;
+    lane_settings=(-only-testing:StarterAppUITests/TabChoicesUITests -only-testing:StarterAppUITests/OnboardingTabsUITests
+      -only-testing:StarterAppUITests/LibraryUITests -only-testing:StarterAppUITests/NotesUITests) ;;
   identity)
     # Only what depends on the app's own name, bundle identifiers and URL scheme, for a configuration
     # whose content is the starter's (pocket-notes, the template made into someone's app): the scheme

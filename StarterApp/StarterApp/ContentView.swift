@@ -95,7 +95,7 @@ struct ContentView: View {
         .accessibilityIdentifier(Identifiers.Welcome.replayTour)
         .contextualTip("tour", in: tips, arrowEdge: .bottom)
         .sheet(isPresented: $isReplayingTour) {
-            OnboardingView(steps: OnboardingStep.template(onChoice: ContentView.rememberBuildGoals)) {
+            OnboardingView(steps: StarterOnboarding.steps) {
                 isReplayingTour = false
             }
         }

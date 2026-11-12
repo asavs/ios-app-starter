@@ -26,6 +26,10 @@ enum Identifiers {
 
         static func hide(_ tab: String) -> String { "tabChoices.hide.\(tab)" }
         static func show(_ tab: String) -> String { "tabChoices.show.\(tab)" }
+        /// A feature's row in onboarding's Choose your tabs step (`TabChoicesStep`).
+        static func onboarding(_ tab: String) -> String { "tabChoices.onboarding.\(tab)" }
+        /// That step's identifier, so `ModuleIdentifiers.Onboarding.step` finds it.
+        static let onboardingStep = "tabs"
     }
 
     /// The Notes tab (`NotesView`, `NoteEditorView` and the Library item picker).
