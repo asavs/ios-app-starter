@@ -85,6 +85,21 @@ class CIReviewTests(unittest.TestCase):
         self.assertIn("policy/job skip", text)
         self.assertIn("do not count as passing", text)
 
+    def test_job_lines_say_where_each_job_ran(self):
+        jobs = [
+            {"name": "build (starter)", "conclusion": "success", "labels": ["starter-mac"],
+             "runner_name": "owners-mac-starter", "started_at": "2026-11-11T10:00:00Z", "completed_at": "2026-11-11T10:03:00Z"},
+            {"name": "test (starter-app-demo, shell)", "conclusion": "success", "labels": ["xcode-27"],
+             "runner_name": "GitHub Actions 1000000001"},
+            {"name": "changes", "conclusion": "success", "labels": ["ubuntu-latest"], "runner_name": "GitHub Actions 1000000002"},
+            {"name": "test (starter, tabs)", "status": "queued", "labels": ["starter-mac"], "runner_name": None},
+        ]
+        lines = review_ci.job_lines(jobs)
+        self.assertTrue(lines[0].endswith("; self-hosted Mac (owners-mac-starter)"), lines[0])
+        self.assertTrue(lines[1].endswith("; GitHub macOS"), lines[1])
+        self.assertTrue(lines[2].endswith("; GitHub hosted"), lines[2])
+        self.assertTrue(lines[3].endswith("; self-hosted Mac (waiting)"), lines[3])
+
     def test_elapsed_formats_check_runtime(self):
         self.assertEqual(
             review_ci.elapsed("2026-10-12T10:00:00Z", "2026-10-12T10:08:31Z"),

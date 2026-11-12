@@ -247,6 +247,18 @@ def conclusion_label(record):
     return "policy/job skip" if str(conclusion).lower() == "skipped" else str(conclusion)
 
 
+def runner_label(job):
+    """Where a job ran: the owner's self-hosted Mac or GitHub's runners (iOS jobs go to the Mac only
+    for pushes and manual runs with SELF_HOSTED_MAC=true; docs/ci.md)."""
+    labels = [str(label) for label in job.get("labels") or []]
+    name = str(job.get("runner_name") or "")
+    if "self-hosted" in labels or "starter-mac" in labels:
+        return f"self-hosted Mac ({name})" if name else "self-hosted Mac (waiting)"
+    if name:
+        return "GitHub " + ("macOS" if any("xcode" in l or "macos" in l for l in labels) else "hosted")
+    return ""
+
+
 def job_lines(jobs, indent=""):
     lines = []
     for job in jobs:
@@ -254,7 +266,8 @@ def job_lines(jobs, indent=""):
             continue
         duration = elapsed(job.get("started_at"), job.get("completed_at"))
         job_time = f"; {duration}" if duration else ""
-        lines.append(f"{indent}- {conclusion_label(job)} - {job.get('name')}{job_time}")
+        where = runner_label(job)
+        lines.append(f"{indent}- {conclusion_label(job)} - {job.get('name')}{job_time}" + (f"; {where}" if where else ""))
     return lines
 
 
