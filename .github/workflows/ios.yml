@@ -78,6 +78,14 @@ jobs:
           else
             { echo "mac_runner=xcode-27"; echo "simulator=platform=iOS Simulator,name=iPhone 17,OS=27.0"; } >> "$GITHUB_OUTPUT"
           fi
+          # Say on the run's summary page where the macOS jobs go, so nobody has to open a job to find out.
+          if [ "$EVENT" != pull_request ] && [ "$SELF_HOSTED_MAC" = true ]; then
+            echo "**macOS jobs run on:** the owner's Mac (self-hosted runner \`starter-mac\`, simulator CI iPhone 17), because this is a $EVENT run and \`SELF_HOSTED_MAC\` is \`true\`." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$EVENT" = pull_request ]; then
+            echo "**macOS jobs run on:** GitHub's \`xcode-27\` runners, as for every pull request." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "**macOS jobs run on:** GitHub's \`xcode-27\` runners (\`SELF_HOSTED_MAC\` is not \`true\`)." >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: List the test lanes
         id: lanes
         env:

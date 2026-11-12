@@ -96,12 +96,13 @@ Apple setup takes an Apple Developer membership and an App Store Connect API key
 | Minimum OS | iOS and iPadOS 17.0 |
 | Devices | iPhone and iPad |
 | Simulator for required checks | iPhone 17, iOS 27.0 |
+| Where CI runs | GitHub's macOS runners; optionally your own Mac for pushes to `main` ([how](docs/ci.md#optional-a-self-hosted-runner-on-your-own-mac)) |
 | Project generator | XcodeGen 2.46.0 |
 
 
 ## Working on the starter itself
 
-Read [AGENTS.md](AGENTS.md) first. The [roadmap](roadmap.md) holds the agreed decisions and what's next, and the [setup journal](docs/setup-experience.md) records what went wrong along the way and how it was fixed.
+Read [AGENTS.md](AGENTS.md) first, then [CONTRIBUTING.md](CONTRIBUTING.md) for the change loop and the checks to run before pushing. The [roadmap](roadmap.md) holds the agreed decisions and what's next, and the [setup journal](docs/setup-experience.md) records what went wrong along the way and how it was fixed.
 
 ## License
 
