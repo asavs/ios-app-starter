@@ -17,7 +17,9 @@ set -euo pipefail
 #   IOS_DEVICE_TESTS=1      run the tests on the device instead of installing and launching
 #   IOS_REGISTER_DEVICE=1   also let xcodebuild register this device in the team's portal
 #   IOS_SIGNING_KEYCHAIN    keychain file whose certificates alone may sign this build; the user
-#                           keychain search list is narrowed to it for xcodebuild and restored after
+#                           keychain search list is narrowed to it for xcodebuild and restored after.
+#                           Unset, the script chooses the login keychain itself when the team's
+#                           development identities are in more than one keychain
 #   IOS_RUN_ON_DEVICE_DRY_RUN=1  print the commands that would run instead of running them
 #   IOS_DEVICE_LIST_JSON    reuse a saved `devicectl list devices --json-output` file (tests, previews)
 #   IOS_RUN_ON_DEVICE_OUTPUT_DIR  where logs and DerivedData go (default build/run-on-device, gitignored)
@@ -171,6 +173,30 @@ remove_runner() {
 # Optionally narrow the user keychain search list to one keychain while xcodebuild signs, so
 # automatic signing cannot pick a same-team certificate whose key lives in another keychain.
 # The previous list is restored on every exit path, including a failed build.
+# Without IOS_SIGNING_KEYCHAIN, look for the team's development identities in every keychain of
+# the search list: when they sit in more than one, Xcode may sign with any of them, and one whose
+# key isn't usable here fails as errSecInternalComponent (2026-11-09, an API-created identity in
+# another project's keychain). The helper then picks the login keychain, or stops and lists them.
+if [[ -z "${IOS_SIGNING_KEYCHAIN:-}" && "$dry_run" != "1" ]]; then
+  identities="$out_dir/signing-identities.tsv"
+  : > "$identities"
+  while IFS= read -r keychain; do
+    keychain="${keychain#"${keychain%%[![:space:]]*}"}"; keychain="${keychain%\"}"; keychain="${keychain#\"}"
+    [[ -n "$keychain" ]] || continue
+    while IFS= read -r name; do
+      subject="$(security find-certificate -c "$name" -p "$keychain" 2>/dev/null | openssl x509 -noout -subject 2>/dev/null || true)"
+      identity_team="$(sed -n -E 's/.*OU ?= ?([A-Z0-9]{10}).*/\1/p' <<<"$subject")"
+      [[ -n "$identity_team" ]] && printf '%s\t%s\t%s\n' "$keychain" "$name" "$identity_team" >> "$identities"
+    done < <(security find-identity -v -p codesigning "$keychain" 2>/dev/null \
+      | sed -n -E 's/^ *[0-9]+\) [0-9A-F]{40} "(Apple Development: [^"]+)".*/\1/p' | sort -u)
+  done < <(security list-keychains -d user)
+  chosen="$(python3 "$helper" signing-keychain "$identities" --team "$team" \
+    --login-keychain "$HOME/Library/Keychains/login.keychain-db")" || exit 1
+  if [[ -n "$chosen" ]]; then
+    IOS_SIGNING_KEYCHAIN="${chosen%%$'\t'*}"
+    log "${chosen#*$'\t'}; signing from the login keychain (set IOS_SIGNING_KEYCHAIN to choose another)"
+  fi
+fi
 saved_keychains=()
 restore_keychains() {
   if (( ${#saved_keychains[@]} )); then

@@ -37,6 +37,11 @@ jobs:
       run: ${{ steps.decide.outputs.run }}
       reason: ${{ steps.decide.outputs.reason }}
       modules: ${{ steps.decide.outputs.modules }}
+      # Whether the per-module tests need to run: always on main and manual runs; on a pull request
+      # only when a module, the package or the module-test scripts changed. App and CI changes can't
+      # break a module's own tests, and the job held a macOS runner for ten minutes of the five that
+      # GitHub runs at once for this account (2026-11-09).
+      module_tests: ${{ steps.decide.outputs.module_tests }}
       # Opt-in with the repository variable SELF_HOSTED_MAC=true: pushes to main and manual runs then go
       # to the owner's Mac (a self-hosted runner labelled starter-mac), so main's ten jobs leave GitHub's
       # five concurrent macOS slots to pull requests (2026-11-09). Without it, or for any pull request,
@@ -53,7 +58,10 @@ jobs:
       # any (2026-11-04, ios-6dd.13). A push to main tests the two the pull request didn't: nine lanes at
       # once ran each test two to three times slower than the pull request's three and timed out three
       # merges in a row (2026-11-07). A manual run tests the one it names, or all three.
-      configurations: ${{ github.event_name == 'pull_request' && '["starter-app-demo"]' || github.event_name == 'push' && '["starter","pocket-notes"]' || inputs.configuration != 'all' && format('["{0}"]', inputs.configuration) || '["starter","pocket-notes","starter-app-demo"]' }}
+      configurations: ${{ steps.lanes.outputs.configurations }}
+      # The test job's (configuration, lane) pairs: every lane for each configuration except
+      # pocket-notes, whose content is the starter's and whose own risk is its identity.
+      lanes: ${{ steps.lanes.outputs.lanes }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -66,12 +74,23 @@ jobs:
           SELF_HOSTED_MAC: ${{ vars.SELF_HOSTED_MAC }}
         run: |
           if [ "$EVENT" != pull_request ] && [ "$SELF_HOSTED_MAC" = true ]; then
-            echo "mac_runner=starter-mac" >> "$GITHUB_OUTPUT"
-            echo "simulator=platform=iOS Simulator,name=CI iPhone 17,OS=27.0" >> "$GITHUB_OUTPUT"
+            { echo "mac_runner=starter-mac"; echo "simulator=platform=iOS Simulator,name=CI iPhone 17,OS=27.0"; } >> "$GITHUB_OUTPUT"
           else
-            echo "mac_runner=xcode-27" >> "$GITHUB_OUTPUT"
-            echo "simulator=platform=iOS Simulator,name=iPhone 17,OS=27.0" >> "$GITHUB_OUTPUT"
+            { echo "mac_runner=xcode-27"; echo "simulator=platform=iOS Simulator,name=iPhone 17,OS=27.0"; } >> "$GITHUB_OUTPUT"
           fi
+      - name: List the test lanes
+        id: lanes
+        env:
+          CONFIGURATIONS: ${{ github.event_name == 'pull_request' && '["starter-app-demo"]' || github.event_name == 'push' && '["starter","pocket-notes"]' || inputs.configuration != 'all' && format('["{0}"]', inputs.configuration) || '["starter","pocket-notes","starter-app-demo"]' }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          lanes = [{"configuration": c, "lane": lane}
+                   for c in json.loads(os.environ["CONFIGURATIONS"])
+                   for lane in (["identity"] if c == "pocket-notes" else ["shell", "features", "tabs"])]
+          print("configurations=" + json.dumps(json.loads(os.environ["CONFIGURATIONS"])))
+          print("lanes=" + json.dumps(lanes))
+          PY
       - name: Classify the change
         id: decide
         env:
@@ -83,13 +102,19 @@ jobs:
           modules="$(python3 -c 'import json,pathlib; p=pathlib.Path("Modules"); print(json.dumps(sorted(d.name for d in p.iterdir() if d.is_dir()) if p.is_dir() else []))')"
           echo "modules=$modules" >> "$GITHUB_OUTPUT"
           if [ "$EVENT" != "pull_request" ]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"; echo "reason=$EVENT event always runs" >> "$GITHUB_OUTPUT"; exit 0
+            { echo "module_tests=true"; echo "run=true"; echo "reason=$EVENT event always runs"; } >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           if [ "$DRAFT" = "true" ]; then
             echo "run=false" >> "$GITHUB_OUTPUT"; echo "reason=draft pull request; mark it ready for review to run the simulator gate" >> "$GITHUB_OUTPUT"; exit 0
           fi
           changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
           printf 'Changed files:\n%s\n' "$changed"
+          if printf '%s\n' "$changed" | grep -q -E '^(Modules/|Package\.swift$|Package\.resolved$|scripts/(test-module\.sh|test-ios\.sh|report-tests\.py|prepare-simulator\.py)$|\.github/workflows/ios\.yml$)'; then
+            echo "module_tests=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "module_tests=false" >> "$GITHUB_OUTPUT"
+          fi
           code="$(printf '%s\n' "$changed" | grep -v -E '^(docs/|[^/]+\.md$|LICENSE$)' || true)"
           if [ -z "$code" ]; then
             echo "run=false" >> "$GITHUB_OUTPUT"; echo "reason=documentation-only change; simulator gate not needed" >> "$GITHUB_OUTPUT"
@@ -254,10 +279,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        configuration: ${{ fromJSON(needs.changes.outputs.configurations) }}
         # Three lanes per configuration, each on its own simulator: the whole UI suite on one runner takes
-        # over 25 minutes (ios-6dd.13). `scripts/test-ios.sh` maps the lane to test classes.
-        lane: [shell, features, tabs]
+        # over 25 minutes (ios-6dd.13). pocket-notes, the template made into someone's app with the
+        # starter's content, runs only its identity lane (2026-11-09). `scripts/test-ios.sh` maps the
+        # lane to test classes; the changes job lists the pairs.
+        include: ${{ fromJSON(needs.changes.outputs.lanes) }}
     runs-on: ${{ needs.changes.outputs.mac_runner }}
     # Pull requests keep the tight limits of a required check; main and manual runs aren't required and
     # share runners with everything else, so they get room to finish rather than fail on the clock.
@@ -346,7 +372,7 @@ jobs:
 
   module-tests:
     needs: changes
-    if: needs.changes.outputs.run == 'true' && needs.changes.outputs.modules != '[]'
+    if: needs.changes.outputs.run == 'true' && needs.changes.outputs.modules != '[]' && needs.changes.outputs.module_tests == 'true'
     runs-on: ${{ needs.changes.outputs.mac_runner }}
     timeout-minutes: 45
     env:
@@ -448,8 +474,11 @@ jobs:
           BUILD_RESULT: ${{ needs.build.result }}
           TEST_RESULT: ${{ needs.test.result }}
           MODULE_RESULT: ${{ needs.module-tests.result }}
+          MODULE_TESTS: ${{ needs.changes.outputs.module_tests }}
           NO_MODULES_RESULT: ${{ needs.no-modules.result }}
         run: |
+          # A pull request that changed no module skips the module tests; that counts as passing.
+          if [ "$MODULE_TESTS" != "true" ] && [ "$MODULE_RESULT" = "skipped" ]; then MODULE_RESULT=success; fi
           echo "Simulator gate requested: $RUN ($REASON); app build: $BUILD_RESULT; app tests: $TEST_RESULT; module tests: $MODULE_RESULT; no-modules build: $NO_MODULES_RESULT"
           if [ "$RUN" = "true" ] && [ "$BUILD_RESULT" = "success" ] && [ "$TEST_RESULT" = "success" ] && [ "$MODULE_RESULT" = "success" ] && [ "$NO_MODULES_RESULT" = "success" ]; then
             echo "## iOS gate: passed" >> "$GITHUB_STEP_SUMMARY"; echo "App smoke tests, per-module tests and the no-modules build passed." >> "$GITHUB_STEP_SUMMARY"; exit 0
