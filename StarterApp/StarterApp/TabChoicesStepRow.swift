@@ -5,7 +5,7 @@ import Theme
 /// One feature in onboarding's tab step, drawn like the choice step's answers: symbol, name and one
 /// sentence, and a circle that fills when the tab is on. A button with the selected trait, so
 /// VoiceOver reads "Selected" on the tabs that show. A required feature can't be turned off: its row
-/// is disabled and says it is always shown.
+/// says it is always shown, and a tap leaves it on.
 struct TabChoicesStepRow: View {
     let feature: StarterFeature
     let isOn: Bool
@@ -57,12 +57,13 @@ struct TabChoicesStepRow: View {
             .animation(reduceMotion ? nil : .snappy(duration: 0.15), value: isOn)
         }
         .buttonStyle(.plain)
-        .disabled(feature.isRequired)
+        // Not `.disabled`: that dims the row below readable contrast. A tap on a required feature
+        // changes nothing (`FeatureChoices.hide` ignores it), and "Always shown" says why.
         .accessibilityAddTraits(isOn ? .isSelected : [])
         .accessibilityIdentifier(Identifiers.TabChoices.onboarding(feature.id.rawValue))
     }
 
-    /// A lock on the row that can't change, so a disabled row doesn't read as an unanswered one.
+    /// A lock on the row that can't change, so the locked row doesn't read as an unanswered one.
     private var indicator: String {
         if feature.isRequired { "lock.circle.fill" } else if isOn { "checkmark.circle.fill" } else { "circle" }
     }

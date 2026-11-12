@@ -42,7 +42,8 @@ final class OnboardingTabsUITests: StarterUITestCase {
 
         let settingsRow = row(app, Identifiers.Tabs.settings)
         XCTAssertTrue(waitUntil(settingsRow, "isSelected == true"), "Settings is on")
-        XCTAssertFalse(settingsRow.isEnabled, "Settings can't be turned off")
+        settingsRow.tap()
+        XCTAssertFalse(waitUntil(settingsRow, "isSelected == false", timeout: 2), "Settings can't be turned off")
         XCTAssertTrue(waitUntil(row(app, Identifiers.Tabs.welcome), "isSelected == true"), "A fresh install starts on the defaults")
         guard let (feature, title) = Self.optionalFeatures.first(where: { row(app, $0.0).exists }) else {
             throw XCTSkip("This build has no optional feature to turn off")
