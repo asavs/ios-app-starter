@@ -2,6 +2,17 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-12 — Where a pull request's lane minutes go: a starved download, two long tests, uneven lanes
+
+- **Tools:** GitHub-hosted `xcode-27` runners (Xcode 27.0, iPhone 17 simulator on iOS 27.0); task `ios-c1p`. Measured from the step times and `tests.json` of five pull request runs, 2026-11-11 and 2026-11-12 (43129383545, 43132608869, 43146486027, 43321879344, 43326434085).
+- **Finding (confirmed, step logs):** each lane spent 2 to 3.5 minutes in "Download the configuration's build" for a 14 MB artifact. The step ran straight after the simulator booted, and the action printed its first line 132 s after the step started; the download itself took 35 s. The same runners start the upload at the end of the job within a second. A hosted runner has little CPU left for minutes after a simulator boot. The lanes now download first and boot second.
+- **Finding (confirmed):** the test with the least room under XCTest's 300 s allowance was `AttachmentsUITests/testPresetAttachments` (89 to 271 s, mean 135), then `LibraryUITests/testLibraryCollectsSearchesPreviewsAndDeletes` (131 to 211 s, mean 160; 255 s on 2026-11-07). Stalls of two minutes or more turned up in tests that usually take 30 to 60 s (`testEraseLocalDataBringsBackTheDefaultTabs` 167 s, `testSettingsAboutScreensAndReset` 194 s), so a test with a mean over 150 s is one stall from being cut off, with no second attempt. Both are now two tests that each add what they need, as Notes was split on 2026-11-08: Attachments into add-and-preview and relaunch-and-remove, Library into collect-rename-preview-relaunch and search-and-delete. Each split costs one more launch and setup.
+- **Finding (confirmed):** the lanes were uneven: test time 8 to 10 minutes in `shell`, 11.5 to 15 in `features`, 12 to 18 in `tabs`. `OnboardingTabsUITests` (about 100 s) moves from `tabs` to `shell`, beside the other onboarding class.
+- **Change:** the invalid-configuration probes (46 to 72 s) ran in the build job ahead of the build every lane waits for; they generate their own projects from `project.yml`, so they now run in `no-modules`, beside the build. The module-tests artifact carried each module's DerivedData (132 MB, over three minutes to upload) and now carries the reports only. `summary.md` lists the five slowest tests and the lane's total test time, so the next heavy test shows on the run page.
+- **Not done:** the string and identifier checks need no simulator but take under ten seconds each on the Mac runner, so moving them to Linux would add a job and save nothing. A fourth lane would shorten a pull request by a few minutes and add a macOS job against the cap of five.
+- **Verified:** PENDING
+- **Remaining:** `NotesUITests/testSearchEditAndKeepAfterRelaunch` (101 to 153 s) is the next candidate if it grows. Starting the tests sooner after boot gives the simulator less time to settle than the slow download did by accident; `prepare-simulator.py` still waits 20 s, and a return of the bootstrap crash of 2026-11-03 would mean raising `IOS_SIMULATOR_SETTLE_SECONDS`.
+
 ## 2026-11-09 — A self-hosted runner on the owner's Mac takes main's iOS jobs, opt-in
 
 - **Tools:** GitHub Actions runner 2.338.2 (osx-arm64, SHA-256 `25a065af…a388`, matching the release notes and GitHub's asset digest); Xcode 27.1 on the owner's Mac; task `ios-7q7`.

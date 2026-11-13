@@ -208,10 +208,6 @@ jobs:
           IOS_TEST_OUTPUT_DIR: ${{ runner.temp }}/ios-test-results
         run: python3 scripts/check-app-icon.py --output "$IOS_TEST_OUTPUT_DIR/icon"
 
-      - name: Verify invalid configurations fail clearly
-        if: matrix.configuration == 'starter' || matrix.configuration == 'starter-app-demo'
-        run: python3 scripts/tests/check-configurations.py
-
       - name: Inject deliberate assertion failure in runner checkout
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.verify_failure_reporting }}
         run: |
@@ -321,10 +317,9 @@ jobs:
           DEVELOPER_DIR="$developer_dir" xcodebuild -version
           echo "DEVELOPER_DIR=$developer_dir" >> "$GITHUB_ENV"
 
-      - name: Prepare simulator
-        timeout-minutes: 5
-        run: python3 scripts/prepare-simulator.py
-
+      # Before the simulator boots: for minutes after booting, the simulator leaves a hosted runner so
+      # little CPU that this 14 MB download took 2 to 3.5 minutes in every lane, most of it before the
+      # action printed its first line (2026-11-12).
       - name: Download the configuration's build
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
@@ -335,6 +330,10 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/ios-test-results"
           cp -R "$RUNNER_TEMP/ios-build/reports/." "$RUNNER_TEMP/ios-test-results/"
+
+      - name: Prepare simulator
+        timeout-minutes: 5
+        run: python3 scripts/prepare-simulator.py
 
       - name: Test the build
         id: ios_tests
@@ -427,7 +426,12 @@ jobs:
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: module-test-results-all
-          path: ${{ runner.temp }}/module-test-results
+          # The reports, not each module's build: with DerivedData the artifact was 132 MB and took over
+          # three minutes to upload (2026-11-12).
+          path: |
+            ${{ runner.temp }}/module-test-results
+            !${{ runner.temp }}/module-test-results/**/DerivedData/**
+            !${{ runner.temp }}/module-test-results/**/SourcePackages/**
           retention-days: 14
           if-no-files-found: warn
 
@@ -456,6 +460,11 @@ jobs:
           fi
           DEVELOPER_DIR="$developer_dir" xcodebuild -version
           echo "DEVELOPER_DIR=$developer_dir" >> "$GITHUB_ENV"
+      - name: Cache verified XcodeGen archive
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/tool-downloads/xcodegen
+          key: xcodegen-v1-${{ runner.os }}-${{ runner.arch }}-2.46.0-${{ hashFiles('scripts/generate-project.sh', 'scripts/tool_download.py') }}
       - name: Generate app with all modules disabled
         env:
           IOS_PROJECT_SPEC: examples/no-modules.yml
@@ -466,6 +475,10 @@ jobs:
           python3 -c 'import json,sys; data=json.load(open(sys.argv[1])); assert data["enabled"] == [], "Expected no module products enabled"' "$RUNNER_TEMP/modules.json"
       - name: Build app without modules
         run: xcodebuild -project StarterApp/StarterApp.xcodeproj -scheme StarterApp -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+      # The probes generate their own projects from project.yml, whatever configuration a run tests. They
+      # ran in the build job, where their minute came before the build every lane waits for (2026-11-12).
+      - name: Verify invalid configurations fail clearly
+        run: python3 scripts/tests/check-configurations.py
 
   # The single required check for pull requests. Passes when the simulator lane passed, or when the
   # change was documentation-only. Fails for drafts and for any failed, cancelled or missing lane.
