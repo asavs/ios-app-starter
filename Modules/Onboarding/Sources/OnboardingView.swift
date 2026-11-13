@@ -89,6 +89,7 @@ public struct OnboardingView: View {
         }
         .padding(.vertical, theme.spacing.medium)
         .background(theme.colors.background.ignoresSafeArea())
+        .modifier(OnboardingSheetSizing()) // Applies when the flow is presented in a sheet.
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: pager)
         .onAppear {
             if steps.isEmpty { finish() }
