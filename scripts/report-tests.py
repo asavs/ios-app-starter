@@ -22,6 +22,9 @@ GENERIC_ERROR_RE = re.compile(r"^(?:xcodebuild: )?error: (?P<message>.*)$")
 XCTEST_ASSERTION_RE = re.compile(r"^-\[[^\]]+\] : ")
 XCTEST_DETAIL_RE = re.compile(r"^-\[(?P<suite>[^\]\s]+) (?P<method>[^\]\s]+)\] : (?P<message>.*)$")
 IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".heic")
+# The per-test allowance scripts/test-ios.sh gives xcodebuild, and how many of the slowest tests to list.
+TEST_ALLOWANCE_SECONDS = 300
+SLOWEST_LISTED = 5
 
 
 def fenced(text):
@@ -96,6 +99,26 @@ def retried_tests(tests):
     for node in tests.get("testNodes", []) or []:
         walk(node, None, None)
     return retried
+
+
+def test_durations(tests):
+    """Every test case with a recorded duration in seconds, slowest first."""
+    timed = []
+
+    def walk(node):
+        if not isinstance(node, dict):
+            return
+        seconds = node.get("durationInSeconds")
+        if node.get("nodeType") == "Test Case":
+            if isinstance(seconds, (int, float)) and not isinstance(seconds, bool):
+                timed.append({"test": node.get("nodeIdentifier") or node.get("name", ""), "seconds": round(seconds, 1)})
+            return
+        for child in node.get("children", []) or []:
+            walk(child)
+
+    for node in (tests.get("testNodes", []) or []) if isinstance(tests, dict) else []:
+        walk(node)
+    return sorted(timed, key=lambda item: -item["seconds"])
 
 
 def test_failures(tests):
@@ -223,6 +246,7 @@ def main():
     tests = load_json(report_dir / "tests.json")
     failures = test_failures(tests)
     retried = retried_tests(tests)
+    durations = test_durations(tests)
     if not failures and result is not None:
         raw = result.get("testFailures", [])
         for failure in ([raw] if isinstance(raw, dict) else raw) if isinstance(raw, (list, dict)) else []:
@@ -269,6 +293,15 @@ def main():
             location = f"{test['file']}:{test['line']}" if test["file"] else "location not recorded"
             lines.append(f"- `{test['test']}` (`{location}`): {test['message']}")
         lines.append("")
+    if durations:
+        total = sum(item["seconds"] for item in durations)
+        lines.extend(["### Slowest tests", "",
+                      f"{len(durations)} tests ran for {total / 60:.1f} minutes in all. A test is cut off at "
+                      f"{TEST_ALLOWANCE_SECONDS} s with no second attempt; split one that passes half of that.", ""])
+        for item in durations[:SLOWEST_LISTED]:
+            near = " (over half the allowance)" if item["seconds"] > TEST_ALLOWANCE_SECONDS / 2 else ""
+            lines.append(f"- {item['seconds']:.0f} s: `{item['test']}`{near}")
+        lines.append("")
     images = [item for item in media if item["isImage"]]
     if images:
         lines.extend(["### Screenshots", ""])
@@ -304,7 +337,7 @@ def main():
     (report_dir / "failures.json").write_text(json.dumps({
         "stage": stage, "exitStatus": status, "destination": destination,
         "counts": {key: result[key] for key in ("totalTestCount", "passedTests", "failedTests", "skippedTests")} if result else None,
-        "failures": failures, "retried": retried, "buildErrors": errors, "attachments": media,
+        "failures": failures, "retried": retried, "slowest": durations[:SLOWEST_LISTED], "buildErrors": errors, "attachments": media,
     }, indent=2) + "\n")
     print(summary)
     if os.environ.get("GITHUB_STEP_SUMMARY"):

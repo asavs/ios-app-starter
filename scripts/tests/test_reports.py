@@ -92,6 +92,20 @@ class ReportTests(unittest.TestCase):
             dict(nodeType="UI test bundle", name="StarterAppUITests", result=final, children=[
                 dict(nodeType="Test Suite", name="StarterAppUITests", result=final, children=[case])])])])
 
+    def test_slowest_tests_are_listed_with_the_one_near_the_allowance_marked(self):
+        cases = [dict(nodeType="Test Case", name=f"test{n}()", nodeIdentifier=f"LibraryUITests/test{n}()", result="Passed",
+                      durationInSeconds=seconds) for n, seconds in enumerate([12.4, 211.2, 48, 60, 30, 5, 90])]
+        tests = dict(testNodes=[dict(nodeType="Test Plan", name="StarterApp", result="Passed", children=[
+            dict(nodeType="Test Suite", name="LibraryUITests", result="Passed", children=cases)])])
+        code, summary = self.report(dict(result="Passed", totalTestCount=7, passedTests=7, failedTests=0, skippedTests=0),
+                                    0, tests=tests)
+        self.assertEqual(code, 0)
+        self.assertIn("7 tests ran for 7.6 minutes in all.", summary)
+        self.assertIn("- 211 s: `LibraryUITests/test1()` (over half the allowance)", summary)
+        self.assertIn("- 90 s: `LibraryUITests/test6()`" + chr(10), summary)
+        self.assertNotIn("test5()", summary)  # The sixth slowest isn't listed.
+        self.assertEqual([item["seconds"] for item in self.last_failures["slowest"]], [211.2, 90, 60, 48, 30])
+
     def test_a_test_that_passed_on_retry_passes_the_run_and_is_listed(self):
         code, summary = self.report(dict(result="Passed", totalTestCount=1, passedTests=1, failedTests=0, skippedTests=0),
                                     0, tests=self.retry_tests("Passed", "OnboardingUITests.swift:63: failed - The welcome sheet should be the first step"))
