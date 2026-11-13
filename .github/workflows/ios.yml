@@ -317,9 +317,10 @@ jobs:
           DEVELOPER_DIR="$developer_dir" xcodebuild -version
           echo "DEVELOPER_DIR=$developer_dir" >> "$GITHUB_ENV"
 
-      # Before the simulator boots: for minutes after booting, the simulator leaves a hosted runner so
-      # little CPU that this 14 MB download took 2 to 3.5 minutes in every lane, most of it before the
-      # action printed its first line (2026-11-12).
+      # Before the simulator boots, while the runner is idle. On a hosted runner whatever starts first
+      # after the boot waits about two minutes: this 14 MB download took 2 to 3.5 minutes there, and
+      # once it moved, xcodebuild took as long to start. The order saves a minute at most; it keeps the
+      # download and its requests, one of which timed out there, off the busy stretch (2026-11-12).
       - name: Download the configuration's build
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:

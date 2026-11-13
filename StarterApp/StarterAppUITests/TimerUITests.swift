@@ -2,6 +2,11 @@ import XCTest
 
 /// The Timer tab: running, editing and saving a plan, the largest text size, the Live Activity.
 final class TimerUITests: StarterUITestCase {
+    /// How long a started session may take to show its Live Activity before a test concludes they are
+    /// off and skips. On a loaded hosted runner 10 s once wasn't enough, and the skip dropped the test
+    /// without a failure (2026-11-12).
+    private static let activityStartWait: TimeInterval = 30
+
     /// The Edit sheet: set the work phase to 0:30 with the hours, minutes and seconds wheels and add a round; the ring and
     /// step count follow, and the times survive a relaunch. Skips when DurationPicker is disabled.
     @MainActor
@@ -226,7 +231,7 @@ final class TimerUITests: StarterUITestCase {
 
         primary.tap()
         XCTAssertTrue(waitUntil(primary, "label == 'Pause'"))
-        if !waitUntil(count, "label == '1'", timeout: 10) {
+        if !waitUntil(count, "label == '1'", timeout: Self.activityStartWait) {
             // The person (or this simulator) has Live Activities off for the app; the controller then does nothing.
             throw XCTSkip("Live Activities are not available in this environment; the phone check covers them")
         }
@@ -257,7 +262,7 @@ final class TimerUITests: StarterUITestCase {
         try requireModuleUI("SessionActivity", appeared: count.waitForExistence(timeout: 5), "no Live Activity readout")
         primary.tap()
         XCTAssertTrue(waitUntil(primary, "label == 'Pause'"))
-        if !waitUntil(count, "label == '1'", timeout: 10) {
+        if !waitUntil(count, "label == '1'", timeout: Self.activityStartWait) {
             throw XCTSkip("Live Activities are not available in this environment; the phone check covers them")
         }
 
