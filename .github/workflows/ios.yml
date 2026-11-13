@@ -317,10 +317,14 @@ jobs:
           DEVELOPER_DIR="$developer_dir" xcodebuild -version
           echo "DEVELOPER_DIR=$developer_dir" >> "$GITHUB_ENV"
 
-      # Before the simulator boots, while the runner is idle. On a hosted runner whatever starts first
-      # after the boot waits about two minutes: this 14 MB download took 2 to 3.5 minutes there, and
-      # once it moved, xcodebuild took as long to start. The order saves a minute at most; it keeps the
-      # download and its requests, one of which timed out there, off the busy stretch (2026-11-12).
+      - name: Prepare simulator
+        timeout-minutes: 5
+        run: python3 scripts/prepare-simulator.py
+
+      # After the simulator boots, not before. On a hosted runner whatever starts first after the boot
+      # waits about two minutes, which this 14 MB download does (2 to 3.5 minutes in all). Downloading
+      # first took seconds and moved the wait to xcodebuild's start, so it saved a minute at most and
+      # started the tests on a simulator with less time behind it (tried and put back, 2026-11-12).
       - name: Download the configuration's build
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
@@ -331,10 +335,6 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/ios-test-results"
           cp -R "$RUNNER_TEMP/ios-build/reports/." "$RUNNER_TEMP/ios-test-results/"
-
-      - name: Prepare simulator
-        timeout-minutes: 5
-        run: python3 scripts/prepare-simulator.py
 
       - name: Test the build
         id: ios_tests
