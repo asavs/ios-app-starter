@@ -2,6 +2,14 @@
 
 Entries for the fresh-repository onboarding path, consent model, and resumable setup command. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-12 — Onboarding at the largest text size needs the page-sized sheet on iPad
+
+- **Context:** `ios-bqu`. Xcode 27.0 on a Mac, iPad Air 11-inch (M4) simulator with iOS 27.0, the starter's demo configuration.
+- **Symptom (confirmed):** On iPad the onboarding sheet uses the default form size, about half the screen high. At the largest accessibility text size a page had only a few lines between Skip, the page dots and Continue. `OnboardingUITests.testLargestTextSize` failed: first reported at the primer's footnote, and in this run already at "The tour card should follow". On iPhone, where the sheet is full height, the test passed.
+- **Fix:** `OnboardingView` applies `OnboardingSheetSizing`, which asks for `presentationSizing(.page)` at accessibility text sizes on iOS 18 and later. Both the first-launch gate and the replay sheet get it. Before iOS 18 the system keeps the form sheet and the page still scrolls.
+- **Verification:** After the fix the same test passed on the iPad simulator, and the whole notifications primer with its footnote fits without scrolling. `swift test --filter OnboardingTests` passed (26 tests, macOS host). The iPhone lanes run in CI on the pull request.
+- **Remaining uncertainty:** iPad on iOS 17 was not run; it keeps the half-height sheet and relies on scrolling. The UI suite does not run on an iPad destination in CI, so this case is covered only when someone runs it there.
+
 ## 2026-10-25 — A bot's pull request needs the owner twice
 
 - **Context:** First run of the opt-in README icon sync (`readme-icon.yml`), GitHub-hosted runners, gh CLI on macOS. The workflow opened [PR #119](https://github.com/asavs/ios-app-starter/pull/119) with the workflow token and dispatched `ios.yml` and `apple-diagnostics.yml` on its branch so the required checks would report.
