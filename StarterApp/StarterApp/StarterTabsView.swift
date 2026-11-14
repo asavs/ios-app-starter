@@ -25,6 +25,8 @@ struct StarterTabsView: View {
         TabShell(tabs: StarterFeature.available.map(\.item), selection: selection) { tab in
             destination(tab)
         }
+        // Home's shortcuts switch tabs through this; they only offer chosen tabs.
+        .environment(\.openTab, OpenTabAction { [selection] tab in selection.select(rawValue: tab.rawValue) })
         .onChange(of: choices.chosen) { _, chosen in
             selection.setTabs(chosen, defaultTab: choices.defaultTab)
         }

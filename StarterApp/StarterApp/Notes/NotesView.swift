@@ -10,8 +10,7 @@ import Theme
 /// Accessibility identifiers: `notes.add`, `notes.empty`, `notes.noResults`, `notes.row.<id>`,
 /// `notes.delete.confirm`.
 struct NotesView: View {
-    @Query(sort: [SortDescriptor(\Note.modifiedAt, order: .reverse), SortDescriptor(\Note.createdAt, order: .reverse)])
-    private var notes: [Note]
+    @Query(sort: NotesView.order) private var notes: [Note]
     @State private var drafts = NoteDrafts.shared
     @State private var search = ""
     /// The note whose editor is open, by id: a deleted note leaves the query and the destination
@@ -24,6 +23,11 @@ struct NotesView: View {
     @Environment(\.contentCoordinator) private var coordinator
 #endif
     @Environment(\.appTheme) private var theme
+
+    /// Most recently changed first; Home's recent notes use the same order.
+    static var order: [SortDescriptor<Note>] {
+        [SortDescriptor(\Note.modifiedAt, order: .reverse), SortDescriptor(\Note.createdAt, order: .reverse)]
+    }
 
     var body: some View {
         let shown: [Note] = NoteSearch.filter(notes, matching: search)

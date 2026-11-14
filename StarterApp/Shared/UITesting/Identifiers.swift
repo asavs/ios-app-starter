@@ -86,8 +86,31 @@ enum Identifiers {
         }
     }
 
-    /// The welcome screen (`ContentView`).
+    /// Home's sections (`HomeSections` and its parts); `tab` is a `StarterTab` raw value.
+    enum Home {
+        /// Each section's header: `home.section.<tab>`; Shortcuts is `home.section.welcome`.
+        static let sectionPrefix = "home.section."
+        static func section(_ tab: String) -> String { "\(sectionPrefix)\(tab)" }
+        static func seeAll(_ tab: String) -> String { "home.seeAll.\(tab)" }
+        /// A shortcut row that switches to a chosen tab.
+        static let shortcutPrefix = "home.shortcut."
+        static func shortcut(_ tab: String) -> String { "\(shortcutPrefix)\(tab)" }
+        static let notesEmpty = "home.notes.empty"
+        static let writeNote = "home.notes.write"
+        /// Each recent note: `home.note.<note id>`.
+        static let notePrefix = "home.note."
+        static func note(_ id: String) -> String { "\(notePrefix)\(id)" }
+        static let libraryEmpty = "home.library.empty"
+        static let openLibrary = "home.library.open"
+        /// Each recent Library item: `home.item.<item id>`.
+        static let itemPrefix = "home.item."
+        static func item(_ id: String) -> String { "\(itemPrefix)\(id)" }
+    }
+
+    /// The welcome screen (`ContentView`): Home with tabs, the greeting without.
     enum Welcome {
+        /// The greeting, in a build without tabs.
+        static let header = "welcome.header"
         static let card = "welcome.card"
         static let modulesVersion = "welcome.modulesVersion"
         static let buildGoals = "welcome.buildGoals"

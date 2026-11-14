@@ -24,7 +24,7 @@ final class OnboardingUITests: StarterUITestCase {
             XCTAssertFalse(next.waitForExistence(timeout: 2), "Onboarding should finish after its last page")
         }
 
-        let visible = app.staticTexts["Hello, world!"].waitForExistence(timeout: 10)
+        let visible = welcomeHeader(in: app).waitForExistence(timeout: 10)
 
         // Always keep one screenshot so CI reports show the screen, pass or fail.
         let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
@@ -100,7 +100,7 @@ final class OnboardingUITests: StarterUITestCase {
         attach(name: "onboarding-permission")
         next.tap() // The fake requester grants without a system alert, and the flow finishes.
 
-        XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 10),
+        XCTAssertTrue(welcomeHeader(in: app).waitForExistence(timeout: 10),
                       "Finishing onboarding should reveal the welcome screen")
         XCTAssertTrue(waitUntilGone(next), "The flow should be gone once finished") // It fades out first.
         let goals = app.staticTexts[Identifiers.Welcome.buildGoals]
@@ -167,7 +167,7 @@ final class OnboardingUITests: StarterUITestCase {
                       "The primer's footnote should be reachable by scrolling")
         next.tap()
 
-        XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 10), "The welcome screen should follow")
+        XCTAssertTrue(welcomeHeader(in: app).waitForExistence(timeout: 10), "The welcome screen should follow")
         XCTAssertTrue(scroll(app, to: app.buttons[Identifiers.Welcome.replayTour]), "The tour button should be reachable")
         attach(name: "large-welcome-screen")
 
@@ -198,7 +198,7 @@ final class OnboardingUITests: StarterUITestCase {
         let skip = app.buttons[ModuleIdentifiers.Onboarding.skip]
         XCTAssertTrue(waitUntilHittable(skip), "Skip should be offered on the first step")
         skip.tap()
-        XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 10),
+        XCTAssertTrue(welcomeHeader(in: app).waitForExistence(timeout: 10),
                       "Skipping should reveal the welcome screen and record completion")
 
         app.terminate()
@@ -206,7 +206,7 @@ final class OnboardingUITests: StarterUITestCase {
         var stored = scenario.relaunch
         stored.onboarding = .asStored
         app.launch(stored)
-        XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 10),
+        XCTAssertTrue(welcomeHeader(in: app).waitForExistence(timeout: 10),
                       "A relaunch after completion should open on the welcome screen")
         XCTAssertFalse(next.waitForExistence(timeout: 3), "A completed flow must not show again on relaunch")
         attach(name: "onboarding-relaunch")
