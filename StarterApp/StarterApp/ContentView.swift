@@ -61,7 +61,11 @@ struct ContentView: View {
     private var welcome: some View {
         ScrollView {
             VStack(spacing: 16) {
-#if canImport(Onboarding) && canImport(Settings) && !canImport(TabShell)
+#if canImport(TabShell)
+                // Home: recent notes and Library items, and shortcuts to the other chosen tabs.
+                HomeSections()
+#else
+#if canImport(Onboarding) && canImport(Settings)
                 // Inline, because a popover anchored to a toolbar button does not appear on iOS 26.
                 ContextualTipView("settings", in: tips)
 #endif
@@ -71,6 +75,8 @@ struct ContentView: View {
                     .accessibilityHidden(true) // Decorative.
                 Text("Hello, world!")
                     .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier(Identifiers.Welcome.header)
+#endif
                 details
                 replayTour
             }
@@ -148,9 +154,11 @@ struct ContentView: View {
 
     @ViewBuilder private var detailLines: some View {
         VStack(spacing: 4) {
+#if !canImport(TabShell)
             Text("Replace this screen in ContentView.swift.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+#endif
 #if canImport(TemplateVersion)
             Text("Modules \(TemplateVersion.modules)")
                 .font(.footnote)

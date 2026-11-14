@@ -16,7 +16,7 @@ final class StarterAppUITests: StarterUITestCase {
         XCTAssertTrue(waitUntil(welcome, "isSelected == true"))
         XCTAssertEqual(welcome.label, "Home", "The welcome tab reads Home; its identifier stays welcome")
         XCTAssertEqual(settings.label, "Settings")
-        XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 5))
+        XCTAssertTrue(welcomeHeader(in: app).waitForExistence(timeout: 5))
         attach(name: "tabs-welcome")
 
         settings.tap()
@@ -25,7 +25,7 @@ final class StarterAppUITests: StarterUITestCase {
         attach(name: "tabs-settings")
         welcome.tap()
         XCTAssertTrue(waitUntil(welcome, "isSelected == true"))
-        XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 5))
+        XCTAssertTrue(welcomeHeader(in: app).waitForExistence(timeout: 5))
         settings.tap()
         XCTAssertTrue(waitUntil(settings, "isSelected == true"))
 
@@ -61,7 +61,7 @@ final class StarterAppUITests: StarterUITestCase {
         XCUIDevice.shared.orientation = .portrait // A previous test may have left the device rotated.
         let app = XCUIApplication()
         app.launch(scenario)
-        let header = app.staticTexts["Hello, world!"]
+        let header = welcomeHeader(in: app)
         XCTAssertTrue(header.waitForExistence(timeout: 10), "The welcome header should show")
         // Above the header: the 16-point padding, the decorative globe (hidden from the hierarchy; about
         // one and a half times the body text) and the stack's 16-point spacing. The allowance scales
@@ -175,7 +175,7 @@ final class StarterAppUITests: StarterUITestCase {
 
         try open("\(scheme)://welcome", from: Identifiers.Tabs.settings)
         XCTAssertTrue(waitUntil(welcome, "isSelected == true"), "The link should select Home")
-        XCTAssertTrue(app.staticTexts["Hello, world!"].waitForExistence(timeout: 5))
+        XCTAssertTrue(welcomeHeader(in: app).waitForExistence(timeout: 5))
     }
 
     /// The Theme module's main path: the themed welcome card and primary button render in light and in
@@ -209,8 +209,8 @@ final class StarterAppUITests: StarterUITestCase {
     @MainActor
     private func assertThemedWelcome(_ app: XCUIApplication, name: String) throws -> CGFloat {
         let card = element(app, Identifiers.Welcome.card)
-        XCTAssertTrue(waitUntilHittable(card), "The themed card should be visible")
-        XCTAssertTrue(app.staticTexts["Replace this screen in ContentView.swift."].isHittable, "The card should show its details")
+        // Home's sections come first with tabs, so the card can be below the fold.
+        XCTAssertTrue(scroll(app, to: card), "The themed card should be visible")
         let replay = app.buttons[Identifiers.Welcome.replayTour]
         if replay.exists {
             XCTAssertTrue(replay.isHittable, "The primary-styled button should be visible")
@@ -220,8 +220,9 @@ final class StarterAppUITests: StarterUITestCase {
         attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)
-        // Above the bottom edge, where a tab bar's material would be sampled instead of the background.
-        return try luminance(of: screenshot.image, atNormalized: CGPoint(x: 0.5, y: 0.85))
+        // Above the bottom edge, where a tab bar's material would be sampled instead of the background,
+        // and in the side margin, clear of Home's cards and text.
+        return try luminance(of: screenshot.image, atNormalized: CGPoint(x: 0.02, y: 0.85))
     }
 
     /// Relative luminance (0 dark to 1 bright) of one pixel, given as a fraction of the image size.

@@ -39,7 +39,7 @@ struct LibraryItemView: View {
             Section {
                 TextField("Title", text: $item.title)
                     .accessibilityIdentifier(Identifiers.Library.Detail.title)
-                LabeledContent("Kind", value: kindName)
+                LabeledContent("Kind", value: item.kindName)
                 if !item.attachment.isLink {
                     LabeledContent("Size", value: item.attachment.byteCount, format: .byteCount(style: .file))
                 }
@@ -100,15 +100,6 @@ struct LibraryItemView: View {
     private var isMissing: Bool {
         guard let url = store.fileURL(for: item.attachment) else { return false }
         return !FileManager.default.fileExists(atPath: url.path())
-    }
-
-    private var kindName: String {
-        switch item.attachment.kind {
-        case .image: String(localized: "Photo")
-        case .movie: String(localized: "Video")
-        case .file: item.attachment.type?.localizedDescription ?? String(localized: "File")
-        case .link: String(localized: "Link")
-        }
     }
 
     private func preview() {

@@ -1,6 +1,6 @@
 # Feature tabs for the starter app
 
-Agreed with the owner on 2026-11-02. This is an implementation plan. Library, Notes, Timer, the Settings chooser (`TabChoicesView`) and onboarding's Choose your tabs step (`TabChoicesStep`) have shipped; the Home content has not.
+Agreed with the owner on 2026-11-02. This is an implementation plan. Library, Notes, Timer, the Settings chooser (`TabChoicesView`), onboarding's Choose your tabs step (`TabChoicesStep`) and Home's recent content and shortcuts (`HomeSections`) have shipped.
 
 The app should offer useful screens a builder can keep in their own app. Each tab has a purpose: Home, Library, Notes, Timer or Settings. There is no Examples tab. More features can bring more tabs; people choose which ones they want during onboarding and can change that choice later.
 

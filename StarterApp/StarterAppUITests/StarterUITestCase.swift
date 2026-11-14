@@ -146,6 +146,14 @@ class StarterUITestCase: XCTestCase {
         throw ModuleUIMissing(description: "no keyboard for \(field.identifier)")
     }
 
+    /// The welcome screen's first header: the greeting in a build without tabs, Home's first section
+    /// with them. Its presence says the welcome screen is showing.
+    @MainActor
+    func welcomeHeader(in app: XCUIApplication) -> XCUIElement {
+        app.staticTexts.matching(NSPredicate(format: "identifier == %@ OR identifier BEGINSWITH %@",
+                                             Identifiers.Welcome.header, Identifiers.Home.sectionPrefix)).firstMatch
+    }
+
     /// Settings is a native tab when TabShell is enabled, otherwise the original toolbar button.
     @MainActor
     func settingsButton(in app: XCUIApplication) -> XCUIElement {

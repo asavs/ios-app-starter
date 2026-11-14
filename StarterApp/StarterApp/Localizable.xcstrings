@@ -683,6 +683,17 @@
         }
       }
     },
+    "No notes yet. The ones you write show here, newest first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No notes yet. The ones you write show here, newest first."
+          }
+        }
+      }
+    },
     "No presets yet": {
       "extractionState": "manual",
       "localizations": {
@@ -716,6 +727,17 @@
         }
       }
     },
+    "Nothing collected yet. Photos, files and links you add to your Library show here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing collected yet. Photos, files and links you add to your Library show here."
+          }
+        }
+      }
+    },
     "Nothing in your Library yet": {
       "extractionState": "manual",
       "localizations": {
@@ -734,6 +756,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "OK"
+          }
+        }
+      }
+    },
+    "Open Library": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Library"
           }
         }
       }
@@ -837,6 +870,17 @@
         }
       }
     },
+    "Recent Notes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent Notes"
+          }
+        }
+      }
+    },
     "Recent content and shortcuts to the features you use.": {
       "extractionState": "manual",
       "localizations": {
@@ -844,6 +888,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Recent content and shortcuts to the features you use."
+          }
+        }
+      }
+    },
+    "Recently Collected": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recently Collected"
           }
         }
       }
@@ -1013,6 +1068,28 @@
         }
       }
     },
+    "See All": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See All"
+          }
+        }
+      }
+    },
+    "See All %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See All %@"
+          }
+        }
+      }
+    },
     "See the tour again": {
       "extractionState": "manual",
       "localizations": {
@@ -1042,6 +1119,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Settings live here"
+          }
+        }
+      }
+    },
+    "Shortcuts": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shortcuts"
           }
         }
       }
@@ -1438,6 +1526,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Work"
+          }
+        }
+      }
+    },
+    "Write a Note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write a Note"
           }
         }
       }
