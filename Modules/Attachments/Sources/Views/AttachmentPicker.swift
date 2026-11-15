@@ -51,7 +51,8 @@ public struct AttachmentPicker: View {
         }
         .accessibilityIdentifier("attachments.add")
         .photosPicker(isPresented: $model.isPresenting(.photos), selection: $model.photoItems,
-                      maxSelectionCount: model.maxPhotoSelection, matching: .any(of: [.images, .videos]))
+                      maxSelectionCount: model.maxPhotoSelection,
+                      matching: model.offersVideos ? .any(of: [.images, .videos]) : .images)
         .onChange(of: model.photoItems, model.photosChanged)
         .fileImporter(isPresented: $model.isPresenting(.files), allowedContentTypes: model.allowedContentTypes,
                       allowsMultipleSelection: true, onCompletion: model.filesPicked)

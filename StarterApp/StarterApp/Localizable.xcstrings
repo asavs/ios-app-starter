@@ -78,6 +78,17 @@
         }
       }
     },
+    "%lld of %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of %lld"
+          }
+        }
+      }
+    },
     "API key": {
       "extractionState": "manual",
       "localizations": {
@@ -210,6 +221,17 @@
         }
       }
     },
+    "Can't Show This Photo": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can't Show This Photo"
+          }
+        }
+      }
+    },
     "Cancel": {
       "extractionState": "manual",
       "localizations": {
@@ -261,6 +283,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Collect photos, files and links, and find them again."
+          }
+        }
+      }
+    },
+    "Couldn't Add the Image": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't Add the Image"
           }
         }
       }
@@ -349,6 +382,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delete this note?"
+          }
+        }
+      }
+    },
+    "Details": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Details"
           }
         }
       }
@@ -518,6 +562,17 @@
         }
       }
     },
+    "Images": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Images"
+          }
+        }
+      }
+    },
     "Intervals": {
       "extractionState": "manual",
       "localizations": {
@@ -672,6 +727,17 @@
         }
       }
     },
+    "No images yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No images yet"
+          }
+        }
+      }
+    },
     "No notes yet": {
       "extractionState": "manual",
       "localizations": {
@@ -811,6 +877,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Photo"
+          }
+        }
+      }
+    },
+    "Pick photos from your library or take one. Add starts here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick photos from your library or take one. Add starts here."
+          }
+        }
+      }
+    },
+    "Pick photos or take one, and look through them full screen.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick photos or take one, and look through them full screen."
           }
         }
       }
@@ -1306,6 +1394,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "The example API key, in this device's Keychain"
+          }
+        }
+      }
+    },
+    "The original file is missing or unreadable.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The original file is missing or unreadable."
           }
         }
       }

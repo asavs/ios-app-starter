@@ -80,7 +80,8 @@ final class OnboardingUITests: StarterUITestCase {
         XCTAssertTrue(waitUntilHittable(skip), "Skip should still be offered on a choice step")
         let tourCard = element(app, ModuleIdentifiers.Onboarding.page("tour"))
         // With tabs, Choose your tabs comes between the choice step and the tour card (OnboardingTabsUITests).
-        let tabsStep = app.buttons[Identifiers.TabChoices.onboarding(Identifiers.Tabs.settings)]
+        // Its first row: with every feature in the build, Settings, the last, starts below the fold.
+        let tabsStep = app.buttons[Identifiers.TabChoices.onboarding(Identifiers.Tabs.welcome)]
         XCTAssertTrue(perform({ next.tap() }, until: { self.isHittable(tourCard) || self.isHittable(tabsStep) },
                               retryingIf: { self.isHittable(tool) }),
                       "The tab step or the tour card should follow the choice step")

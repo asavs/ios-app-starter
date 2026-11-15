@@ -22,8 +22,9 @@ final class OnboardingTabsUITests: StarterUITestCase {
         let choice = app.buttons[ModuleIdentifiers.Onboarding.choice("build", "tool")]
         XCTAssertTrue(perform({ next.tap() }, until: { self.isHittable(choice) }, retryingIf: { self.isHittable(welcomeRow) }),
                       "The choice step should follow the welcome sheet")
-        let settingsRow = row(app, Identifiers.Tabs.settings)
-        XCTAssertTrue(perform({ next.tap() }, until: { self.isHittable(settingsRow) }, retryingIf: { self.isHittable(choice) }),
+        // Its first row: with every feature in the build, Settings, the last, starts below the fold.
+        let homeRow = row(app, Identifiers.Tabs.welcome)
+        XCTAssertTrue(perform({ next.tap() }, until: { self.isHittable(homeRow) }, retryingIf: { self.isHittable(choice) }),
                       "Choose your tabs should follow the choice step")
     }
 
@@ -41,6 +42,13 @@ final class OnboardingTabsUITests: StarterUITestCase {
         continueToTabStep(app)
 
         let settingsRow = row(app, Identifiers.Tabs.settings)
+        // The step's scroll view ends above Continue, so a row under it is inside the window but clipped:
+        // swipe until Settings clears the button, rather than until its frame is in the window.
+        let continueTop = app.buttons[ModuleIdentifiers.Onboarding.next].frame.minY
+        for _ in 0..<4 where settingsRow.frame.maxY > continueTop - 8 {
+            app.swipeUp()
+        }
+        XCTAssertTrue(waitUntilHittable(settingsRow), "The step scrolls to Settings, its last row")
         XCTAssertTrue(waitUntil(settingsRow, "isSelected == true"), "Settings is on")
         settingsRow.tap()
         XCTAssertFalse(waitUntil(settingsRow, "isSelected == false", timeout: 2), "Settings can't be turned off")

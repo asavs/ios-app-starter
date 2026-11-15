@@ -92,11 +92,11 @@ struct FeatureChoicesTests {
     @Test func hidingKeepsOrderAndNeverTheRequiredFeature() {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let choices = FeatureChoices(defaults: defaults, features: full)
-        #expect(choices.hidden.isEmpty)
+        #expect(choices.hidden.map(\.id) == [.images], "Only what is off by default")
         choices.hide(.library)
         choices.hide(.welcome)
         #expect(choices.chosen == [.notes, .timer, .settings])
-        #expect(choices.hidden.map(\.id) == [.welcome, .library], "Hidden features in default order")
+        #expect(choices.hidden.map(\.id) == [.welcome, .library, .images], "Hidden features in default order")
         #expect(defaults.string(forKey: FeatureChoices.storageKey) == "notes,timer,settings")
         choices.hide(.settings)
         #expect(choices.chosen.contains(.settings), "Settings stays")
@@ -105,7 +105,7 @@ struct FeatureChoicesTests {
         #expect(choices.chosen == [.settings], "Everything else can go")
         choices.reveal(.library)
         #expect(choices.chosen == [.settings, .library], "Shown again at the end")
-        #expect(FeatureChoices(defaults: defaults, features: withoutTimer).hidden.map(\.id) == [.welcome, .notes],
+        #expect(FeatureChoices(defaults: defaults, features: withoutTimer).hidden.map(\.id) == [.welcome, .notes, .images],
                 "A feature this build left out isn't offered")
     }
 

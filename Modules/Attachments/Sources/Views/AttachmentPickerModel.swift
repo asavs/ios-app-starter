@@ -49,6 +49,12 @@ public final class AttachmentPickerModel {
         return available
     }
 
+    /// Whether the Photos picker offers videos as well as photos: only when an allowed type takes a
+    /// movie, so a host that allows `[.image]` gets a picker of photos alone.
+    public var offersVideos: Bool {
+        allowedContentTypes.contains { UTType.movie.conforms(to: $0) }
+    }
+
     public static var hasCamera: Bool {
 #if os(iOS)
         UIImagePickerController.isSourceTypeAvailable(.camera)

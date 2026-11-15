@@ -57,6 +57,16 @@ struct AttachmentsTests {
         #expect(again.width == thumbnail.width)
     }
 
+    @Test func aDisplayImageComesFromTheOriginalAtTheSizeAsked() async throws {
+        let jpeg = try #require(ThumbnailMaker.sampleJPEG(width: 900, height: 600))
+        let attachment = try await store.add(imageData: jpeg, contentType: .jpeg, displayName: "Photo")
+        _ = await store.thumbnail(for: attachment, pixelSize: 100) // A small cached thumbnail doesn't stand in.
+        let image = try #require(await store.displayImage(for: attachment, pixelSize: 600))
+        #expect(max(image.width, image.height) == 600)
+        let link = try await store.add(link: URL(string: "https://www.apple.com")!)
+        #expect(await store.displayImage(for: link, pixelSize: 600) == nil, "A link has no image")
+    }
+
     @Test func aLinkKeepsItsTitleAndCachesItsMetadata() async throws {
         let url = try #require(URL(string: "https://www.apple.com/iphone/"))
         let link = try await store.add(link: url)
@@ -118,6 +128,14 @@ struct AttachmentsTests {
         #expect(all.fakeLink == "Fake Title")
         let store = all.store()
         #expect(store.root.path().hasPrefix("/tmp/att/"))
+    }
+
+    @MainActor @Test func thePhotosPickerOffersVideosOnlyWhenAMovieIsAllowed() {
+        let model = { (types: [UTType]) in AttachmentPickerModel(store: store, allowedContentTypes: types) { _ in } }
+        #expect(model([.item]).offersVideos, "The default takes anything")
+        #expect(model([.image, .movie]).offersVideos)
+        #expect(!model([.image]).offersVideos, "A photos-only host gets a photos-only picker")
+        #expect(!model([.jpeg, .png]).offersVideos)
     }
 
     @Test func theSampleImageIsAJPEG() throws {
