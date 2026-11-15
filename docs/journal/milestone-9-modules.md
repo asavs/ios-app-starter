@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-15 — The Notes draft test: a longer keyboard wait, and no note written first
+
+- **Tools:** GitHub-hosted `xcode-27` runner (Xcode 27.0, iPhone 17 simulator on iOS 27.0); task `ios-c7w`.
+- **Symptom (confirmed, PR #188, run 43534558321 attempt 1):** `NotesUITests/testWriteSaveAndKeepAnUnsavedDraft` failed both in-job attempts in the `tabs` lane. The first had the keyboard still up 5 s after typing "Shopping" and Return in the title. The second failed with "Failed to tap notes.editor.body: Timed out while evaluating UI query". The test took 160 s, the slowest in the lane. A re-run of the job passed. Cause suspected, not confirmed: a loaded runner, and a 5 s keyboard wait too short for it.
+- **Change:** `pressReturnToDismissKeyboard` in `StarterUITestCase` presses Return through `perform(_:until:retryingIf:)`, waits up to 15 s for the keyboard to go, and presses Return once more only if the keyboard is still up. The three Return-to-dismiss sites in `NotesUITests` use it. The draft test, now `testKeepAnUnsavedDraft`, no longer writes and saves a note first, because the other two Notes tests start by doing that. It ends on the empty state, and the `notes-saved` screenshot moved to `testDeleteAsksFirst`.
+- **Verified:** see the pull request's `tabs` lane. No simulator was booted on the Mac for this.
+- **Remaining:** the "Timed out while evaluating UI query" failure is the runner taking too long to snapshot the tree. A shorter test makes it less likely but doesn't remove it.
+
 ## 2026-11-12 — Where a pull request's lane minutes go: the stretch after the simulator boots, two long tests, uneven lanes
 
 - **Tools:** GitHub-hosted `xcode-27` runners (Xcode 27.0, iPhone 17 simulator on iOS 27.0); task `ios-c1p`. Measured from the step times and `tests.json` of five pull request runs, 2026-11-11 and 2026-11-12 (43129383545, 43132608869, 43146486027, 43321879344, 43326434085).

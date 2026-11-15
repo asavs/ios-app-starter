@@ -146,6 +146,16 @@ class StarterUITestCase: XCTestCase {
         throw ModuleUIMissing(description: "no keyboard for \(field.identifier)")
     }
 
+    /// Presses Return in the focused single-line field, which puts the keyboard away, and waits for it
+    /// to go. On a loaded hosted runner the keyboard was still up 5 s after the Return (2026-11-14), so
+    /// the wait is longer, and the Return is pressed once more only if the keyboard never moved.
+    @MainActor
+    func pressReturnToDismissKeyboard(_ app: XCUIApplication) -> Bool {
+        let keyboard = app.keyboards.firstMatch
+        return perform({ app.typeText("\n") }, until: { !keyboard.exists },
+                       retryingIf: { keyboard.exists }, timeout: 15)
+    }
+
     /// The welcome screen's first header: the greeting in a build without tabs, Home's first section
     /// with them. Its presence says the welcome screen is showing.
     @MainActor

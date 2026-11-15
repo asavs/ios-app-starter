@@ -46,8 +46,9 @@ final class NotesUITests: StarterUITestCase {
         XCTAssertTrue(screen.title.waitForExistence(timeout: 10), "Add opens an empty editor")
         XCTAssertFalse(screen.save.isEnabled, "Nothing to save yet")
         try focus(screen.title, in: app)
-        app.typeText(text + "\n") // Return puts the keyboard away, so focusing the body below waits for it to come back.
-        XCTAssertTrue(waitUntilGone(app.keyboards.firstMatch, timeout: 5))
+        app.typeText(text)
+        // Return puts the keyboard away, so focusing the body below waits for it to come back.
+        XCTAssertTrue(pressReturnToDismissKeyboard(app), "Return in the title puts the keyboard away")
         try focus(screen.body, in: app)
         app.typeText(bodyText)
         XCTAssertTrue(waitUntil(screen.save, "isEnabled == true", timeout: 15), "Typing enables Save")
@@ -58,21 +59,21 @@ final class NotesUITests: StarterUITestCase {
         XCTAssertTrue(waitUntilGone(screen.empty))
     }
 
-    /// Writing and saving a note, and a second one typed but not saved: it survives switching tabs,
-    /// leaving it asks, Keep Editing stays and Discard drops it.
+    /// A note typed but not saved survives switching tabs; leaving it asks, Keep Editing stays and
+    /// Discard drops it. Writing and saving is covered by the other tests, which start by doing it; this
+    /// test once did both and took 160 s on a loaded runner (2026-11-14).
     @MainActor
-    func testWriteSaveAndKeepAnUnsavedDraft() throws {
+    func testKeepAnUnsavedDraft() throws {
         let screen = try launchEmpty()
         let app = screen.app
         attach(name: "notes-empty")
-        try write(screen, title: "Monday", body: "Three rounds, then rest.")
-        attach(name: "notes-saved")
 
         screen.add.tap()
         XCTAssertTrue(screen.title.waitForExistence(timeout: 10))
         try focus(screen.title, in: app)
-        app.typeText("Shopping\n") // Return puts the keyboard away; it covers the tab bar otherwise.
-        XCTAssertTrue(waitUntilGone(app.keyboards.firstMatch, timeout: 5))
+        app.typeText("Shopping")
+        // Return puts the keyboard away; it covers the tab bar otherwise.
+        XCTAssertTrue(pressReturnToDismissKeyboard(app), "Return in the title puts the keyboard away")
         let home = tabButton(in: app, Identifiers.Tabs.welcome, title: "Home")
         let notesTab = tabButton(in: app, Identifiers.Tabs.notes, title: "Notes")
         home.tap()
@@ -97,7 +98,7 @@ final class NotesUITests: StarterUITestCase {
         screen.done.tap()
         XCTAssertTrue(discard.waitForExistence(timeout: 5))
         discard.tap()
-        XCTAssertTrue(screen.row(containing: "Monday").waitForExistence(timeout: 10), "Discard leaves the list as it was")
+        XCTAssertTrue(screen.empty.waitForExistence(timeout: 10), "Discard leaves the list as it was, empty")
         XCTAssertFalse(screen.row(containing: "Shopping").exists, "The discarded draft is gone")
     }
 
@@ -131,8 +132,8 @@ final class NotesUITests: StarterUITestCase {
         screen.save.tap()
         XCTAssertTrue(waitUntil(screen.save, "isEnabled == false", timeout: 10))
         try focus(screen.title, in: app)
-        app.typeText("\n") // Return in the title puts the keyboard away; it covers the rows below.
-        XCTAssertTrue(waitUntilGone(app.keyboards.firstMatch, timeout: 5))
+        // Return in the title puts the keyboard away; it covers the rows below.
+        XCTAssertTrue(pressReturnToDismissKeyboard(app), "Return in the title puts the keyboard away")
         let addReference = app.buttons[Identifiers.Notes.Editor.addReference].firstMatch
         if Self.enabledModules?.contains("Attachments") ?? addReference.exists {
             try linkALibraryItem(app, addReference: addReference)
@@ -159,6 +160,7 @@ final class NotesUITests: StarterUITestCase {
         let screen = try launchEmpty()
         let app = screen.app
         try write(screen, title: "Monday", body: "Three rounds, then rest.")
+        attach(name: "notes-saved")
         let monday = screen.row(containing: "Monday")
 
         monday.swipeLeft()
