@@ -66,6 +66,14 @@ struct StarterTabsView: View {
 #else
             FeatureUnavailableView(feature: StarterFeature.feature(.notes))
 #endif
+        case .images:
+#if canImport(Database) && canImport(Attachments)
+            NavigationStack {
+                ImagesView()
+            }
+#else
+            FeatureUnavailableView(feature: StarterFeature.feature(.images))
+#endif
         case .timer:
 #if canImport(SessionTimer) && canImport(TimerRing)
             NavigationStack {

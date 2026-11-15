@@ -11,6 +11,7 @@ enum StarterTab: String, CaseIterable {
     case welcome
     case library
     case notes
+    case images
     case timer
     case settings
 }

@@ -12,6 +12,7 @@ enum Identifiers {
         static let welcome = "welcome"
         static let library = "library"
         static let notes = "notes"
+        static let images = "images"
         static let timer = "timer"
         static let settings = "settings"
 
@@ -84,6 +85,19 @@ enum Identifiers {
             static let missing = "library.detail.missing"
             static let delete = "library.detail.delete"
         }
+    }
+
+    /// The Images tab (`ImagesView` and `ImageViewer`); the grid, its cells and the Add menu are the
+    /// Attachments module's (`ModuleIdentifiers.Attachments`).
+    enum Images {
+        /// The empty state, before any photo is picked.
+        static let empty = "images.empty"
+        /// Each page of the full-screen viewer: `images.page.<attachment id>`.
+        static let pagePrefix = "images.page."
+        static func page(_ id: String) -> String { "\(pagePrefix)\(id)" }
+        static let share = "images.viewer.share"
+        static let details = "images.viewer.details"
+        static let delete = "images.viewer.delete"
     }
 
     /// Home's sections (`HomeSections` and its parts); `tab` is a `StarterTab` raw value.

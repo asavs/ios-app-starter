@@ -35,6 +35,9 @@ struct StarterFeature: Identifiable, Hashable {
                        systemImage: "books.vertical", isAvailable: hasLibrary, isDefault: true, isRequired: false),
         StarterFeature(id: .notes, title: "Notes", summary: "Write and keep notes, with items from your Library.",
                        systemImage: "note.text", isAvailable: hasNotes, isDefault: true, isRequired: false),
+        // Off by default: a sixth tab would push Settings into More. Settings and onboarding turn it on.
+        StarterFeature(id: .images, title: "Images", summary: "Pick photos or take one, and look through them full screen.",
+                       systemImage: "photo.on.rectangle", isAvailable: hasLibrary, isDefault: false, isRequired: false),
         StarterFeature(id: .timer, title: "Timer", summary: "Run interval sessions, save plans and follow them from the Lock Screen.",
                        systemImage: "timer", isAvailable: hasTimer, isDefault: true, isRequired: false),
         StarterFeature(id: .settings, title: "Settings", summary: "Appearance, sounds, privacy and your local data.",
