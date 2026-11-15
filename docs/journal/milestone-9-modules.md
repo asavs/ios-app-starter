@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-15 — A sixth feature put onboarding's last tab row out of reach, and a clipped row passes the scroll helper
+
+- **Tools:** Xcode 27.0, iPhone 17 simulator on iOS 27.0, locally and on the `xcode-27` runners; task `ios-125.16` (Images tab), PR #190.
+- **Symptom (confirmed):** with the Images tab in the registry, `OnboardingTabsUITests` and `OnboardingUITests/testOnboardingSteps` failed on CI ("Choose your tabs should follow the choice step") but passed locally. Local runs used the default `project.yml`, which has no Timer, so its step had five rows. CI tests `starter-app-demo`, whose step has six. The tests waited for the Settings row, the last one, to become hittable, and it now starts below the fold.
+- **Second cause (confirmed by a screenshot from a local demo build):** `scroll(app, to:)` stops once an element's frame is inside the window. The step's scroll view ends above Continue, so the clipped Settings row lies inside the window but outside the scroll view, the helper never swipes, and `isHittable` then fails with "Activation point invalid".
+- **Fix:** the tests wait for the first row (Home) to know the step arrived, and swipe until Settings clears the top of Continue before using it. Both classes pass locally on the demo build.
+- **Remaining:** other uses of `scroll(app, to:)` inside a scroll view that ends above a fixed control can hit the same false stop. Check UI tests for a new tab on the demo configuration (`IOS_PROJECT_SPEC=examples/starter-app-demo.yml bash scripts/generate-project.sh`, then regenerate the default project before committing).
+- **Lanes:** on the same run the `tabs` lane reached its 30-minute pull request limit on its last test, after a `NotesUITests/testDeleteAsksFirst` retry used about six minutes, so `ImagesUITests` (66 s on CI) runs in `features`.
 ## 2026-11-15 — The Notes draft test: a longer keyboard wait, and no note written first
 
 - **Tools:** GitHub-hosted `xcode-27` runner (Xcode 27.0, iPhone 17 simulator on iOS 27.0); task `ios-c7w`.
