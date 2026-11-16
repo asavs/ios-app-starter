@@ -138,10 +138,10 @@ final class ManyTabsUITests: StarterUITestCase {
         attach(name: "five-tabs-after-hiding")
     }
 
-    /// Ways in that don't go through More's list: a Home shortcut and a deep link to a tab in More,
-    /// including from More's list itself, and a chosen order that puts other tabs there.
+    /// Ways in that don't go through More's list: a Home shortcut to a tab in More, and a deep link to
+    /// it while More's list shows. Which tabs go to More follows the chosen order (`TabOverflowTests`).
     @MainActor
-    func testOverflowTabsOpenFromShortcutsLinksAndOrder() throws {
+    func testOverflowTabsOpenFromShortcutsAndLinks() throws {
         let scheme = try XCTUnwrap(Bundle(for: Self.self).object(forInfoDictionaryKey: "StarterAppURLScheme") as? String,
                                    "project.yml should pass APP_URL_SCHEME to the UI tests")
         let app = XCUIApplication()
@@ -160,23 +160,6 @@ final class ManyTabsUITests: StarterUITestCase {
         XCTAssertTrue(waitUntilHittable(moreRow(app, Identifiers.Tabs.timer)))
         app.open(try XCTUnwrap(URL(string: "\(scheme)://timer")), in: scenario.relaunch)
         XCTAssertTrue(element(app, Identifiers.Timer.ring).waitForExistence(timeout: 10), "A link leaves More's list")
-
-        app.open(try XCTUnwrap(URL(string: "\(scheme)://settings")), in: scenario.relaunch)
-        XCTAssertTrue(app.buttons[Identifiers.TabChoices.open].firstMatch.waitForExistence(timeout: 10),
-                      "A link opens Settings in More")
-        app.terminate()
-
-        // Settings and Timer chosen first: they take the bar, and Notes and Images go to More.
-        let reordered = [Identifiers.Tabs.settings, Identifiers.Tabs.timer, Identifiers.Tabs.welcome,
-                         Identifiers.Tabs.library, Identifiers.Tabs.notes, Identifiers.Tabs.images]
-        app.launch(UITestLaunch(tab: Identifiers.Tabs.settings, tabs: reordered))
-        let settings = tab(app, Identifiers.Tabs.settings)
-        XCTAssertTrue(settings.waitForExistence(timeout: 10), "Settings leads the bar")
-        XCTAssertTrue(isHittable(tab(app, Identifiers.Tabs.timer)))
-        XCTAssertFalse(tab(app, Identifiers.Tabs.images).exists, "Images is in More")
-        open(app, Identifiers.Tabs.images)
-        XCTAssertTrue(element(app, Identifiers.Images.empty).waitForExistence(timeout: 10), "Images opens from More")
-        attach(name: "six-tabs-reordered-images")
     }
 
     /// At the largest text size More's rows and its back button stay full-size touch targets.
