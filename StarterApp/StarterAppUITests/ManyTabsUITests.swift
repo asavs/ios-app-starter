@@ -24,7 +24,8 @@ final class ManyTabsUITests: StarterUITestCase {
     private func moreButton(_ app: XCUIApplication) -> XCUIElement {
         let predicate = NSPredicate(format: "identifier == %@ OR (identifier == '' AND label == 'More')",
                                     ModuleIdentifiers.TabShell.more)
-        return app.buttons.matching(predicate).firstMatch
+        // Only a phone's tab bar has More; a narrow query a loaded runner answers in time.
+        return app.tabBars.buttons.matching(predicate).firstMatch
     }
 
     @MainActor
@@ -46,7 +47,8 @@ final class ManyTabsUITests: StarterUITestCase {
         let home = tab(app, Identifiers.Tabs.welcome)
         try requireModuleUI("TabShell", appeared: home.waitForExistence(timeout: 10), "no Home tab")
         let more = moreButton(app), timer = tab(app, Identifiers.Tabs.timer)
-        if !waitUntil(timeout: 5, { more.exists || timer.exists }) {
+        // A loaded hosted runner has taken over 5 s to show the bar's last buttons after Home's.
+        if !waitUntil(timeout: 15, { more.exists || timer.exists }) {
             if let enabled = Self.enabledModules, enabled.isSuperset(of: Self.sixFeatureModules) {
                 XCTFail("Every feature's module is enabled, but six tabs did not appear")
             }
