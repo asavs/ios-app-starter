@@ -206,6 +206,8 @@ final class ManyTabsUITests: StarterUITestCase {
     /// An iPad's bar holds all six, in the chosen order, with no More; each one opens. Skips on a phone.
     @MainActor
     func testSixTabsFitAnIPadBar() throws {
+        // Decided before launching, so a phone lane doesn't spend a launch on it.
+        guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("Only an iPad shows six tabs in its bar") }
         let app = XCUIApplication()
         _ = try launchSixTabs(app, selected: Identifiers.Tabs.welcome)
         guard !overflows(app) else { throw XCTSkip("A phone overflows into More: the other tests cover it") }
