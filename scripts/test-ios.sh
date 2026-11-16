@@ -65,8 +65,8 @@ fi
 workers="${IOS_TEST_WORKERS:-1}"
 
 # IOS_TEST_LANE picks the test classes: `shell` (the unit tests, the shell, theme and deep links,
-# onboarding with its tab chooser, and Settings), `features` (the Timer, Attachments and Images classes) or `tabs`
-# (the tab chooser in Settings, Library, Notes and Home); unset or `all` runs everything. The lanes are
+# onboarding with its tab chooser, and Settings), `features` (the Timer and Attachments classes) or `tabs`
+# (the tab chooser in Settings, Library, Notes, Home and Images); unset or `all` runs everything. The lanes are
 # balanced by measured time, so a new class goes to the shortest one (docs/ci.md says how to measure).
 # CI runs the lanes as separate jobs, each with its own simulator, since one runner takes over 25
 # minutes for the whole suite (ios-6dd.13). The classes are listed here so the workflow needn't know them.
@@ -77,12 +77,11 @@ case "${IOS_TEST_LANE:-all}" in
       -only-testing:StarterAppUITests/OnboardingUITests -only-testing:StarterAppUITests/OnboardingTabsUITests
       -only-testing:StarterAppUITests/SettingsUITests) ;;
   features)
-    lane_settings=(-only-testing:StarterAppUITests/TimerUITests -only-testing:StarterAppUITests/AttachmentsUITests
-      -only-testing:StarterAppUITests/ImagesUITests) ;;
+    lane_settings=(-only-testing:StarterAppUITests/TimerUITests -only-testing:StarterAppUITests/AttachmentsUITests) ;;
   tabs)
     lane_settings=(-only-testing:StarterAppUITests/TabChoicesUITests -only-testing:StarterAppUITests/LibraryUITests
-      -only-testing:StarterAppUITests/HomeUITests
-      -only-testing:StarterAppUITests/NotesUITests) ;;
+      -only-testing:StarterAppUITests/HomeUITests -only-testing:StarterAppUITests/NotesUITests
+      -only-testing:StarterAppUITests/ImagesUITests) ;;
   identity)
     # Only what depends on the app's own name, bundle identifiers and URL scheme, for a configuration
     # whose content is the starter's (pocket-notes, the template made into someone's app): the scheme
@@ -95,6 +94,33 @@ case "${IOS_TEST_LANE:-all}" in
   *) echo "test-ios: unknown IOS_TEST_LANE '$IOS_TEST_LANE' (shell, features, tabs, identity or all)" >&2; exit 2 ;;
 esac
 printf 'Test lane: %s\n' "${IOS_TEST_LANE:-all}"
+
+# IOS_TEST_SET=required leaves out the variants: tests that repeat a feature's main path under another
+# condition (a relaunch, the largest text size, a replay, an invalid saved choice, an erase), whose
+# main path a required test already walks. Pull requests run `required`; pushes to `main` and manual
+# runs run `all` (the default). A variant must run in the `starter` configuration that `main` tests,
+# so a test that needs a module only `starter-app-demo` has (the Timer modules) stays required.
+variant_tests=(
+  OnboardingUITests/testLargestTextSize
+  OnboardingUITests/testOnboardingNotShownAgainAfterCompletion
+  OnboardingUITests/testSwipingOnboardingAwaySkipsIt
+  OnboardingTabsUITests/testReplayKeepsAnExistingChoice
+  StarterAppUITests/testHeaderSitsAtTheTopOfTheSafeAreaAtTheLargestTextSize
+  SettingsUITests/testScenarioKeepsDataUntilReset
+  NotesUITests/testSearchEditAndKeepAfterRelaunch
+  HomeUITests/testCollectedItemShowsOnHome
+  TabChoicesUITests/testInvalidSavedSelectionAndChoiceFallBack
+  TabChoicesUITests/testHidingNotesKeepsAnUnsavedNote
+  TabChoicesUITests/testChooserAtLargestTextSize
+  TabChoicesUITests/testEraseLocalDataBringsBackTheDefaultTabs
+)
+set_settings=()
+case "${IOS_TEST_SET:-all}" in
+  required) for variant in "${variant_tests[@]}"; do set_settings+=("-skip-testing:StarterAppUITests/$variant"); done ;;
+  all) ;;
+  *) echo "test-ios: unknown IOS_TEST_SET '$IOS_TEST_SET' (required or all)" >&2; exit 2 ;;
+esac
+printf 'Test set: %s (%s variants left out)\n' "${IOS_TEST_SET:-all}" "${#set_settings[@]}"
 parallel_settings=(-parallel-testing-enabled NO)
 if [[ "$workers" =~ ^[0-9]+$ ]] && (( workers > 1 )); then
   parallel_settings=(-parallel-testing-enabled YES -parallel-testing-worker-count "$workers")
@@ -133,6 +159,7 @@ test_settings=(
   -skip-testing:StarterAppUITests/StarterAppUITests/testLaunchPerformance
   -skip-testing:StarterAppUITests/StarterAppUITestsLaunchTests
   ${lane_settings[@]+"${lane_settings[@]}"}
+  ${set_settings[@]+"${set_settings[@]}"}
   "${parallel_settings[@]}"
   -test-timeouts-enabled YES
   -default-test-execution-time-allowance 300
