@@ -17,6 +17,12 @@ on:
       - '.github/actionlint.yaml'
   workflow_dispatch:
 
+# A new commit on a pull request replaces that pull request's run. Every other run, above all each
+# push to main, gets a group of its own and is never cancelled (2026-11-16).
+concurrency:
+  group: workflow-lint-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 

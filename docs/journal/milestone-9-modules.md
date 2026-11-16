@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-16 — CI speed audit; runs on `main` are no longer cancelled
+
+- **Context and tools:** CI speed work, milestone 9. The `ci-speedup` skill (starslingdev/skills, installed user-level, not pinned here) run against 63 runs from 2026-10-17 to 2026-11-16, plus `gh api` job and step timings and the test reports of PR run [43804114126](https://github.com/asavs/ios-app-starter/actions/runs/43804114126). Xcode 27.0 on `xcode-27`.
+- **Measured:** a pull request that changes code waits about 27 minutes at the median and about an hour at p95 (16 green runs, 2026-11-12 to 16). The slowest lane, `test (starter-app-demo, tabs)`, takes 20m 36s at the median: queue for a macOS runner p50 1m 52s and p95 21m, simulator boot 1.5 min, build download 1.6 min, tests 14 to 17 min. Its 33 UI tests take 38 minutes one after another (17 to 210 s each); the 84 unit tests take 5 s. The helpers already wait on state; the time is the hosted VM's slow UI snapshots.
+- **Floor and limits (confirmed from docs, not tried):** a merge queue needs an organization-owned repository, which this one is not, so pull requests must keep running the whole suite: build, simulator boot and the 210 s test put a floor near 7 minutes however many shards run.
+- **Change:** each pull request workflow cancels that pull request's superseded run; pushes to `main` and manual runs get a concurrency group of their own and are never cancelled. Before, a newer `main` push cancelled the running one, so a commit on `main` could land without a result of its own.
+- **Remaining:** 19 of 25 `main` runs failed in the window, most on the owner's Mac with "Unable to find a device matching the provided destination specifier" (the CI iPhone 17 simulator was missing). Retries and the 150 to 210 s tests are the next changes.
+
 ## 2026-11-15 — Six tabs on an iPhone: the system's More lost the selection and doubled the navigation bar
 
 - **Tools:** Xcode 27.1 locally, iPhone 17 simulator on iOS 27.0, `starter-app-demo`; task `ios-125.9`.
