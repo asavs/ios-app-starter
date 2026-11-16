@@ -347,6 +347,8 @@ jobs:
           IOS_TEST_ARTIFACT_NAME: ios-test-results-${{ matrix.configuration }}-${{ matrix.lane }}
           IOS_TEST_LANE: ${{ matrix.lane }}
           IOS_TEST_ACTION: run
+          # Pull requests leave out the variants, which run on main (scripts/test-ios.sh lists them).
+          IOS_TEST_SET: ${{ github.event_name == 'pull_request' && 'required' || 'all' }}
           # A failed test gets a second attempt; the report lists every test that needed one (2026-11-08).
           IOS_TEST_ATTEMPTS: '2'
         run: |
