@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-15 — Settings moves to `shell`, and why lanes can't reach ten minutes by moving classes
+
+- **Tools:** GitHub-hosted `xcode-27` runners (Xcode 27.0, iPhone 17 simulator on iOS 27.0); task `ios-6dd.13`. Measured from `tests.json` of four green pull request runs, 2026-11-14 and 2026-11-15 (43531370647, 43534558321, 43750582727, 43759630432).
+- **Finding (confirmed):** the same class takes very different times from run to run on the hosted runner: `NotesUITests` 178 to 376 s, `SettingsUITests` 168 to 321 s, `TabChoicesUITests` 257 to 417 s. Averaged over the four runs, test time per lane was about 10.7 minutes in `shell`, 17.2 in `features` (with `ImagesUITests`, measured once) and 16.1 in `tabs`.
+- **Change:** `SettingsUITests` (about 250 s on average) moves from `features` to `shell`. On the same averages that gives 14.8, 13.1 and 16.1 minutes. Moving a second class (`HomeUITests` or `LibraryUITests` to `features`) would shave less than a minute off the longest lane, less than the lanes vary.
+- **Finding (arithmetic, from the same runs):** the UI suite takes about 44 minutes of test time in all, about 65 s a test, and each lane pays four to six minutes before its first test (entry of 2026-11-12). Three lanes of about ten minutes need under about 15 minutes of UI test time in all, a third of today's. No single test has a wait worth cutting: the two fixed sleeps in `TimerUITests` check that a paused countdown holds still and let the island settle, and the rest is launches and the runner's slow hierarchy snapshots. More lanes need more macOS jobs, and a pull request already runs five macOS jobs (six when modules change), and GitHub runs five at once. Getting near ten minutes means running fewer UI tests on each pull request (for example the relaunch and largest-text-size variants only on `main`), which is a coverage decision for the owner.
+- **Verified:** see the pull request's lanes.
+
 ## 2026-11-15 — A sixth feature put onboarding's last tab row out of reach, and a clipped row passes the scroll helper
 
 - **Tools:** Xcode 27.0, iPhone 17 simulator on iOS 27.0, locally and on the `xcode-27` runners; task `ios-125.16` (Images tab), PR #190.
