@@ -15,6 +15,8 @@ struct ImageViewer: View {
     @State private var current: UUID?
     @State private var details: UUID?
     @State private var deleting: LibraryItem?
+    /// Set once the viewer has asked to close, so the emptied query doesn't close it again.
+    @State private var isClosing = false
     @Environment(\.dismiss) private var dismiss
     @Environment(\.appTheme) private var theme
 
@@ -25,13 +27,7 @@ struct ImageViewer: View {
     var body: some View {
         let images = ImageItems.images(in: items)
         let shown = images.first { $0.id == current }
-        TabView(selection: $current) {
-            ForEach(Array(images.enumerated()), id: \.element.id) { index, item in
-                ImagePage(attachment: item.attachment, title: item.displayTitle, position: index + 1, count: images.count)
-                    .tag(Optional(item.id))
-            }
-        }
-        .tabViewStyle(.page(indexDisplayMode: .never))
+        pages(images)
         .background(theme.colors.background)
         .navigationTitle(Text(verbatim: shown?.displayTitle ?? ""))
         .navigationBarTitleDisplayMode(.inline)
@@ -49,7 +45,11 @@ struct ImageViewer: View {
                     Button("Delete", systemImage: "trash", role: .destructive) { deleting = shown }
                         .accessibilityIdentifier(Identifiers.Images.delete)
                         // On the button, so a dialog shown as a popover (iOS 27) points at it.
-                        .libraryDeleteConfirmation(item: $deleting)
+                        .libraryDeleteConfirmation(item: $deleting) {
+                            // Deleting the last photo closes the viewer now, before the query
+                            // empties under a paged TabView that is on its way out.
+                            if images.count <= 1 { close() }
+                        }
                 }
             }
         }
@@ -61,13 +61,35 @@ struct ImageViewer: View {
         .onChange(of: images.map(\.id), moveOffRemoved)
     }
 
+    /// The photos as pages, or nothing once none is left: a paged TabView is never left empty.
+    @ViewBuilder
+    private func pages(_ images: [LibraryItem]) -> some View {
+        if images.isEmpty {
+            Color.clear
+        } else {
+            TabView(selection: $current) {
+                ForEach(Array(images.enumerated()), id: \.element.id) { index, item in
+                    ImagePage(attachment: item.attachment, title: item.displayTitle, position: index + 1, count: images.count)
+                        .tag(Optional(item.id))
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+        }
+    }
+
+    private func close() {
+        guard !isClosing else { return }
+        isClosing = true
+        dismiss()
+    }
+
     /// The photo showing left the Library: show its neighbor, or close with nothing left.
     private func moveOffRemoved(_ before: [UUID], _ after: [UUID]) {
         guard let current, !after.contains(current) else { return }
         if let next = ImageItems.neighbor(of: current, in: before, keeping: after) {
             self.current = next
         } else {
-            dismiss()
+            close()
         }
     }
 }
