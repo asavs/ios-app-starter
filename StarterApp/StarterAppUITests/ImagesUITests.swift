@@ -67,7 +67,10 @@ final class ImagesUITests: StarterUITestCase {
         try delete(in: app)
         XCTAssertTrue(captureTitle.waitForExistence(timeout: 10), "After a delete the viewer shows the photo beside it")
         try delete(in: app)
-        XCTAssertTrue(empty.waitForExistence(timeout: 10), "Deleting the last photo closes the viewer on an empty tab")
+        // The viewer's close is a navigation pop; on a loaded runner the snapshot taken mid-pop can
+        // time out, so wait for the pages to go before looking for the empty tab.
+        XCTAssertTrue(waitUntilGone(pages.firstMatch, timeout: 20), "Deleting the last photo closes the viewer")
+        XCTAssertTrue(waitUntil(empty, "exists == true", timeout: 20), "The viewer closes on an empty tab")
         attach(name: "images-emptied")
     }
 

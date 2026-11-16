@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-15 — The Images viewer closes before its paged TabView empties
+
+- **Tools:** GitHub-hosted `xcode-27` runner (Xcode 27.0, iPhone 17 simulator on iOS 27.0); task `ios-cdl`.
+- **Symptom (confirmed, PR #190, `features` lane):** `ImagesUITests/testPickViewSwipeAndDelete` passed only on its second attempt. The first failed on its last step, waiting for `images.empty` after the viewer's last delete, with "Failed to get matching snapshots: Timed out while evaluating UI query". `TabChoicesUITests` hit the same error in that run, so runner load is part of it. Cause suspected, not confirmed: the viewer closed only from `onChange` once the query had emptied, so a paged `TabView` with an empty `ForEach` was laid out during the pop.
+- **Change:** `ImageViewer` closes from the delete's `onDeleted` when it deletes the last photo, before the query updates, and shows `Color.clear` instead of a paged `TabView` when no photo is left. A flag keeps the later `onChange` from dismissing a second time. The test waits up to 20 s for the pages to go, then for the empty tab.
+- **Verified:** see the pull request's `features` lane. No simulator was booted on the Mac for this.
+- **Remaining:** snapshot timeouts on a loaded runner can still hit any test. If this one recurs, look at the cost of `element(app:)`, which matches against every descendant.
+
 ## 2026-11-15 — Settings moves to `shell`, and pull requests leave out the UI test variants
 
 - **Tools:** GitHub-hosted `xcode-27` runners (Xcode 27.0, iPhone 17 simulator on iOS 27.0); task `ios-6dd.13`. Measured from `tests.json` of four green pull request runs, 2026-11-14 and 2026-11-15 (43531370647, 43534558321, 43750582727, 43759630432).
