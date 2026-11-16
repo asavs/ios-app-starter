@@ -14,6 +14,9 @@ public final class TabSelection<ID: Hashable & RawRepresentable> where ID.RawVal
     public private(set) var tabs: [ID]
 
     private var currentTab: ID
+    /// Counts selections, including one of the tab already selected, so the shell can leave More's
+    /// list for a tab that a link or shortcut selects again.
+    private(set) var requests = 0
     private let defaults: UserDefaults
     private let storageKey: String
 
@@ -23,6 +26,7 @@ public final class TabSelection<ID: Hashable & RawRepresentable> where ID.RawVal
         set {
             guard tabs.contains(newValue) else { return }
             currentTab = newValue
+            requests += 1
             defaults.set(newValue.rawValue, forKey: storageKey)
         }
     }

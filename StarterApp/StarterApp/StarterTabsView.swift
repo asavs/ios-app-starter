@@ -3,6 +3,8 @@ import SwiftUI
 import TabShell
 
 /// The choice of tabs is the app's; each scene owns its selection and each destination its navigation stack.
+/// Each stack's root takes `tabShellMoreButton()`, its way back to More's list when a phone has more
+/// than five tabs and it was opened from there.
 ///
 /// The shell gets every available feature's descriptor once; which tabs show, and in what order,
 /// follows `FeatureChoices` through the selection's tab list.
@@ -49,11 +51,13 @@ struct StarterTabsView: View {
             NavigationStack {
                 ContentView()
                     .navigationTitle(Text(StarterFeature.feature(.welcome).title))
+                    .tabShellMoreButton()
             }
         case .library:
 #if canImport(Database) && canImport(Attachments)
             NavigationStack {
                 LibraryView()
+                    .tabShellMoreButton()
             }
 #else
             FeatureUnavailableView(feature: StarterFeature.feature(.library))
@@ -62,6 +66,7 @@ struct StarterTabsView: View {
 #if canImport(Database)
             NavigationStack {
                 NotesView()
+                    .tabShellMoreButton()
             }
 #else
             FeatureUnavailableView(feature: StarterFeature.feature(.notes))
@@ -70,6 +75,7 @@ struct StarterTabsView: View {
 #if canImport(Database) && canImport(Attachments)
             NavigationStack {
                 ImagesView()
+                    .tabShellMoreButton()
             }
 #else
             FeatureUnavailableView(feature: StarterFeature.feature(.images))
@@ -78,6 +84,7 @@ struct StarterTabsView: View {
 #if canImport(SessionTimer) && canImport(TimerRing)
             NavigationStack {
                 StarterTimerView()
+                    .tabShellMoreButton()
             }
 #else
             FeatureUnavailableView(feature: StarterFeature.feature(.timer))
@@ -86,6 +93,7 @@ struct StarterTabsView: View {
 #if canImport(Settings)
             NavigationStack(path: $settingsPath) {
                 StarterSettingsView()
+                    .tabShellMoreButton()
                     .navigationDestination(for: SettingsRoute.self) { route in
                         switch route {
                         case .tabs: TabChoicesView()

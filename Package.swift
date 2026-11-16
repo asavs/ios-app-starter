@@ -40,7 +40,7 @@ let package = Package(
                 resources: [.process("Resources"), .process("PrivacyInfo.xcprivacy")]),
         .testTarget(name: "SettingsTests", dependencies: ["Settings"], path: "Modules/Settings/Tests"),
         .target(name: "TabShell", dependencies: ["Theme"], path: "Modules/TabShell/Sources",
-                resources: [.process("PrivacyInfo.xcprivacy")]),
+                resources: [.process("PrivacyInfo.xcprivacy"), .process("Resources")]),
         .testTarget(name: "TabShellTests", dependencies: ["TabShell"], path: "Modules/TabShell/Tests"),
         .target(name: "SessionTimer", path: "Modules/SessionTimer/Sources"),
         .testTarget(name: "SessionTimerTests", dependencies: ["SessionTimer"], path: "Modules/SessionTimer/Tests"),
