@@ -181,6 +181,8 @@ A manual **iOS** run takes `configuration=starter`, `pocket-notes` or `starter-a
 gh workflow run ios.yml --ref main --field configuration=starter-app-demo --field verify_failure_reporting=false
 ```
 
+`device=iPad` runs the same lanes on an iPad Pro 11-inch (M5) simulator on GitHub's runners, even when `SELF_HOSTED_MAC` is set, since the owner's Mac keeps no iPad simulator. Pull requests don't test an iPad: the five-job macOS limit has no room for it. Run it after a change to the tab shell or another layout that differs at regular width; `ManyTabsUITests/testSixTabsFitAnIPadBar` runs only there.
+
 Set `verify_failure_reporting=true` only for the controlled check that is meant to go red. Each configuration run uploads its own `ios-test-results-<configuration>` artifact. A new commit cancels the PR's older iOS run, and a newer push to `main` cancels the older push run; manual runs are independent. This lane stays unsigned and credential-free.
 
 ## Make a social preview card

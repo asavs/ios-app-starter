@@ -98,6 +98,17 @@ struct TabSelectionTests {
         #expect(makeSelection().selectedTab == .activity)
     }
 
+    @Test func everySelectionCountsAsARequest() {
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let selection = makeSelection()
+        selection.selectedTab = .settings
+        #expect(selection.requests == 1)
+        #expect(selection.select(rawValue: "settings"), "Selecting the selected tab again")
+        #expect(selection.requests == 2, "still counts, so the shell leaves More's list for it")
+        #expect(!selection.select(rawValue: "removed"))
+        #expect(selection.requests == 2, "A rejected tab doesn't")
+    }
+
     private func makeSelection() -> TabSelection<TestTab> {
         TabSelection(tabs: TestTab.allCases, defaultTab: .library, defaults: defaults)
     }

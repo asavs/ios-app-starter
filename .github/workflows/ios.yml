@@ -12,6 +12,11 @@ on:
         type: choice
         default: all
         options: [all, starter, pocket-notes, starter-app-demo]
+      device:
+        description: Simulator for a manual run; iPad runs on GitHub's runners, never the owner's Mac
+        type: choice
+        default: iPhone
+        options: [iPhone, iPad]
       verify_failure_reporting:
         description: 'Deliberately fail the smoke test to check reports (expected red run)'
         type: boolean
@@ -72,7 +77,15 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
           SELF_HOSTED_MAC: ${{ vars.SELF_HOSTED_MAC }}
+          DEVICE: ${{ inputs.device || 'iPhone' }}
         run: |
+          # A manual iPad run checks the iPad arrangement, such as six tabs in one bar (ios-125.9). The
+          # owner's Mac has no iPad simulator and keeps none, so it goes to GitHub's runners.
+          if [ "$EVENT" = workflow_dispatch ] && [ "$DEVICE" = iPad ]; then
+            { echo "mac_runner=xcode-27"; echo "simulator=platform=iOS Simulator,name=iPad Pro 11-inch (M5),OS=27.0"; } >> "$GITHUB_OUTPUT"
+            echo "**macOS jobs run on:** GitHub's \`xcode-27\` runners, on an iPad Pro 11-inch (M5) simulator, because this manual run asked for an iPad." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           if [ "$EVENT" != pull_request ] && [ "$SELF_HOSTED_MAC" = true ]; then
             { echo "mac_runner=starter-mac"; echo "simulator=platform=iOS Simulator,name=CI iPhone 17,OS=27.0"; } >> "$GITHUB_OUTPUT"
           else

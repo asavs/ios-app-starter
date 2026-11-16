@@ -2,6 +2,14 @@
 
 Entries for the module library mechanism, the first-round modules, their lanes and the first backpropagation. Newest first. Index: [setup-experience.md](../setup-experience.md).
 
+## 2026-11-15 — Six tabs on an iPhone: the system's More lost the selection and doubled the navigation bar
+
+- **Tools:** Xcode 27.1 locally, iPhone 17 simulator on iOS 27.0, `starter-app-demo`; task `ios-125.9`.
+- **Symptom (confirmed locally, with screenshots):** with all six features chosen, SwiftUI's `TabView` showed four tabs and the system's More. Two defects followed. A tab opened from More's list never reached the tab view's selection binding, so `tabs.selected` kept the previous tab and a relaunch opened Home instead of Settings. And each destination's own `NavigationStack` drew a second navigation bar under More's, with two back buttons (More, then Settings in the tab chooser). A tab selected by code (a Home shortcut, a deep link) did open inside More. The system's More list offered no Edit button.
+- **Fix:** TabShell owns the overflow (`TabOverflow`). At compact width with more than five tabs it shows the first four and its own More tab listing the rest. A tab picked there replaces the list rather than being pushed, so its stack is the only one, and the selection is the shell's, so it is stored and restored like any other. The way back is `tabShellMoreButton()`, a toolbar button each destination root applies inside its own stack, because only a view inside that stack can put a button in its bar. `TabSelection.requests` counts selections so a link to the tab already selected leaves More's list. Regular width (an iPad) shows every tab. iOS 17's `tabItem` path uses the same split.
+- **Verification:** `ManyTabsUITests` (features lane) walks More's list, the back button, one navigation bar, the chooser inside More, relaunch, a Home shortcut, deep links, a chosen order, the largest text size with Apple's accessibility audit, and an iPad bar with all six. Results below are from the PR.
+- **Remaining:** narrowing an iPad window to compact width (Split View, Stage Manager) uses the same size-class rule, but no UI test resizes a window. The iPad case runs through a manual `iOS` workflow run with `device: iPad`, not on pull requests: the five-job macOS limit has no room for it.
+
 ## 2026-11-15 — The Images viewer closes before its paged TabView empties
 
 - **Tools:** GitHub-hosted `xcode-27` runner (Xcode 27.0, iPhone 17 simulator on iOS 27.0); task `ios-cdl`.
@@ -28,6 +36,7 @@ Entries for the module library mechanism, the first-round modules, their lanes a
 - **Fix:** the tests wait for the first row (Home) to know the step arrived, and swipe until Settings clears the top of Continue before using it. Both classes pass locally on the demo build.
 - **Remaining:** other uses of `scroll(app, to:)` inside a scroll view that ends above a fixed control can hit the same false stop. Check UI tests for a new tab on the demo configuration (`IOS_PROJECT_SPEC=examples/starter-app-demo.yml bash scripts/generate-project.sh`, then regenerate the default project before committing).
 - **Lanes:** on the same run the `tabs` lane reached its 30-minute pull request limit on its last test, after a `NotesUITests/testDeleteAsksFirst` retry used about six minutes, so `ImagesUITests` (66 s on CI) runs in `features`.
+
 ## 2026-11-15 — The Notes draft test: a longer keyboard wait, and no note written first
 
 - **Tools:** GitHub-hosted `xcode-27` runner (Xcode 27.0, iPhone 17 simulator on iOS 27.0); task `ios-c7w`.
@@ -186,6 +195,7 @@ Entries for the module library mechanism, the first-round modules, their lanes a
 - **Remaining:** the app's full-width controls on iPad (`ios-93k`, a design follow-up); a physical iPad on iPadOS 17 or later for a device run.
 
 - **Finding (confirmed, 2026-11-04):** querying a tab button among all the app's buttons (the first iPad version of the helper) timed out a hierarchy snapshot on a loaded hosted runner ("Timed out while evaluating UI query", PR #159's first run). The helper now asks once per test whether the app draws a tab bar and keeps the narrow `tabBars.buttons` query on an iPhone; the broad query is only for the iPad's top bar. Verified under the demo configuration on the iPhone 17 and iPad Air simulators.
+
 ## 2026-11-04 — Pull requests test the demo configuration only
 
 - **Tools:** GitHub-hosted macOS runner (`xcode-27`). Task `ios-6dd.13`; Asa chose this over more trimming while the queue was hours deep.
@@ -225,6 +235,7 @@ Entries for the module library mechanism, the first-round modules, their lanes a
 - **Finding (confirmed):** on a simulator booted seconds before the run, the UI test runner twice died in XCTest's stall detector while bootstrapping ("operation never finished bootstrapping", abort in `XCTWaiter handleStalledWait`); the same signature took a lane on #155. Pre-booted simulators passed every time. Recorded on `ios-6dd.13`.
 - **Verified:** header gap under the chrome, in points: full build on iPhone 17, 58 at the default size and 112 at the largest, portrait and landscape alike; iPad Air 11-inch and iPhone 13 mini pass the same assertions; no-modules build (status bar only), 66 and 120 in portrait, 58 and 112 in landscape. Allowances 83 and 190. All local simulators; the iPhone 13 mini runs its own older runtime, the others iOS 27.0.
 - **Remaining:** iPad Split View and Stage Manager aren't claimed by the template, so not measured; the largest text size scrolls from the top like any other size, measured in the same test.
+
 ## 2026-11-04 — One module-tests job, and longer first waits in the scenario harness test
 
 - **Tools:** GitHub-hosted macOS runners (`xcode-27`). Task `ios-6dd.13`.
@@ -233,6 +244,7 @@ Entries for the module library mechanism, the first-round modules, their lanes a
 - **Cost:** the module job runs longer than any single matrix lane did, for the same test coverage with one build instead of twelve; the artifact is one `module-test-results-all`.
 - **Verified:** `bash scripts/test-module.sh all` locally on iPhone 17 / iOS 27.0: one build, every module test target green (twelve result bundles in one run, 160 tests). Python suite and the identifier contract hold. Hosted evidence is this change's own run and the ones after it.
 - **Remaining:** the ten-minute aim for the required lanes; trimming the slowest UI tests.
+
 ## 2026-11-04 — Let the simulator settle before the UI test runner starts
 
 - **Tools:** GitHub-hosted macOS runner (`xcode-27`), Xcode 27.0; the Mac's simulators. Task `ios-6dd.13`.
@@ -262,6 +274,7 @@ Entries for the module library mechanism, the first-round modules, their lanes a
 - **Verification:** all 10 pinned skills verified. Existing migration tests were inspected; they create a V1 fixture from today's types and do not establish preservation of an authentic released V2 store or its original files. No Swift code, schema or runtime behavior changed.
 - **Draft review boundary:** [PR #148](https://github.com/asavs/ios-app-starter/pull/148) intentionally remains a research draft. The iOS workflow classifies drafts before documentation changes and deliberately fails `ios-gate` with simulator jobs skipped ([run 41543034630](https://github.com/asavs/ios-app-starter/actions/runs/41543034630)). This is the configured draft gate, not a migration test failure. Marking the PR ready after research review allows the documentation-only gate; no workflow change is needed.
 - **Remaining:** authentic V1/V2 writer fixtures, iOS 17 disk migration and failure tests, module-switch policy and deletion retention decisions. The research remains pending implementation; no runtime compatibility claim follows from this review.
+
 ## 2026-11-03 — The timer leaves the default template for the demo overlay
 
 - **Tools:** Xcode 27.0, iPhone 17 / iOS 27.0 simulator. Task `ios-6dd.10`, after the registry (#152) made a missing feature a normal state of the shell.

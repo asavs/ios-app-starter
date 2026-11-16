@@ -65,7 +65,8 @@ fi
 workers="${IOS_TEST_WORKERS:-1}"
 
 # IOS_TEST_LANE picks the test classes: `shell` (the unit tests, the shell, theme and deep links,
-# onboarding with its tab chooser, and Settings), `features` (the Timer and Attachments classes) or `tabs`
+# onboarding with its tab chooser, and Settings), `features` (the Timer and Attachments classes, and
+# six tabs overflowing into More) or `tabs`
 # (the tab chooser in Settings, Library, Notes, Home and Images); unset or `all` runs everything. The lanes are
 # balanced by measured time, so a new class goes to the shortest one (docs/ci.md says how to measure).
 # CI runs the lanes as separate jobs, each with its own simulator, since one runner takes over 25
@@ -77,7 +78,8 @@ case "${IOS_TEST_LANE:-all}" in
       -only-testing:StarterAppUITests/OnboardingUITests -only-testing:StarterAppUITests/OnboardingTabsUITests
       -only-testing:StarterAppUITests/SettingsUITests) ;;
   features)
-    lane_settings=(-only-testing:StarterAppUITests/TimerUITests -only-testing:StarterAppUITests/AttachmentsUITests) ;;
+    lane_settings=(-only-testing:StarterAppUITests/TimerUITests -only-testing:StarterAppUITests/AttachmentsUITests
+      -only-testing:StarterAppUITests/ManyTabsUITests) ;;
   tabs)
     lane_settings=(-only-testing:StarterAppUITests/TabChoicesUITests -only-testing:StarterAppUITests/LibraryUITests
       -only-testing:StarterAppUITests/HomeUITests -only-testing:StarterAppUITests/NotesUITests

@@ -178,6 +178,14 @@ enum Identifiers {
 /// module. The modules set them; this mirror exists so the tests have no literals, and
 /// `scripts/check-ui-identifiers.py` checks each one against the module sources.
 enum ModuleIdentifiers {
+    /// TabShell's own controls (`TabShellIdentifiers`): a phone with more than five tabs shows four and More.
+    enum TabShell {
+        static let more = "tabs.more"
+        static let moreBack = "tabs.more.back"
+        /// A tab's row in More's list; `tab` is a `StarterTab` raw value.
+        static func moreRow(_ tab: String) -> String { "tabs.moreRow.\(tab)" }
+    }
+
     enum Onboarding {
         static let next = "onboarding.next"
         static let skip = "onboarding.skip"

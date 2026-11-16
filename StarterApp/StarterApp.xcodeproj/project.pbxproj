@@ -30,6 +30,7 @@
 		338C33E092092319761BC3EE /* Database in Frameworks */ = {isa = PBXBuildFile; productRef = 9E9D6DF129F87F5B995DD574 /* Database */; };
 		3A90FD36AC641E70F0A4357A /* LibraryItem+Kind.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96A02F581B53F1B856A2D3E6 /* LibraryItem+Kind.swift */; };
 		3D254CCA4FC6D280CB235C06 /* ImageViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E96BD64336C941060E579BD /* ImageViewer.swift */; };
+		3F9CBA37FFFAF28BBBCE2B69 /* ManyTabsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC422777CE67FBAE1D92981C /* ManyTabsUITests.swift */; };
 		4373411B683AC6A1449A225B /* StarterTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9218B03F8BC10E8E6907F4D3 /* StarterTab.swift */; };
 		46C0B1C171E433E997E37D77 /* StarterSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C1F23018F09539BF2772719 /* StarterSettingsView.swift */; };
 		4A63205FB8D706D0A1BB2AC6 /* TabChoicesStep.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD757D132FC27DADC0F9CCEC /* TabChoicesStep.swift */; };
@@ -247,6 +248,7 @@
 		F59A7DFA28BB431E40109A90 /* TimerSession+Presets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TimerSession+Presets.swift"; sourceTree = "<group>"; };
 		FBBA9B19281BD46FC1E3F9BC /* SessionRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRecord.swift; sourceTree = "<group>"; };
 		FBF5C48B8DEE60F1BE83C0C8 /* StarterApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = StarterApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FC422777CE67FBAE1D92981C /* ManyTabsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManyTabsUITests.swift; sourceTree = "<group>"; };
 		FCAAD5B3D9897A4CFA6CD55C /* DeepLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLink.swift; sourceTree = "<group>"; };
 		FD757D132FC27DADC0F9CCEC /* TabChoicesStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabChoicesStep.swift; sourceTree = "<group>"; };
 		FFF15AD838B003558CAAB034 /* TimerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerUITests.swift; sourceTree = "<group>"; };
@@ -483,6 +485,7 @@
 				DFA26BAEAC18D31AE29EE33D /* HomeUITests.swift */,
 				87FC7CCC6DB99E53101A8C34 /* ImagesUITests.swift */,
 				8BAF4741CB5CE83C3B7B0EB7 /* LibraryUITests.swift */,
+				FC422777CE67FBAE1D92981C /* ManyTabsUITests.swift */,
 				2A7ADE53420B8B2133DF54FD /* NotesUITests.swift */,
 				0412FF2AA70F5AC334A04A12 /* OnboardingTabsUITests.swift */,
 				1CFFEDEBFC317C598BC30DFF /* OnboardingUITests.swift */,
@@ -686,6 +689,7 @@
 				4BA16119ACA346106FCF0090 /* Identifiers.swift in Sources */,
 				CD899048659D501849E31D7F /* ImagesUITests.swift in Sources */,
 				0519A0D6340476B789BD8750 /* LibraryUITests.swift in Sources */,
+				3F9CBA37FFFAF28BBBCE2B69 /* ManyTabsUITests.swift in Sources */,
 				9B91B82F50490F87CC432B44 /* NotesUITests.swift in Sources */,
 				FFF37194DF87A2CEA9CBDC3E /* OnboardingTabsUITests.swift in Sources */,
 				623273AC4B57F76DFB0D0E4F /* OnboardingUITests.swift in Sources */,
